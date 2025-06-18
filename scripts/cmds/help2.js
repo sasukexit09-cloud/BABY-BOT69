@@ -31,8 +31,8 @@ module.exports = {
   onStart: async function ({ args, message, event }) {
     const prefix = await getPrefix(event.threadID);
     const totalCommands = commands.size;
-    const botName = "〲٭⃝✨⃝YOUR 卝 চুন্নি ⃝✨⃝٭";
-    const ownerName = "T A N J I L 🎀";
+    const botName = "𝑴𝒊𝒖𝑴𝒊𝒖 😸";
+    const ownerName = "𝗧𝗮𝗿𝗲𝗸";
     const perPage = 6;
 
     if (args.length === 0 || !isNaN(args[0])) {
