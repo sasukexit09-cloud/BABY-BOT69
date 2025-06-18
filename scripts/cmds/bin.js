@@ -47,7 +47,7 @@ module.exports = {
       // If filename provided
       const fileName = args[0];
       if (!fileName) {
-        return message.reply("📝 Please provide a filename or reply to a file");
+        return message.reply("📝 𝐏𝐥𝐞𝐚𝐬𝐞 𝐩𝐫𝐨𝐯𝐢𝐝𝐞 𝐚 𝐟𝐢𝐥𝐞𝐧𝐚𝐦𝐞 𝐨𝐫 𝐫𝐞𝐩𝐥𝐲 𝐭𝐨 𝐚 𝐟𝐢𝐥𝐞..🙂");
       }
 
       await this.uploadFile(api, event, fileName, baseApiUrl);
