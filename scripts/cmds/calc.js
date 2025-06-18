@@ -3,63 +3,66 @@ const math = require('mathjs');
 module.exports = {
   config: {
     name: "calc",
-    aliases: ["calculate", "calculator", "math"],
-    description: "A smart calculator that gives direct answers to any math expression!",
-    usage: "/calc <expression>",
-    category: "tools",
-    cooldown: 2,
+    version: "1.1",
+    author: "Tarek",
+    countDown: 1,
     role: 0,
-    author: "T A N J I L 🎀",
-    shortDescription: {
-      en: "Smart calculator for all math expressions!"
-    },
-    longDescription: {
-      en: "Use /calc followed by a mathematical expression to get instant results like a real calculator."
-    },
+    shortDescription: "Smart Calculator",
+    longDescription: "Performs both normal and scientific calculations.",
+    category: "utility",
     guide: {
       en: `
-✪ Smart Calculator Guide ✪
+📘 Usage Guide for /calc:
 
-➤ Description:
-Solve math expressions instantly using this smart calculator command.
+🔹 Basic Arithmetic:
+- /calc 5 + 3            → 8
+- /calc 20 - 5           → 15
+- /calc 4 * 6            → 24
+- /calc 24 / 3           → 8
+- /calc (10 + 5) * 2     → 30
 
-➤ Usage:
-• /calc <expression>
+🔹 Scientific Functions:
+- /calc sqrt(25)         → 5
+- /calc pow(2, 3)        → 8
+- /calc 2^3              → 8
+- /calc abs(-10)         → 10
+- /calc log(100)         → 2
+- /calc log10(1000)      → 3
 
-➤ Examples:
-• /calc 2+2
-• /calc 5*8-3
-• /calc (12/4) + 3^2
-• /calc sqrt(25)
-• /calc 3^3
+🔹 Trigonometry (use 'deg' for degrees):
+- /calc sin(90 deg)      → 1
+- /calc cos(0 deg)       → 1
+- /calc tan(45 deg)      → 1
 
-➤ Supported Operations:
-• Addition (+), Subtraction (-)
-• Multiplication (*), Division (/)
-• Exponents (^), Square roots (sqrt)
-• Brackets for priority ( )
-• Decimals are also supported (e.g., 3.5 + 2.1)
+🔹 Constants:
+- /calc pi               → 3.141592...
+- /calc e                → 2.71828...
 
-➤ Notes:
-• Make sure to type valid math expressions.
-• You can use functions like: sqrt(), sin(), cos(), log(), etc.
+🔹 Mixed Expressions:
+- /calc sqrt(16) + pow(2, 4)     → 4 + 16 = 20
+- /calc sin(30 deg) * 100        → 50
+- /calc (10 + 5) * sqrt(9)       → 15 * 3 = 45
 
-Enjoy smart math solving!
+🔹 Percentage:
+- /calc 10% of 200       → 20
+
+⚠️ Note: Use valid math expressions. If there's an error, check your format.
       `
     }
   },
 
-  onStart: async function ({ api, event, args }) {
-    const expression = args.join(" ");
-    if (!expression) {
-      return api.sendMessage("❌ Please enter a math expression.\n\nExample: /calc (3+5)*2", event.threadID, event.messageID);
+  onStart: async function ({ message, event, args }) {
+    const input = args.join(" ");
+
+    if (!input) {
+      return message.reply("📌 Please provide a math expression.\nType /calc help to see usage examples.");
     }
 
     try {
-      const result = math.evaluate(expression);
-      return api.sendMessage(`🧮 Result: ${result}`, event.threadID, event.messageID);
+      const result = math.evaluate(input);
+      message.reply(`🧮 Result: ${result}`);
     } catch (error) {
-      return api.sendMessage("❌ Invalid expression. Please try again.\nExample: /calc sqrt(16)+4", event.threadID, event.messageID);
+      message.reply("⚠️ Invalid expression! Please try again with a correct math format.\nUse /calc help for usage.");
     }
   }
 };
