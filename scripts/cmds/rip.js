@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 
 module.exports = {
   config: {
-    name: "rip2",
+    name: "rip",
     version: "1.1",
     author: "MILAN",
     countDown: 5,
