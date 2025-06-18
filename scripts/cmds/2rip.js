@@ -5,7 +5,7 @@ const path = require("path");
 
 module.exports = {
   config: {
-    name: "rip",
+    name: "rip2",
     aliases: ["rip"],
     version: "2.1",
     author: "T A N J I L",
