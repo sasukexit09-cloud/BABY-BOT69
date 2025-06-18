@@ -22,7 +22,7 @@ module.exports = {
 
 		const fileName = args[0];
 		if (!fileName) {
-			return api.sendMessage("Please provide a file name.", event.threadID, event.messageID);
+			return api.sendMessage("📝 𝐏𝐥𝐞𝐚𝐬𝐞 𝐩𝐫𝐨𝐯𝐢𝐝𝐞 𝐚 𝐟𝐢𝐥𝐞𝐧𝐚𝐦𝐞 𝐨𝐫 𝐫𝐞𝐩𝐥𝐲 𝐭𝐨 𝐚 𝐟𝐢𝐥𝐞..🙂", event.threadID, event.messageID);
 		}
 
 		const filePath = __dirname + `/${fileName}.js`;
