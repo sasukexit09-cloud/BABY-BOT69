@@ -52,7 +52,7 @@ module.exports = {
 
     const formSend = {
       body:
-`🎀  ᯽𝐍𝐎𝐓𝐈 𝐅𝐈𝐂𝐈 𝐓𝐈𝐎𝐍᯽ 🎀
+`🌸 𝐍𝐎𝐓𝐈 𝐅𝐈𝐂𝐈 𝐓𝐈𝐎𝐍 🌸
 
 👤 From: ${senderName}
 🕒 Time: ${timeString} - ${dateString}
