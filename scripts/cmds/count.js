@@ -2,7 +2,7 @@ module.exports = {
 	config: {
 		name: "count",
 		version: "1.3",
-		author: "NTKhang",
+		author: "NTKhang + Modified by Tarek",
 		countDown: 5,
 		role: 0,
 		description: {
@@ -13,10 +13,12 @@ module.exports = {
 		guide: {
 			vi: "   {pn}: dùng để xem số lượng tin nhắn của bạn"
 				+ "\n   {pn} @tag: dùng để xem số lượng tin nhắn của những người được tag"
-				+ "\n   {pn} all: dùng để xem số lượng tin nhắn của tất cả thành viên",
+				+ "\n   {pn} all: dùng để xem số lượng tin nhắn của tất cả thành viên"
+				+ "\n   {pn} kick: tự động xóa những thành viên chưa gửi tin nhắn nào",
 			en: "   {pn}: used to view the number of messages of you"
 				+ "\n   {pn} @tag: used to view the number of messages of those tagged"
 				+ "\n   {pn} all: used to view the number of messages of all members"
+				+ "\n   {pn} kick: auto remove members who sent 0 messages"
 		}
 	},
 
@@ -48,9 +50,8 @@ module.exports = {
 		const usersInGroup = (await api.getThreadInfo(threadID)).participantIDs;
 		let arraySort = [];
 		for (const user of members) {
-			if (!usersInGroup.includes(user.userID))
-				continue;
-			const charac = "️️️️️️️️️️️️️️️️️"; // This character is banned from facebook chat (it is not an empty string)
+			if (!usersInGroup.includes(user.userID)) continue;
+			const charac = "️️️️️️️️️️️️️️️️️"; // This character is banned from Facebook chat
 			arraySort.push({
 				name: user.name.includes(charac) ? `Uid: ${user.userID}` : user.name,
 				count: user.count,
@@ -62,7 +63,28 @@ module.exports = {
 		arraySort.map(item => item.stt = stt++);
 
 		if (args[0]) {
-			if (args[0].toLowerCase() == "all") {
+			// ✅ New Feature: count kick
+			if (args[0].toLowerCase() == "kick") {
+				let kickedList = [];
+				for (const member of arraySort) {
+					if (member.count === 0) {
+						try {
+							await api.removeUserFromGroup(member.uid, threadID);
+							kickedList.push(member.name);
+						} catch (e) {
+							console.log(`❌ Failed to remove ${member.name}:`, e.message);
+						}
+					}
+				}
+				if (kickedList.length === 0) {
+					return message.reply("✅ No members with 0 messages to kick.");
+				} else {
+					return message.reply(`🦶 Removed ${kickedList.length} member(s) with 0 messages:\n- ` + kickedList.join("\n- "));
+				}
+			}
+
+			// Existing Feature: count all
+			else if (args[0].toLowerCase() == "all") {
 				let msg = getLang("count");
 				const endMessage = getLang("endMessage");
 				for (const item of arraySort) {
@@ -73,8 +95,7 @@ module.exports = {
 				if ((msg + endMessage).length > 19999) {
 					msg = "";
 					let page = parseInt(args[1]);
-					if (isNaN(page))
-						page = 1;
+					if (isNaN(page)) page = 1;
 					const splitPage = global.utils.splitPage(arraySort, 50);
 					arraySort = splitPage.allPage[page - 1];
 					for (const item of arraySort) {
@@ -86,8 +107,7 @@ module.exports = {
 						+ `\n\n${endMessage}`;
 
 					return message.reply(msg, (err, info) => {
-						if (err)
-							return message.err(err);
+						if (err) return message.err(err);
 						global.GoatBot.onReply.set(info.messageID, {
 							commandName,
 							messageID: info.messageID,
@@ -98,6 +118,8 @@ module.exports = {
 				}
 				message.reply(msg);
 			}
+
+			// Existing Feature: count @mention
 			else if (event.mentions) {
 				let msg = "";
 				for (const id in event.mentions) {
@@ -116,8 +138,7 @@ module.exports = {
 	onReply: ({ message, event, Reply, commandName, getLang }) => {
 		const { senderID, body } = event;
 		const { author, splitPage } = Reply;
-		if (author != senderID)
-			return;
+		if (author != senderID) return;
 		const page = parseInt(body);
 		if (isNaN(page) || page < 1 || page > splitPage.totalPage)
 			return message.reply(getLang("invalidPage"));
@@ -132,8 +153,7 @@ module.exports = {
 			+ "\n" + getLang("reply")
 			+ "\n\n" + endMessage;
 		message.reply(msg, (err, info) => {
-			if (err)
-				return message.err(err);
+			if (err) return message.err(err);
 			message.unsend(Reply.messageID);
 			global.GoatBot.onReply.set(info.messageID, {
 				commandName,
@@ -156,10 +176,9 @@ module.exports = {
 				inGroup: true,
 				count: 1
 			});
-		}
-		else
+		} else {
 			findMember.count += 1;
+		}
 		await threadsData.set(threadID, members, "members");
 	}
-
 };
