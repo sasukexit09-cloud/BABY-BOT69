@@ -1,4 +1,4 @@
-# 👋 Hello, I'm Tanjil Hasan!
+# 👋 Hello, I'm Tarek Shikdar !
 
 ![Banner](https://files.catbox.moe/egw7cj.jpg)
 
@@ -11,21 +11,15 @@ I'm a curious and tech-enthusiastic individual, currently focused on learning ne
 - 🔭 Currently exploring new knowledge and skills
 - 🌱 Not in school right now, but working hard for a better future
 - 🎮 Passionate about: Religion, Gaming (Free Fire), Music
-- 📍 Location: Dhaka, Mirpur 12, D Block, Muslim Bazaar-
+- 📍 Location: Tangail,Tangail Sadar,New bus Stan , Kodalia nursery Road-
 
 ---
 
 
 ## 📫 Connect With Me
 
-- 🧵 Facebook: [〲TOM 卝 হাসানヅ࿐](https://www.facebook.com/share/12Ke3rerJgs/)
+- 🧵 Facebook: [Tarek Shikdar](https://www.facebook.com/tarek.shikdar.08)
 - 📱 WhatsApp: +8801XXXXXXXXX
-
----
-
-## 📂 GitHub Stats
-
-![Tanjil's GitHub stats](https://github-readme-stats.vercel.app/api?username=your-github-username&show_icons=true&theme=radical)
 
 ---
 
