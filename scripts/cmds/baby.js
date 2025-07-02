@@ -185,7 +185,7 @@ module.exports.onChat = async ({
             ];
 
             const selectedReply = rawReplies[Math.floor(Math.random() * rawReplies.length)];
-            const finalReply = `✨ ${name} ✨\n\n${selectedReply}`;
+            const finalReply =selectedReply;
 
             if (!arr) {
                 await api.sendMessage(finalReply, event.threadID, (error, info) => {
