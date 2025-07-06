@@ -46,11 +46,11 @@ module.exports = {
       const name = userInfo[uid].name || "Unknown";
       const gender = userInfo[uid].gender === 1 ? "Female" : userInfo[uid].gender === 2 ? "Male" : "Unknown";
       const isFriend = userInfo[uid].isFriend ? "Yes" : "No";
-      const isBirthday = userInfo[uid].isBirthday ? "Yes" : "private";
+      const isBirthday = userInfo[uid].isBirthday ? "Yes" : "Private";
       const profileUrl = `https://www.facebook.com/${uid}`;
       const balance = data.money || 0;
       const exp = data.exp || 0;
-      const level = Math.floor(0.1 * Math.sqrt(exp)); // ← Calculated from exp
+      const level = Math.floor(0.1 * Math.sqrt(exp));
 
       const threadNickname = event.threadID && uid ? (await api.getThreadInfo(event.threadID)).nicknames?.[uid] : null;
       const nickname = threadNickname || "Not set in group";
@@ -59,31 +59,27 @@ module.exports = {
       const sortedUsers = allUsers
         .filter(user => typeof user.money === 'number')
         .sort((a, b) => b.money - a.money);
-
       const userRankIndex = sortedUsers.findIndex(user => user.userID === uid);
       const rankPosition = userRankIndex !== -1 ? `Rank ${userRankIndex + 1}` : "Unranked";
 
-      const fancyInfo = 
-`╭Hello ${senderName}
-│  
-│✨𝐍𝐚𝐦𝐞: ${name}
-│✨𝐧𝐢𝐜𝐤: ${nickname}
-│✨𝐔𝐢𝐝: ${uid}
-│
-│💵𝐁𝐚𝐥𝐚𝐧𝐜𝐞 : $${balance}
-│✨ 𝐄𝐱𝐩 : ${exp}
-│✨ 𝐋𝐞𝐯𝐞𝐥 : ${level}
-│✨ 𝐑𝐚𝐧𝐤 : ${rankPosition}
-│
-│✨ 𝐆𝐞𝐧𝐝𝐞𝐫 : ${gender}
-│🎂 𝐁𝐢𝐫𝐭𝐡𝐝𝐚𝐲 : ${isBirthday}
-│💑 𝐑𝐞𝐥𝐚𝐭𝐢𝐨𝐧𝐬𝐡𝐢𝐩 : Single 
-│
-│🤝 𝐅𝐫𝐢𝐞𝐧𝐝 : ${isFriend}
-│🌐 𝐏𝐫𝐨𝐟𝐢𝐥𝐞 𝐋𝐢𝐧𝐤: 
-│${profileUrl}
-│
-╰───────────────֍`;
+      const fancyInfo =
+`╭─[ 🧊 User Info Panel ]──╮
+│ 🆔 UID         : ${uid}
+│ 👤 Name        : ${name}
+│ 🏷️ Nickname    : ${nickname}
+│ 
+│ 💵 Balance     : $${balance}
+│ 📚 EXP         : ${exp}
+│ 🔢 Level       : ${level}
+│ 🏆 Rank        : ${rankPosition}
+│ 
+│ 🚻 Gender      : ${gender}
+│ 🎂 Birthday    : ${isBirthday}
+│ 💘 Status      : Single
+│ 🤝 Friend      : ${isFriend}
+│ 🌐 Profile Link:
+│ ${profileUrl}
+╰─────────────────╯`;
 
       return message.reply({
         body: fancyInfo,
