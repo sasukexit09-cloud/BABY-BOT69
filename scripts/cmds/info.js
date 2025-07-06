@@ -11,8 +11,8 @@ module.exports = {
 
   onStart: async function ({ api, event }) {
     const videoUrls = [
-      "https://files.catbox.moe/fk4p6y.mp4",  // 1st video
-      "https://files.catbox.moe/vovx3d.mp4",  // 2nd video
+      // ✅ Fixed: Converted to direct-download format
+      "https://drive.google.com/uc?export=download&id=1T76MSnPSi4oIK4UFP9Uhy3QW53K6jAw1"
     ];
 
     const msgBody = `
