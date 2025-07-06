@@ -5,8 +5,8 @@ const path = require("path");
 
 module.exports = {
   config: {
-    name: "fk2",
-    aliases: ["fk2"],
+    name: "fk",
+    aliases: ["fk","fuck"],
     version: "1.0",
     author: "Tarek",
     countDown: 5,
@@ -49,7 +49,8 @@ module.exports = {
         Canvas.loadImage(avatarFemale)
       ]);
 
-      const bgUrl = "https://files.catbox.moe/t7yf7u.jpg";
+      // ✅ Updated: Google Drive direct download link
+      const bgUrl = "https://drive.google.com/uc?export=download&id=1QnmVdwJgqNcOIN1QTsxwB0dbWzTpD2BJ";
       const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
       const bg = await Canvas.loadImage(bgRes.data);
 
@@ -96,8 +97,8 @@ module.exports = {
       }, () => fs.unlinkSync(imgPath));
 
     } catch (err) {
-      console.error("Error in fk command:", err);
-      message.reply("There was an error creating the fk image.");
+      console.error("Error in fk2 command:", err);
+      message.reply("❌ There was an error creating the FK image.");
     }
   }
 };
