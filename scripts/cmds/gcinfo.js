@@ -6,7 +6,7 @@ module.exports = {
     name: "gcinfo",
     aliases: [],
     version: "2.1",
-    author: "〲T A N J I L ツ ",
+    author: "〲T A N J I L ツ",
     role: 0,
     shortDescription: {
       en: "Show group info"
@@ -24,6 +24,15 @@ module.exports = {
     try {
       const threadInfo = await api.getThreadInfo(event.threadID);
       const groupName = threadInfo.threadName || "Unnamed Group";
+      const boldName = groupName
+        .split('')
+        .map(char =>
+          char
+            .replace(/[A-Z]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x1D400 - 0x41))
+            .replace(/[a-z]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x1D41A - 0x61))
+        )
+        .join('');
+
       const adminIDs = threadInfo.adminIDs.map(i => i.id);
       const admins = threadInfo.userInfo.filter(user => adminIDs.includes(user.id));
       const males = threadInfo.userInfo.filter(u => u.gender === 'MALE').length;
@@ -35,30 +44,25 @@ module.exports = {
       const approvalMode = threadInfo.approvalMode ? "On" : "Off";
       const threadID = event.threadID;
 
-      let adminList = admins.map(ad => `• ${ad.name}`).join("\n┃ ");
+      const adminList = admins.map(ad => `• ${ad.name}`).join("\n");
 
       const msg =
-`╭━━━━━━━━━━━━━━━━╮
-┃          ✨ 𝐍𝐚𝐦𝐞 ✨
-┃  
-┃          ${groupName} 
-┃
-┃     𝐓𝐈𝐃 : ${threadID}
-┃ 👤 𝐓𝐨𝐭𝐚𝐥 𝐌𝐞𝐦𝐛𝐞𝐫𝐬: ${totalMembers}
-┃ 💬 𝐓𝐨𝐭𝐚𝐥 𝐌𝐚𝐬𝐬𝐞𝐠𝐞𝐬: ${totalMessages}
-┃
-┃ 🙋🏻‍♀️ 𝐌𝐚𝐥𝐞𝐬: ${males}
-┃ 🙋🏼‍♂️ 𝐅𝐞𝐦𝐚𝐥𝐞𝐬: ${females}
-┃
-┃ 😃 𝐄𝐦𝐨𝐣𝐢: ${groupEmoji}
-┃ ✅ 𝐀𝐩𝐩𝐫𝐨𝐯𝐞 𝐌𝐨𝐝𝐞: ${approvalMode}
-┃ 
-┃ 👑 𝐀𝐃𝐌𝐈𝐍:
-┃ ${adminList}
-╰━━━━━━━━━━━━━━━━╯`;
+`🌸── 𝙂𝙧𝙤𝙪𝙥 𝙎𝙣𝙖𝙥 ──🌸
+📛 𝙉𝙖𝙢𝙚: ${boldName}
+🆔 𝙄𝘿: ${threadID}
+👥 𝙈𝙚𝙢𝙗𝙚𝙧𝙨: ${totalMembers}
+💌 𝙈𝙨𝙜 𝘾𝙤𝙪𝙣𝙩: ${totalMessages}
+
+🧒 𝙈𝙖𝙡𝙚: ${males} | 👧 𝙁𝙚𝙢𝙖𝙡𝙚: ${females}
+😊 𝙀𝙢𝙤𝙟𝙞: ${groupEmoji}
+🔐 𝘼𝙥𝙥𝙧𝙤𝙫𝙖𝙡: ${approvalMode}
+
+👑 𝘼𝘿𝙈𝙄𝙉𝙎:
+${adminList}
+🌸─────────────────🌸`;
 
       if (groupImage) {
-        const path = __dirname + "/tmp.png";
+        const path = __dirname + "/gc_cover.png";
         const res = await axios.get(groupImage, { responseType: "arraybuffer" });
         fs.writeFileSync(path, Buffer.from(res.data, "utf-8"));
 
