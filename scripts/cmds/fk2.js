@@ -5,12 +5,12 @@ const path = require("path");
 
 module.exports = {
   config: {
-    name: "fk2",
-    aliases: ["fk2","fuck2"],
+    name: "fuck2",
+    aliases: ["fk2"],
     version: "1.0",
     author: "Efat",
     countDown: 5,
-    role: 0,
+    role: 2,
     shortDescription: "FK with custom image",
     longDescription: "Generate a fk image with the mentioned user using a custom background. Male on right, female on left.",
     category: "funny",
@@ -52,7 +52,7 @@ module.exports = {
       ]);
 
       // Load background image
-      const bgUrl = "http://remakeai-production.up.railway.app/Remake_Ai/Nyx_Remake_1746747501339.gif";
+      const bgUrl = "https://files.catbox.moe/0d5987.mp4";
       const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
       const bg = await Canvas.loadImage(bgRes.data);
 
@@ -93,7 +93,7 @@ module.exports = {
       fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
 
       message.reply({
-        body: "Fkkkk!",
+        body: "Fuck 🤭💦",
         attachment: fs.createReadStream(imgPath)
       }, () => fs.unlinkSync(imgPath));
 
