@@ -28,8 +28,8 @@ module.exports = {
   onStart: async function({ api, event, args, message }) {
     try {
       const query = encodeURIComponent(args.join(' '));
-      message.reply("✅ SUCCESSFULLY SEND MSG\n\n🔰 PLEASE CK YOUR INBOX OR MSG REQUEST BOX", event.threadID);
-      api.sendMessage("✅ SUCCESSFULLY ALLOW\n🔰 NOW YOU CAN USE🫠 HI I'M BAYJID BOT🫠 HERE", event.senderID);
+      message.reply("𝐁𝐚𝐛𝐲 𝐀𝐦𝐢 𝐭𝐨𝐦𝐚𝐫 𝐢𝐧𝐛𝐨𝐱 𝐞 𝐬𝐦𝐬 𝐝𝐢𝐬𝐢 😺", event.threadID);
+      api.sendMessage("✅ 𝐗𝐚𝐍 𝐓𝐮𝐦𝐢 𝐠𝐫𝐨𝐮𝐩 𝐞 𝐤𝐢 𝐤𝐨𝐫𝐨 𝐀𝐦𝐢 𝐭𝐨 𝐢𝐧𝐛𝐨𝐱 𝐭𝐨𝐦𝐚𝐫 𝐉𝐨𝐧𝐧𝐨 𝐁𝐨𝐬𝐞 𝐚𝐬𝐢 😄🙈", event.senderID);
     } catch (error) {
       console.error("Error bro: " + error);
     }
