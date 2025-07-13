@@ -8,7 +8,7 @@ const baseApiUrl = async () => {
 
 module.exports = {
   config: {
-    name: "gemini",
+    name: "gemini3",
     version: "1.0",
     author: "Dipto",
     description: "gemeini ai",
