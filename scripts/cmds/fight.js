@@ -14,13 +14,7 @@ module.exports = {
     },
     guide: {
       en: `
-✪ Fight Game Command Guide ✪
-
-➤ Description:
-Challenge another user in the group to a fight! Win to earn EXP. No money required.
-
 ➤ Usage:
-• /fight @mention
 • /fight @mention
 
 ➤ Reward:
@@ -29,12 +23,7 @@ Challenge another user in the group to a fight! Win to earn EXP. No money requir
 ➤ Valid Moves:
 • punch
 • kick
-• slap
-
-➤ Note:
-• Only the fighters can participate.
-• Replies and warnings appear only in the current fight group.
-      `
+• slap`
     }
   },
 
@@ -68,7 +57,34 @@ Challenge another user in the group to a fight! Win to earn EXP. No money requir
     global.fightGames[threadID] = {
       players,
       turn: currentTurn,
-      threadID
+      threadID,
+      timeout: setTimeout(async () => {
+        const game = global.fightGames[threadID];
+        if (!game) return;
+
+        const [player1, player2] = game.players;
+        let winner;
+
+        if (player1.hp > player2.hp) winner = player1;
+        else if (player2.hp > player1.hp) winner = player2;
+        else winner = null;
+
+        if (winner) {
+          const userData = await usersData.get(winner.id);
+          const expToAdd = 300;
+          await usersData.set(winner.id, {
+            exp: (userData.exp || 0) + expToAdd
+          });
+
+          await message.reply(
+            `⌛ Time's up! 🕐\n🏁 ${winner.name} wins by having higher HP!\n🎉 Reward: ${expToAdd} EXP earned!`
+          );
+        } else {
+          await message.reply("⌛ Time's up! It's a draw! 🤝 No one wins.");
+        }
+
+        delete global.fightGames[threadID];
+      }, 60000) // 1 minute = 60000 ms
     };
   },
 
@@ -94,6 +110,8 @@ Challenge another user in the group to a fight! Win to earn EXP. No money requir
 
     if (!validMoves.includes(input)) return;
 
+    clearTimeout(game.timeout); // Reset timer
+
     const damage = Math.floor(Math.random() * 100) + 1;
     const opponent = players[1 - turn];
     opponent.hp -= damage;
@@ -111,11 +129,34 @@ Challenge another user in the group to a fight! Win to earn EXP. No money requir
       `👤 ${players[1].name} → ${getHpBar(players[1].hp)}`
     );
 
-    // Inform the next player's turn
     if (opponent.hp > 0) {
       const nextTurn = 1 - turn;
+      game.turn = nextTurn;
+      game.timeout = setTimeout(async () => {
+        const [player1, player2] = game.players;
+        let winner;
+
+        if (player1.hp > player2.hp) winner = player1;
+        else if (player2.hp > player1.hp) winner = player2;
+        else winner = null;
+
+        if (winner) {
+          const userData = await usersData.get(winner.id);
+          const expToAdd = 300;
+          await usersData.set(winner.id, {
+            exp: (userData.exp || 0) + expToAdd
+          });
+
+          await message.reply(
+            `⌛ Time's up! 🕐\n🏁 ${winner.name} wins by having higher HP!\n🎉 Reward: ${expToAdd} EXP earned!`
+          );
+        } else {
+          await message.reply("⌛ Time's up! It's a draw! 🤝 No one wins.");
+        }
+
+        delete global.fightGames[threadID];
+      }, 60000); // 1 min reset
       await message.reply(`👉 It's now ${players[nextTurn].name}'s turn!`);
-      global.fightGames[threadID].turn = nextTurn;
     } else {
       const winner = players[turn];
       const userData = await usersData.get(winner.id);
@@ -129,8 +170,8 @@ Challenge another user in the group to a fight! Win to earn EXP. No money requir
         `🏁 ${winner.name} wins the fight! 🏆\n🎉 Reward: ${expToAdd} EXP earned!`
       );
 
+      clearTimeout(game.timeout);
       delete global.fightGames[threadID];
     }
   }
-  // END: Fight Handler
 };
