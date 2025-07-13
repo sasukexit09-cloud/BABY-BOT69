@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "spin",
     version: "1.0",
-    author: "T A N J I L",
+    author: "T A N J I L 🎀",
     shortDescription: {
       en: "Spin and win game",
     },
