@@ -1,29 +1,28 @@
 module.exports = {
   config: {
     name: "slot",
-    version: "1.0",
-    author: "OtinXSandip",
+    version: "2.0",
+    author: "T A N J I L 🎀",
     shortDescription: {
-      en: "Slot game",
+      en: "Stylish slot machine game",
     },
     longDescription: {
-      en: "Slot game.",
+      en: "Slot machine game with emoji rarity and beautiful design.",
     },
     category: "Game",
   },
+
   langs: {
     en: {
-      invalid_amount: "Enter a valid and positive amount to have a chance to win double",
-      not_enough_money: "Check your balance if you have that amount",
-      spin_message: "Spinning...",
-      win_message: "You won $%1, buddy!",
-      lose_message: "You lost $%1, buddy.",
-      jackpot_message: "Jackpot! You won $%1 with three %2 symbols, buddy!",
+      invalid_amount: "Enter a valid and positive amount to play.",
+      not_enough_money: "Not enough balance to place this bet.",
     },
   },
-  onStart: async function ({ args, message, event, envCommands, usersData, commandName, getLang }) {
+
+  onStart: async function ({ args, message, event, usersData, getLang }) {
     const { senderID } = event;
     const userData = await usersData.get(senderID);
+    const name = userData.name || `ID: ${senderID}`;
     const amount = parseInt(args[0]);
 
     if (isNaN(amount) || amount <= 0) {
@@ -34,46 +33,77 @@ module.exports = {
       return message.reply(getLang("not_enough_money"));
     }
 
-    const slots = ["💚", "💛", "💙", "💛", "💚", "💙", "💙", "💛", "💚"];
-    const slot1 = slots[Math.floor(Math.random() * slots.length)];
-    const slot2 = slots[Math.floor(Math.random() * slots.length)];
-    const slot3 = slots[Math.floor(Math.random() * slots.length)];
-
+    const slot1 = getRandomEmoji();
+    const slot2 = getRandomEmoji();
+    const slot3 = getRandomEmoji();
+    const resultArray = [slot1, slot2, slot3];
     const winnings = calculateWinnings(slot1, slot2, slot3, amount);
+    const newBalance = userData.money + winnings;
 
     await usersData.set(senderID, {
-      money: userData.money + winnings,
+      money: newBalance,
       data: userData.data,
     });
 
-    const messageText = getSpinResultMessage(slot1, slot2, slot3, winnings, getLang);
+    let status = "";
+    if (slot1 === slot2 && slot2 === slot3) {
+      status = `🎉 JACKPOT! You won $${winnings}!`;
+    } else if (winnings > 0) {
+      status = `✅ You won $${winnings}!`;
+    } else {
+      status = `❌ You lost $${amount}.`;
+    }
 
-    return message.reply(messageText);
+    const response = formatResult({
+      name,
+      amount,
+      result: resultArray,
+      status,
+      balance: newBalance,
+    });
+
+    return message.reply(response);
   },
 };
 
-function calculateWinnings(slot1, slot2, slot3, betAmount) {
-  if (slot1 === "💚" && slot2 === "💚" && slot3 === "💚") {
-    return betAmount * 10;
-  } else if (slot1 === "💛" && slot2 === "💛" && slot3 === "💛") {
-    return betAmount * 5;
-  } else if (slot1 === slot2 && slot2 === slot3) {
-    return betAmount * 3;
-  } else if (slot1 === slot2 || slot1 === slot3 || slot2 === slot3) {
-    return betAmount * 2;
-  } else {
-    return -betAmount;
+// Emoji rarity system (more ❤️, less 🖤)
+const emojiChances = {
+  "❤️": 25,
+  "🧡": 20,
+  "💛": 15,
+  "💚": 10,
+  "💙": 8,
+  "💜": 5,
+  "🖤": 2,
+};
+
+function getRandomEmoji() {
+  const pool = [];
+  for (const [emoji, chance] of Object.entries(emojiChances)) {
+    for (let i = 0; i < chance; i++) {
+      pool.push(emoji);
+    }
   }
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function getSpinResultMessage(slot1, slot2, slot3, winnings, getLang) {
-  if (winnings > 0) {
-    if (slot1 === "💙" && slot2 === "💙" && slot3 === "💙") {
-      return getLang("jackpot_message", winnings, "💙");
-    } else {
-      return getLang("win_message", winnings) + `\[ ${slot1} | ${slot2} | ${slot3} ]`;
-    }
-  } else {
-    return getLang("lose_message", -winnings) + `\[ ${slot1} | ${slot2} | ${slot3} ]`;
-  }
-  }
+function calculateWinnings(s1, s2, s3, amount) {
+  if (s1 === "💚" && s2 === "💚" && s3 === "💚") return amount * 10;
+  if (s1 === "💛" && s2 === "💛" && s3 === "💛") return amount * 5;
+  if (s1 === s2 && s2 === s3) return amount * 3;
+  if (s1 === s2 || s1 === s3 || s2 === s3) return amount * 2;
+  return -amount;
+}
+
+function formatResult({ name, amount, result, status, balance }) {
+  return (
+    `🎰 SLOT MACHINE 🎰\n` +
+    `╔═════════════════╗\n` +
+    `👤 Name      : ${name}\n` +
+    `💰 Bet       : $${amount}\n` +
+    `🎲 Result    : ${result.join(" | ")}\n` +
+    `🏆 Status    : ${status}\n` +
+    `💳 Balance   : $${balance}\n` +
+    `╚═════════════════╝`
+  );
+}
