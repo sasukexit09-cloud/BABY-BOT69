@@ -1,12 +1,23 @@
 module.exports = {
   config: {
     name: "bank",
-    version: "1.2",
-    description: "Deposit, withdraw, earn interest, loan system",
+    version: "3.0",
+    description: "Deposit, withdraw, earn interest, loan system, bet, service, details",
     guide: {
       vi: "",
-      en:
-        `💫 {pn}Bank Commands 💫\n\n💖 Bank - Show bank features\n💙 Bank balance - Show your balance\n💛 Bank deposit [amount] - Deposit money\n💜 Bank withdraw [amount] - Withdraw money\n✨ Bank interest - Earn double after 6h\n🌷 Bank loan - Take a 20k loan\n😇 Bank repay [amount] - Repay your loan\n😍 Bank top - Top 10 richest users`
+      en: `💫 Bank Commands 💫
+
+💖 bank - Show bank features
+💙 bank balance - Show your balance
+💛 bank deposit [amount] - Deposit money
+💜 bank withdraw [amount] - Withdraw money
+✨ bank interest - Earn double after 6h
+🌷 bank loan - Take a 20k loan
+😇 bank repay [amount] - Repay your loan
+😍 bank top - Top 10 richest users
+🖤 bank bet [amount] - Bet with bank balance
+🧾 bank service - Show all bank services (বাংলায়)
+📊 bank details - Show your banking details`
     },
     category: "💰 Economy",
     countDown: 1,
@@ -14,67 +25,65 @@ module.exports = {
     author: "〲T A N J I L ツ"
   },
 
-  onStart: async function ({ message, event, args, usersData, api, commandName }) {
+  onStart: async function ({ message, event, args, usersData, api }) {
     const { MongoClient } = require("mongodb");
-    const uri = "mongodb+srv://tarekshikdar09:tarek099@bot-cluster.a7rzjf4.mongodb.net/?retryWrites=true&w=majority&appName=bot-cluster";
+    const uri = "mongodb+srv://tanjil4:tanjil4@cluster0.lqh9lyk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
     const client = new MongoClient(uri);
 
-    await client.connect();
-    const db = client.db("bankSystem");
-    const users = db.collection("users");
-    const uid = event.senderID;
+    try {
+      await client.connect();
+      const db = client.db("bankSystem");
+      const users = db.collection("users");
+      const uid = event.senderID;
+      const action = args[0]?.toLowerCase();
+      const amount = parseInt(args[1]);
 
-    const action = args[0]?.toLowerCase();
-    const amount = parseInt(args[1]);
+      const prefix = "〲٭⃝🎀 ⃝𝐘𝐎𝐔𝐑 𝐁𝐀𝐁𝐘 ⃝🎀\n\n";
 
-    // Initialize user if not exists
-    const user = await users.findOneAndUpdate(
-      { uid },
-      { $setOnInsert: { balance: 0, loan: 0, lastInterest: Date.now() } },
-      { upsert: true, returnDocument: "after" }
-    );
+      const user = await users.findOneAndUpdate(
+        { uid },
+        {
+          $setOnInsert: {
+            balance: 0,
+            loan: 0,
+            lastInterest: Date.now(),
+            interestCount: 0,
+            interestProfit: 0,
+            joinedAt: Date.now()
+          }
+        },
+        { upsert: true, returnDocument: "after" }
+      );
 
-    switch (action) {
-      case "balance": {
-        return message.reply(`💙 your bank balance: ${user.value.balance}  $✨`);
-      }
+      const userData = user?.value;
 
-      case "deposit": {
-  if (!amount || amount <= 0)
-    return message.reply("🌷 example: Bank deposit 100");
+      switch (action) {
+        case "balance":
+          return message.reply(`${prefix}💙 Your bank balance: ${userData.balance} $✨`);
 
-  const userBank = await users.findOne({ uid });
-  if (!userBank) return message.reply("❌ User not found.");
+        case "deposit": {
+          if (!amount || amount <= 0)
+            return message.reply(`${prefix}🌷 Example: bank deposit 100`);
 
-  // Get current user's money from usersData (hand cash)
-  const currentMoney = await usersData.get(uid, "money") || 0;
+          const currentMoney = await usersData.get(uid, "money") || 0;
+          if (currentMoney < amount)
+            return message.reply(`${prefix}❌ You don't have enough cash to deposit.`);
 
-  if (currentMoney < amount)
-    return message.reply("❌ You don't have enough cash to deposit.");
+          await usersData.set(uid, "money", currentMoney - amount);
+          await users.updateOne({ uid }, { $inc: { balance: amount } });
 
-  // Subtract from hand (usersData)
-  await usersData.set(uid, {
-    money: currentMoney - amount
-  });
+          return message.reply(`${prefix}💖 Deposited ${amount} $ successfully from your cash! 🏦`);
+        }
 
-  // Add to bank (MongoDB)
-  await users.updateOne(
-    { uid },
-    { $inc: { balance: amount } }
-  );
-
-  return message.reply(`💖 Deposited ${amount} $ successfully from your cash! 🏦`);
-}
-
-      case "withdraw": {
+        case "withdraw": {
   if (!amount || amount <= 0) {
-    return message.reply("💖 Please enter a valid amount to withdraw. 🤗");
+    return message.reply("${prefix}💖 Please enter a valid amount to withdraw. 🤗");
   }
 
   const userData = user.value;
 
   if (amount > userData.balance) {
-    return message.reply("🪽 Not enough balance in your bank! 😢");
+    return message.reply("${prefix}🪽 Not enough balance in your bank! 😢");
   }
 
   // 
@@ -86,149 +95,182 @@ module.exports = {
   // 
   await usersData.set(uid, { money: currentMoney + amount });
 
-  return message.reply(`✅ You withdrew $${amount} successfully! 🎀`);
+  return message.reply(`${prefix}✅ You withdrew $${amount} successfully! 🎀`);
 }
 
-      case "interest": {
-  const cooldown = 6 * 60 * 60 * 1000; // 
-  const currentTime = Date.now();
-  const lastClaim = user.value.lastInterest || 0;
-  const elapsed = currentTime - lastClaim;
+        case "interest": {
+          const cooldown = 6 * 60 * 60 * 1000;
+          const now = Date.now();
+          const elapsed = now - userData.lastInterest;
 
-  if (elapsed < cooldown) {
-    const remaining = cooldown - elapsed;
-    const hours = Math.floor(remaining / (60 * 60 * 1000));
-    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-    const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
-    return message.reply(`🕒 Please wait ${hours}h ${minutes}m ${seconds}s to claim interest again.`);
+          if (elapsed < cooldown) {
+            const remaining = cooldown - elapsed;
+            const h = Math.floor(remaining / 3600000);
+            const m = Math.floor((remaining % 3600000) / 60000);
+            const s = Math.floor((remaining % 60000) / 1000);
+            return message.reply(`${prefix}🕒 Please wait ${h}h ${m}m ${s}s to claim interest again.`);
+          }
+
+          const earned = userData.balance * 2;
+          await users.updateOne(
+            { uid },
+            {
+              $inc: { balance: earned, interestCount: 1, interestProfit: earned },
+              $set: { lastInterest: now }
+            }
+          );
+
+          return message.reply(`${prefix}💸 You've earned $${earned} interest!`);
+        }
+
+        case "loan": {
+          if (userData.loan > 0)
+            return message.reply(`${prefix}👀 You already have a loan. Repay first.`);
+
+          await users.updateOne({ uid }, { $inc: { balance: 20000, loan: 20000 } });
+          return message.reply(`${prefix}😍 You received a loan of 20,000 $💸\n💫 Please repay within 3 days.`);
+        }
+
+        case "repay": {
+          if (!amount || amount <= 0)
+            return message.reply(`${prefix}💛 Example: bank repay 1000`);
+          if (userData.loan <= 0)
+            return message.reply(`${prefix}💙 You don’t have any active loans.`);
+          if (userData.balance < amount)
+            return message.reply(`${prefix}💫 Not enough balance to repay.`);
+
+          const repayAmount = Math.min(amount, userData.loan);
+          const remainingLoan = userData.loan - repayAmount;
+          await users.updateOne(
+            { uid },
+            { $inc: { loan: -repayAmount, balance: -repayAmount } }
+          );
+
+          return message.reply(`${prefix}💖 Repaid ${repayAmount} $. Remaining loan: ${remainingLoan} $`);
+        }
+
+        case "bet": {
+  if (!amount || isNaN(amount) || amount <= 0) {
+    return message.reply(`${prefix}❌ Invalid amount.\n📌 Example: /bank bet 100`);
   }
 
-  const earnedInterest = user.value.balance * 2;
-  await users.updateOne(
-    { uid },
-    {
-      $inc: { balance: earnedInterest },
-      $set: { lastInterest: currentTime }
-    }
-  );
-
-  return message.reply(`💸 You've earned $${earnedInterest} interest! Your new balance is $${user.value.balance + earnedInterest}`);
-}
-
-      case "loan": {
-        if (user.value.loan > 0)
-          return message.reply("👀 You already have a loan. Repay first.");
-        await users.updateOne({ uid }, { $inc: { balance: 20000, loan: 20000 } });
-        return message.reply(
-          `😍 You received a loan of 20,000 $💸\n💫 Please repay within 3 days.`
-        );
-      }
-
-      case "repay": {
-        if (!amount || amount <= 0)
-          return message.reply("💛 example: Bank repay 1000");
-        if (user.value.loan <= 0)
-          return message.reply("💙 You don’t have any active loans.");
-        if (user.value.balance < amount)
-          return message.reply("💫 Not enough balance to repay.");
-        const repayment = Math.min(amount, user.value.loan);
-        await users.updateOne(
-          { uid },
-          { $inc: { loan: -repayment, balance: -repayment } }
-        );
-        return message.reply(`💖 Repaid ${repayment} $ ✨. Remaining loan: ${user.value.loan - repayment} $✨`);
-      }
-
-       case "topreset": {
-  const adminUID = "61577095705293";
-  if (event.senderID !== adminUID) {
-    return message.reply("❌ You are not authorized to use this command.");
+  if (userData.balance < amount) {
+    return message.reply(`${prefix}💸 You don't have enough balance to place this bet.`);
   }
 
-  const targetUID = args[1];
+  // 60% chance to lose
+  const didWin = Math.random() < 0.4; // 40% chance to win
 
-  if (targetUID) {
-    const result = await users.updateOne(
-      { uid: targetUID },
-      { $set: { balance: 0 } }
+  // Weighted multipliers: more chance for 1.0–2.0 range
+  const weightedMultipliers = [
+    1.0, 1.0, 1.1, 1.1, 1.2, 1.2, 1.3, 1.3,
+    1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
+    2.5, 3.0, 3.5, 4.0, 5.0 // Rare big wins
+  ];
+  const multiplier = weightedMultipliers[Math.floor(Math.random() * weightedMultipliers.length)];
+
+  if (didWin) {
+    const winAmount = Math.floor(amount * multiplier);
+    await users.updateOne({ uid }, { $inc: { balance: winAmount } });
+    return message.reply(
+      `${prefix}🎉 You won the bet!\n💰 Bet: ${amount} $\n💸 Won: ${winAmount} $ (x${multiplier})`
     );
-
-    if (result.matchedCount === 0) {
-      return message.reply(`❌ No user found with UID: ${targetUID}`);
-    }
-
-    return message.reply(`✅ User with UID ${targetUID}'s balance has been reset to 0.`);
   } else {
-    const result = await users.updateMany(
-      { balance: { $gt: 0 } },
-      { $set: { balance: 0 } }
+    await users.updateOne({ uid }, { $inc: { balance: -amount } });
+    return message.reply(
+      `${prefix}😓 You lost the bet.\n💰 Bet: ${amount} $\n💸 Lost: ${amount} $`
     );
-
-    return message.reply(`✅ All users' bank balances have been reset to 0.\nAffected users: ${result.modifiedCount}`);
   }
 }
 
-       case "top": {
-  const topUsers = await users
-    .find({ balance: { $gt: 0 } })
-    .sort({ balance: -1 })
-    .limit(10)
-    .toArray();
+        case "service":
+          return message.reply(`${prefix}🔰 ব্যাংকের সকল সার্ভিস 🔰\n\n🏦 balance → ব্যাংকে জমাকৃত টাকা দেখতে পারবেন।\n💵 deposit [amount] → আপনার কাছে থাকা টাকা ব্যাংকে জমা দিতে পারবেন।\n🏧 withdraw [amount] → ব্যাংক থেকে টাকা তুলতে পারবেন (প্রতি ১০০০ টাকায় ৫০ টাকা চার্জ কাটা হয়)।\n⏳ interest → প্রতি ৬ ঘণ্টা পর আপনি আপনার ব্যালেন্স এর দ্বিগুণ সুদ পেতে পারেন।\n🏦 loan → একবারে ২০,০০০ টাকা লোন নিতে পারবেন।\n🔁 repay [amount] → আপনার লোন পরিশোধ করতে পারবেন।\n👑 top → ব্যাংকের শীর্ষ ১০ জন ব্যবহারকারীর তালিকা দেখবেন।\n🎀 topreset → সব ব্যবহারকারীর balance reset করা হয় (শুধুমাত্র owner ব্যবহার করতে পারবে)।\n🖤 bet [amount] → ব্যালেন্স থেকে টাকা বেট করতে পারবেন, জিতলে multiplier অনুযায়ী টাকা পাবেন।\n💻 details → আপনার ব্যাংক সংক্রান্ত বিস্তারিত তথ্য দেখাবে।`);
 
-  if (topUsers.length === 0) {
-    return message.reply("😶 No top users found. 💭");
+        case "details": {
+  const uid = event.senderID;
+
+  const userInfo = await usersData.get(uid);
+  if (!userInfo) {
+    return message.reply("❌ User data not found. Please register first!");
   }
 
-  function formatNumber(number) {
-    if (number >= 1e24) return (number / 1e24).toFixed(2) + "e+24";
-    if (number >= 1e21) return (number / 1e21).toFixed(2) + "e+21";
-    if (number >= 1e18) return (number / 1e18).toFixed(2) + "Qi";
-    if (number >= 1e15) return (number / 1e15).toFixed(2) + "Q";
-    if (number >= 1e12) return (number / 1e12).toFixed(2) + "T";
-    if (number >= 1e9) return (number / 1e9).toFixed(2) + "B";
-    if (number >= 1e6) return (number / 1e6).toFixed(2) + "M";
-    if (number >= 1e3) return (number / 1e3).toFixed(2) + "K";
-    return number.toString();
-  }
+  const name = userInfo.name || "Unknown";
+  const balance = userInfo.balance ?? 0; // 🛠️ এখানে balance ঠিক করা হয়েছে
+  const betWon = userInfo.betWon ?? 0;
+  const betLost = userInfo.betLost ?? 0;
+  const joinDate = userInfo.joinedAt ? new Date(userInfo.joinedAt) : new Date();
+  const now = new Date();
+  const usedDays = Math.floor((now - joinDate) / (1000 * 60 * 60 * 24));
 
-  let topMsg = "👑 TOP 10 BANK USERS 👑\n✨━━━━━━━━━━━━━━━✨\n";
+  const bdTime = now.toLocaleString("en-US", { 
+    timeZone: "Asia/Dhaka", 
+    hour12: true 
+  });
 
-  for (let i = 0; i < topUsers.length; i++) {
-    const u = topUsers[i];
-    const formattedBalance = formatNumber(u.balance);
-    const rawBalance = u.balance.toString();
-    try {
-      const userInfo = await api.getUserInfo(u.uid);
-      const name = userInfo[u.uid]?.name || "Unknown";
-      topMsg += `${i + 1}. ${name}\n   🆔 UID: ${u.uid}\n   ✨ Balance: ${formattedBalance} ($${rawBalance}) 💸\n`;
-    } catch (err) {
-      topMsg += `${i + 1}. Unknown\n   🆔 UID: ${u.uid}\n   ✨ Balance: ${formattedBalance} ($${rawBalance}) 💸\n`;
-    }
-  }
+  const response = 
+`📊 𝗕𝗔𝗡𝗞 𝗨𝗦𝗘𝗥 𝗜𝗡𝗙𝗢 📊
 
-  return message.reply(topMsg.trim());
+👤 Name: ${name}
+🧾 UID: ${uid}
+💵 Balance: ${balance} $
+
+🏆 Total Wins in Bank Game: ${betWon}
+💥 Total Losses in Bank Game: ${betLost}
+
+🗓️ Days Active in Bank System: ${usedDays} day(s)
+
+📅 Current Date & Time (BD): ${bdTime}
+`;
+
+  return message.reply(response);
 }
 
-      default: {
-        return message.reply(
-          `
-✨ Bank System Menu ✨
-━━━━━━━━━━━━━━━━━━
-🏦 balance 
+        case "topreset": {
+          const adminUID = "61577095705293";
+          if (event.senderID !== adminUID)
+            return message.reply(`${prefix}❌ You are not authorized to use this command.`);
 
- 💵 deposit  [amount]
+          const targetUID = args[1];
+          if (targetUID) {
+            const result = await users.updateOne({ uid: targetUID }, { $set: { balance: 0 } });
+            if (result.matchedCount === 0)
+              return message.reply(`${prefix}❌ No user found with UID: ${targetUID}`);
+            return message.reply(`${prefix}✅ User with UID ${targetUID}'s balance has been reset to 0.`);
+          } else {
+            const result = await users.updateMany({ balance: { $gt: 0 } }, { $set: { balance: 0 } });
+            return message.reply(`${prefix}✅ All users' bank balances have been reset to 0.\nAffected users: ${result.modifiedCount}`);
+          }
+        }
 
-🏧 withdraw [amount]
+        case "top": {
+          const topUsers = await users.find({ balance: { $gt: 0 } }).sort({ balance: -1 }).limit(10).toArray();
 
-⏳ interest [2x]
+          if (topUsers.length === 0)
+            return message.reply(`${prefix}😶 No top users found.`);
 
-🏦 loan [only 20000]
+          const formatNumber = num => num.toLocaleString();
 
-🔁 repay [amount]
+          let topMsg = `${prefix}👑 TOP 10 BANK USERS 👑\n\n`;
 
- 👑 top [10 richest user]  `
-        );
+          for (let i = 0; i < topUsers.length; i++) {
+            const u = topUsers[i];
+            try {
+              const userInfo = await api.getUserInfo(u.uid);
+              const name = userInfo[u.uid]?.name || "Unknown";
+              topMsg += `${i + 1}. ${name} (UID: ${u.uid})\n💵 Balance: ${formatNumber(u.balance)} $\n\n`;
+            } catch {
+              topMsg += `${i + 1}. Unknown (UID: ${u.uid})\n💵 Balance: ${formatNumber(u.balance)} $\n\n`;
+            }
+          }
+
+          return message.reply(topMsg.trim());
+        }
+
+        default:
+          return message.reply(`〲٭⃝🎀 ⃝𝐘𝐎𝐔𝐑 𝐁𝐀𝐁𝐘 𝐋𝐢𝐬𝐭 ⃝🎀٭⃝\n━━━━━━━━━━━━━━━━━━\n\n1.🏦 balance\n2.💵 deposit [amount]\n3.🏧 withdraw [amount]\n4.⏳ interest [2x]\n5.🏦 loan [only 20000]\n6.🔁 repay [amount]\n7.👑 top [10 richest user]\n8.🎀 topreset  [ only owner ]\n9.🖤 Bank bet [ 1k / 1000 ]\n10.🏦 Bank service\n11.💻 Details`);
       }
+    } finally {
+      await client.close();
     }
   }
 };
