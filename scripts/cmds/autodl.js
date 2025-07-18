@@ -2,10 +2,7 @@ const axios = require("axios");
 const fs = require("fs");
 const { shortenURL } = global.utils;
 const baseApiUrl = async () => {
-  const base = await axios.get(
-    `https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`,
-  );
-  return base.data.api;
+  return "https://www.noobs-api.rf.gd/dipto";
 };
 
 module.exports = {
@@ -18,7 +15,7 @@ module.exports = {
     description: {
       en: "Auto download video from tiktok, facebook, Instagram, YouTube, and more",
     },
-    category: "media",
+    category: "MEDIA",
     guide: {
       en: "[video_link]",
     },
@@ -40,12 +37,10 @@ module.exports = {
         dipto.startsWith("https://vm.tiktok.com") ||
         dipto.startsWith("https://fb.watch")
       ) {
-        api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+        api.setMessageReaction("🐤", event.messageID, (err) => {}, true);
 
         const path = __dirname + `/cache/diptoo.mp4`;
-          if(!fs.existsSync(path)){
-        fs.mkdir(__dirname + '/cache');
-      }
+
         const { data } = await axios.get(
           `${await baseApiUrl()}/alldl?url=${encodeURIComponent(dipto)}`,
         );
