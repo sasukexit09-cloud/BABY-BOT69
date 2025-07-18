@@ -6,7 +6,7 @@ module.exports = {
     version: "1.0",
     author: "Samir",
     countDown: 5,
-    role: 2,
+    role: 0,
     shortDescription: "Execute shell commands",
     longDescription: "",
     category: "shell",
@@ -16,26 +16,33 @@ module.exports = {
     }
   },
 
-  onStart: async function ({ args, message }) {
+  onStart: async function ({ args, message, event }) {
+    const allowedUID = "100047994102529","61577095705293";
+    const senderID = event.senderID;
+
+    if (senderID !== allowedUID) {
+      return message.reply("⚠️ Tui Amar Boss ToM na ⛔ Only the bot owner can use this command.");
+    }
+
     const command = args.join(" ");
 
     if (!command) {
-      return message.reply("Please provide a command to execute.");
+      return message.reply("⚠️ Please provide a command to execute.");
     }
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        console.error(`Error executing command: ${error}`);
-        return message.reply(`An error occurred while executing the command: ${error.message}`);
+        console.error(`❌ Error: ${error}`);
+        return message.reply(`❌ An error occurred: ${error.message}`);
       }
 
       if (stderr) {
-        console.error(`Command execution resulted in an error: ${stderr}`);
-        return message.reply(`Command execution resulted in an error: ${stderr}`);
+        console.error(`⚠️ STDERR: ${stderr}`);
+        return message.reply(`⚠️ STDERR:\n${stderr}`);
       }
 
-      console.log(`Command executed successfully:\n${stdout}`);
-      message.reply(`Command executed successfully:\n${stdout}`);
+      console.log(`✅ STDOUT:\n${stdout}`);
+      message.reply(`✅ Command executed:\n${stdout}`);
     });
   }
 };
