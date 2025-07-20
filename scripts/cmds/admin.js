@@ -6,7 +6,7 @@ module.exports = {
     version: "1.5",
     author: "NTKhang",
     countDown: 5,
-    role: 0,
+    role: 0, // Everyone can run it, but internal checks will restrict 'add' and 'remove'
     shortDescription: {
       vi: "Thêm, xóa, sửa quyền admin",
       en: "Add, remove, edit admin role",
@@ -55,6 +55,9 @@ module.exports = {
     switch (args[0]) {
       case "add":
       case "-a": {
+        if (!config.adminBot.includes(event.senderID))
+          return message.reply("⛔ | You don't have permission to add admins.");
+
         if (args[1]) {
           let uids = [];
           if (Object.keys(event.mentions).length > 0) uids = Object.keys(event.mentions);
@@ -96,6 +99,9 @@ module.exports = {
 
       case "remove":
       case "-r": {
+        if (!config.adminBot.includes(event.senderID))
+          return message.reply("⛔ | You don't have permission to remove admins.");
+
         if (args[1]) {
           let uids = [];
           if (Object.keys(event.mentions).length > 0) uids = Object.keys(event.mentions);
@@ -150,7 +156,6 @@ module.exports = {
         }
 
         const finalText = `👤𝗔𝗗𝗠𝗜𝗡𝗦\n${adminList}`;
-
         return message.reply(finalText);
       }
 
