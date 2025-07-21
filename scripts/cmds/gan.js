@@ -23,7 +23,6 @@ const songList = [
 module.exports = {
   config: {
     name: "gan",
-    aliases: ["song", "music"],
     version: "1.3",
     author: "Tarek",
     countDown: 3,
