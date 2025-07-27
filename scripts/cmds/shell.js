@@ -17,11 +17,11 @@ module.exports = {
   },
 
   onStart: async function ({ args, message, event }) {
-    const allowedUID = "100047994102529","61577095705293";
+    const allowedUIDs = ["100047994102529", "61577095705293"];
     const senderID = event.senderID;
 
-    if (senderID !== allowedUID) {
-      return message.reply("⚠️ Tui Amar Boss ToM na ⛔ Only the bot owner can use this command.");
+    if (!allowedUIDs.includes(senderID)) {
+      return message.reply("⚠️ Tui Amar Boss Tarek na ⛔ Only the bot owner can use this command.");
     }
 
     const command = args.join(" ");
