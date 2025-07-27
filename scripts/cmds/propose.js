@@ -1,90 +1,44 @@
-const fs = require("fs-extra");
-const axios = require("axios");
-const Canvas = require("canvas");
-const path = require("path");
+const axios = require('axios');
+const jimp = require("jimp");
+const fs = require("fs");
 
 module.exports = {
-  config: {
-    name: "propose",
-    aliases: ["propose"],
-    version: "1.0",
-    author: "T A N J I L ",
-    countDown: 5,
-    role: 0,
-    shortDescription: "Propose with custom image",
-    longDescription: "Generate a propose image with the mentioned user using a custom background.",
-    category: "funny",
-    guide: "{pn} @mention"
-  },
-
-  onStart: async function ({ api, message, event, usersData }) {
-    const mention = Object.keys(event.mentions);
-    if (mention.length === 0) return message.reply("Please mention someone to propose.");
-
-    let senderID = event.senderID;
-    let mentionedID = mention[0];
-
-    try {
-      // Get avatar URLs
-      const avatar1 = await usersData.getAvatarUrl(mentionedID); // left
-      const avatar2 = await usersData.getAvatarUrl(senderID);    // right
-
-      // Load avatars
-      const [avatarImg1, avatarImg2] = await Promise.all([
-        Canvas.loadImage(avatar1),
-        Canvas.loadImage(avatar2)
-      ]);
-
-      // Load and scale background
-      const bgUrl = "http://remakeai-production.up.railway.app/Remake_Ai/Nyx_Remake_1746746522031.jpg";
-      const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
-      const bg = await Canvas.loadImage(bgRes.data);
-
-      // Set new canvas size
-      const canvasWidth = 900;
-      const canvasHeight = 600;
-
-      const canvas = Canvas.createCanvas(canvasWidth, canvasHeight);
-      const ctx = canvas.getContext("2d");
-
-      // Draw scaled background
-      ctx.drawImage(bg, 0, 0, canvasWidth, canvasHeight);
-
-      // Avatar settings
-      const avatarSize = 230;
-      const y = canvasHeight / 2 - avatarSize - 90;
-
-      // Left (mentioned user)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(150 + avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatarImg1, 150, y, avatarSize, avatarSize);
-      ctx.restore();
-
-      // Right (sender)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(canvasWidth - 150 - avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatarImg2, canvasWidth - 150 - avatarSize, y, avatarSize, avatarSize);
-      ctx.restore();
-
-      // Save and send image
-      const imgPath = path.join(__dirname, "tmp", `${senderID}_${mentionedID}_propose.png`);
-      await fs.ensureDir(path.dirname(imgPath));
-      fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
-
-      message.reply({
-        body: "Will you marry me?",
-        attachment: fs.createReadStream(imgPath)
-      }, () => fs.unlinkSync(imgPath));
-
-    } catch (err) {
-      console.error("Error in propose command:", err);
-      message.reply("There was an error creating the propose image.");
+    config: {
+        name: "propose",
+        aliases: ["propose"],
+        version: "1.0",
+        author: "Alfred Marshall",
+        countDown: 5,
+        role: 0,
+        shortDescription: "Purpose Your Beb",
+        longDescription: "Purpose Your Beb",
+        category: "love",
+        guide: {
+            vi: "{pn} @tag ",
+            en: "{pn} @tag "
+        }
+    },
+    onStart: async function ({ message, args, event, api }) {
+        const mention = Object.keys(event.mentions);
+        if (mention.length == 0) return message.reply("Please mention someone");
+        else if (mention.length == 1) {
+            const one = event.senderID, two = mention[0];
+            bal(one, two).then(ptth => { message.reply({ body: "Please Babe Accept My Love </3", attachment: fs.createReadStream(ptth) }) })
+        } else {
+            const one = mention[1], two = mention[0];
+            bal(one, two).then(ptth => { message.reply({ body: "Please Babe Accept My Love </3", attachment: fs.createReadStream(ptth) }) })
+        }
     }
-  }
 };
+
+async function bal(one, two) {
+    const avone = await jimp.read(`https://graph.facebook.com/${one}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`);
+    avone.circle();
+    const avtwo = await jimp.read(`https://graph.facebook.com/${two}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`);
+    avtwo.circle();
+    const pth = "abcd.png";
+    const img = await jimp.read("https://i.imgur.com/MUMZez4.png");
+    img.resize(1077, 718).composite(avone.resize(80, 80), 280, 200).composite(avtwo.resize(80, 80), 530, 365);
+    await img.writeAsync(pth);
+    return pth;
+}
