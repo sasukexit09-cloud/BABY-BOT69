@@ -2,7 +2,7 @@
   "name": "goat-bot-v2",
   "version": "1.5.35",
   "description": "A simple Bot chat messenger using personal account. Made by NTKhang.",
-  "main": "index.js",
+  "main": "Goat.js", // Changed from index.js to Goat.js to match your deployment
   "engines": {
     "node": "16.x",
     "npm": ">=7.0.0"
@@ -42,6 +42,7 @@
     "qrcode-reader": "^1.0.4",
     "qs": "^6.11.0",
     "request": "^2.88.2",
+    "request-promise": "^4.2.6", // Added to resolve the missing module error
     "searchitunes": "^2.5.4",
     "sequelize": "^6.19.0",
     "socket.io": "^4.5.1",
@@ -51,9 +52,9 @@
     "websocket-stream": "^5.5.2"
   },
   "scripts": {
-    "start": "NODE_ENV=production node index.js",
-    "dev": "NODE_ENV=development node index.js",
-    "prod": "NODE_ENV=production node index.js"
+    "start": "NODE_ENV=production node Goat.js", // Changed to Goat.js
+    "dev": "NODE_ENV=development node Goat.js", // Changed to Goat.js
+    "prod": "NODE_ENV=production node Goat.js" // Changed to Goat.js
   },
   "author": "NTKhang",
   "license": "MIT",
