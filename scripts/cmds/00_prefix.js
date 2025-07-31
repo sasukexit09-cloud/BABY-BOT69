@@ -83,7 +83,7 @@ module.exports = {
     }
   },
 
-  onChat: async function ({ event, message, usersData, getLang }) {
+  onChat: async function ({ event, message, usersData }) {
     const data = await usersData.get(event.senderID);
     const name = data.name || "Darling";
     const currentTime = moment.tz("Asia/Dhaka").format("hh:mm:ss A");
@@ -91,12 +91,15 @@ module.exports = {
     if (event.body.toLowerCase() === "prefix") {
       return message.reply({
         body: `
-🔖 Hello, ${name}!
-⚒️ Current Prefixes:
-  🛸 Group : ${utils.getPrefix(event.threadID)}
-  🌏 System : ${global.GoatBot.config.prefix}
-🕒 Time: ${currentTime}
-        `
+╭───────────────╮
+    🌸  ʜᴇʟʟᴏ ᴅᴇᴀʀ ᴜsᴇʀ  🌸
+
+  🔹  ʙᴏᴛ ᴘʀᴇғɪxᴇs:
+  ├─ 🌏  𝐒𝐲𝐬𝐭𝐞𝐦: ${global.GoatBot.config.prefix}
+  └─ 💬  𝐓𝐡𝐢𝐬 𝐆𝐫𝐨𝐮𝐩: ${utils.getPrefix(event.threadID)}
+
+  🕰️  𝐂𝐮𝐫𝐫𝐞𝐧𝐭 𝐓𝐢𝐦𝐞: ${currentTime}
+╰────────────────╯`
       });
     }
   }
