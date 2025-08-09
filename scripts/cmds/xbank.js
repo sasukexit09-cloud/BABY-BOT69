@@ -1,6 +1,6 @@
 module.exports = {
   config: {
-    name: "bank",
+    name: "xbank",
     version: "3.0",
     description: "Deposit, withdraw, earn interest, loan system, bet, service, details",
     guide: {
