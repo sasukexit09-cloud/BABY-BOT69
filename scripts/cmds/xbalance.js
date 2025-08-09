@@ -2,8 +2,8 @@ const { config } = global.GoatBot;
 
 module.exports = {
     config: {
-        name: "balance",
-        aliases: ["bal", "money"],
+        name: "xbalance",
+        aliases: ["xbal", "xmoney"],
         version: "1.6.9",
         author: "Nazrul",
         countDown: 1,
