@@ -7,8 +7,8 @@ module.exports = {
   config: {
     name: "bal",
     aliases: ["balance", "money"],
-    version: "1.3.0",
-    author: "TAREK",
+    version: "1.3.3",
+    author: "TAREK (Neon + Thin White Border by ChatGPT)",
     countDown: 2,
     role: 0,
     shortDescription: "Show balance or transfer money",
@@ -41,7 +41,6 @@ module.exports = {
       if (!senderData || (senderData.money || 0) < amount)
         return api.sendMessage("❌ You don't have enough balance to transfer.", event.threadID);
 
-      // Transfer
       senderData.money -= amount;
       receiverData.money = (receiverData.money || 0) + amount;
 
@@ -63,8 +62,8 @@ module.exports = {
 
       const name = userData.name || "Unknown";
       const money = Number(userData.money) || 0;
-      const bank = Number(userData.bank) || 0; // Fixed: Properly get bank balance
-      const loan = Number(userData.loan) || 0; // Fixed: Properly get loan balance
+      const bank = Number(userData.bank) || 0;
+      const loan = Number(userData.loan) || 0;
       const lastTransaction = userData.lastTransaction || "No recent activity";
 
       const sortedUsers = allUsers
@@ -87,26 +86,47 @@ module.exports = {
       const canvas = createCanvas(800, 600);
       const ctx = canvas.getContext("2d");
 
-      // Background
-      ctx.fillStyle = "#000";
+      // Neon gradient background
+      const gradient = ctx.createLinearGradient(0, 0, 800, 600);
+      gradient.addColorStop(0, "#1a1a1a"); // Dark grayish black
+      gradient.addColorStop(0.5, "#0f0f0f"); // Slightly lighter center
+      gradient.addColorStop(1, "#1a1a1a");
+      ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, 800, 600);
 
-      // Profile circle
+      // Neon glow
+      ctx.shadowColor = "#0ff";
+      ctx.shadowBlur = 20;
+
+      // Profile circle with thin white border and bigger avatar
       ctx.save();
+
       ctx.beginPath();
-      ctx.arc(400, 80, 50, 0, Math.PI * 2);
+      ctx.arc(400, 80, 52, 0, Math.PI * 2); // border radius 52
+      ctx.lineWidth = 3;                     // border width 3px
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+      ctx.closePath();
+
+      ctx.beginPath();
+      ctx.arc(400, 80, 48, 0, Math.PI * 2); // avatar radius 48
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(avatar, 350, 30, 100, 100);
+
+      ctx.drawImage(avatar, 352, 32, 96, 96); // bigger avatar with adjusted position
+
       ctx.restore();
 
       // Title
       ctx.fillStyle = "#fff";
       ctx.font = "bold 28px Arial";
       ctx.textAlign = "center";
+      ctx.shadowColor = "#0ff";
+      ctx.shadowBlur = 15;
       ctx.fillText(`${name}'s Balance`, 400, 160);
+      ctx.shadowBlur = 0;
 
-      // Helper function to format large numbers
+      // Number formatter
       const formatNumber = (num) => {
         if (num >= 1e12) return (num / 1e12).toFixed(2) + "T";
         if (num >= 1e9) return (num / 1e9).toFixed(2) + "B";
@@ -118,34 +138,35 @@ module.exports = {
       const drawBox = (x, y, w, h, borderColor, label, value, isText = false) => {
         ctx.strokeStyle = borderColor;
         ctx.lineWidth = 4;
+        ctx.shadowColor = borderColor;
+        ctx.shadowBlur = 15;
         ctx.strokeRect(x, y, w, h);
+        ctx.shadowBlur = 0;
+
         ctx.font = "bold 22px Arial";
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
         ctx.fillText(label, x + w / 2, y + 30);
+
         ctx.font = "20px Arial";
-        
-        // Adjust font size for very large numbers
         const formattedValue = isText ? value : formatNumber(value) + "$";
         const maxWidth = w - 40;
         let fontSize = 20;
-        
-        // Check if text fits, reduce font size if needed
+
         ctx.font = `${fontSize}px Arial`;
         while (ctx.measureText(formattedValue).width > maxWidth && fontSize > 10) {
           fontSize -= 1;
           ctx.font = `${fontSize}px Arial`;
         }
-        
+
         ctx.fillText(formattedValue, x + w / 2, y + 65);
       };
 
-      // Draw all balance boxes - Now showing all values correctly
       drawBox(80, 200, 280, 90, "red", "Cash Balance", money);
       drawBox(440, 200, 280, 90, "blue", "Bank Balance", bank);
       drawBox(80, 320, 280, 80, "pink", "Balance Rank", rank, true);
       drawBox(440, 320, 280, 80, "green", "Loan Balance", loan);
-      drawBox(230, 430, 340, 80, "olive", "Last Transaction", lastTransaction, true);
+      drawBox(230, 430, 340, 80, "orange", "Last Transaction", lastTransaction, true);
 
       const cacheDir = path.join(__dirname, "cache");
       fs.ensureDirSync(cacheDir);
@@ -162,7 +183,6 @@ module.exports = {
     }
   },
 
-  // Helper function to format numbers for transfer message
   formatNumber: function(num) {
     if (num >= 1e12) return (num / 1e12).toFixed(2) + "T";
     if (num >= 1e9) return (num / 1e9).toFixed(2) + "B";
