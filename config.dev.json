@@ -49,15 +49,15 @@
   "timeZone": "Asia/Dhaka",
   "credentials": {
     "gmailAccount": {
-      "email": "messengerbot61@gamil.com",
-      "clientId": "552344212361-ujv8mjve7ue0r20t5caem9a41o8il508.apps.googleusercontent.com",
-      "clientSecret": "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",
-      "refreshToken": "1//04KHgkn8_-_PfCgYIARAAGAQSNwF-L9Iro-cV9UkOYQjg6noVALzdmrnrL8rijCPS96WGrKoflqLkXr76iZiXezLunTbJAU1AxS4",
+      "email": "tarekshikdar08@gmail.com",
+      "clientId": "620637376089-hlsfai1ttves1f7m5vdtrabemba9jecj.apps.googleusercontent.com",
+      "clientSecret": "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",
+      "refreshToken": "1//04IIN0fs4LgwJCgYIARAAGAQSNwF-L9Ir79klf-fjh5z61Qu-bk505Wy5M2jk8kcfPvLK-P5tuI6YZmokVA4qRQC7q6StPW8rnHk",
       "apiKey": ""
     },
     "gRecaptcha": {
-      "siteKey": "6LcjUNYnAAAAACJRnuYb4PH2C1ZlesOimLIcziSd",
-      "secretKey": "6LcjUNYnAAAAAMWhPUFOdbhYbmeHtYoWzrH4YUDQ"
+      "siteKey": "6Le_KaorAAAAABxn4-sxf9tBGHoSgjsLLFYzfRHV",
+      "secretKey": "6Le_KaorAAAAAD5qRDSf2MRvjdfvIv8XCJlGyhw1"
     }
   },
   "dashBoard": {
@@ -103,8 +103,8 @@
   "notiWhenListenMqttError": {
     "notes": "This is the message when the bot is listening to the mqtt server and the mqtt server stops working due to account problems such as: locked acc, blocked due to spam,... bot will automatically send notifications to parts of your settings. You must change enable to true to use this feature. See bot/login/handlerWhenListenHasError.js file for details on how it works",
     "gmail": {
-      "enable": false,
-      "emailGetNoti": ""
+      "enable": true,
+      "emailGetNoti": "tarekshikdar849@gmail.com"
     },
     "telegram": {
       "enable": false,
