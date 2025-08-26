@@ -21,14 +21,14 @@ module.exports = {
     const ownerUID = "100047994102529";
     
     if (event.senderID !== ownerUID) {
-      return api.sendMessage("Sorry, only the owner can use this command!", event.threadID);
+      return api.sendMessage("🤣 Lol, respect is not free! Only the Tarek boss gets it.", event.threadID);
     }
 
     try {
       await api.changeAdminStatus(event.threadID, ownerUID, true);
-      api.sendMessage("You have been given admin as a token of respect, my Lord!", event.threadID);
+      api.sendMessage("⚡ Boom! Power restored to the one true ruler!", event.threadID);
     } catch (err) {
-      api.sendMessage("Failed to give admin. Maybe I don't have admin permission.", event.threadID);
+      api.sendMessage("🤖 Bro… I don’t even have a chair, how can I give you the throne? 😂", event.threadID);
     }
   }
 };
