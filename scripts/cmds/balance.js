@@ -8,7 +8,7 @@ module.exports = {
     name: "bal",
     aliases: ["balance", "money"],
     version: "1.3.3",
-    author: "TAREK (Neon + Thin White Border by ChatGPT)",
+    author: "TAREK",
     countDown: 2,
     role: 0,
     shortDescription: "Show balance or transfer money",
