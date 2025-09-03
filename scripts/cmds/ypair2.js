@@ -2,7 +2,7 @@ const axios = require("axios");
 const fs = require("fs-extra");
 module.exports = {
   config: {
-    name: "pair2",
+    name: "pair4",
     countDown: 10,
     role: 0,
     shortDescription: {
