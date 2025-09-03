@@ -5,7 +5,7 @@ const fs = require("fs");
 module.exports = {
   config: {
     name: "uptime",
-    aliases: ["up", "u"],
+    aliases: ["up","u"],
     version: "2.3",
     author: "TANJIL",
     countDown: 1,
