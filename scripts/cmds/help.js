@@ -47,13 +47,13 @@ module.exports = {
         case "usage":
         case "-g":
         case "guide":
-          msg += "֍───| USAGE |─────֎\n";
+          msg += "֍─────| USAGE |─────֎\n";
           msg += `🛠 ${guide}\n`;
-          msg += "╰─────────────⦿\n";
+          msg += "╰────────────────⦿\n";
           break;
         case "-i":
         case "info":
-          msg += "֍────| INFO |──────֎\n";
+          msg += "֍─────| INFO |──────֎\n";
           msg += `🛠 Command name: ${prefix}${config.name}\n`;
           msg += `📝 Description: ${config.longDescription || config.shortDescription || "Not provided"}\n`;
           msg += `🌊 Other names: ${aliases}\n`;
@@ -61,20 +61,20 @@ module.exports = {
           msg += `🎭 Role: ${config.role}\n`;
           msg += `⏱ Time per command: ${config.countDown || "1s"}\n`;
           msg += `✍️ Author: ${config.author || "Unknown"}\n`;
-          msg += "╰─────────────⦿\n";
+          msg += "╰───────────────⦿\n";
           break;
         case "-r":
         case "role":
-          msg += "֍────| ROLE |───֎\n";
+          msg += "֍────| ROLE |────֎\n";
           msg += `🎭 ${config.role} (${config.role === 0 ? "All users" : "Restricted"})\n`;
           msg += "╰─────────────⦿\n";
           break;
         case "-a":
         case "alias":
-          msg += "֍───| ALIAS |─────֎\n";
+          msg += "֍─────| ALIAS |─────֎\n";
           msg += `🌊 Other names: ${aliases}\n`;
           msg += `📦 Other names in your group: ${aliases}\n`;
-          msg += "╰─────────────⦿\n";
+          msg += "╰───────────────⦿\n";
           break;
         default:
           msg += "֎─────────────────֍\n";
@@ -86,7 +86,7 @@ module.exports = {
           msg += `🎭 Role Required: ${config.role}\n`;
           msg += `🌊 Aliases: ${aliases}\n`;
           msg += `🛠 Usage: ${guide}\n`;
-          msg += "╰─────────────⦿\n";
+          msg += "╰─────────────────⦿\n";
           break;
       }
 
@@ -103,10 +103,9 @@ module.exports = {
 
     msg += "╭──────────⦿\n";
     msg += `│ 𝗧𝗼𝘁𝗮𝗹 𝗰𝗺𝗱𝘀:「${allCommands.size}」\n`;
-    msg += "╰─────────────⦿\n";
-    msg += "╭─────────────⦿\n";
-    msg += "│ 𝗧𝗮𝗿𝗲𝗸\n";
-    msg += "╰────────────⦿";
+    msg += `│ 𝗢𝘄𝗻𝗲𝗿: 𝗧𝗮𝗿𝗲𝗸\n`;
+    msg += `│ 𝗣𝗿𝗲𝗳𝗶𝘅: [ ${prefix} ] \n`;
+    msg += "╰─────────────⦿";
 
     return message.reply(msg);
   }
