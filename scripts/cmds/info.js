@@ -1,18 +1,18 @@
 module.exports = {
   config: {
     name: "info",
-    version: "1.5",
-    author: "✨ Tarek ✨",
+    version: "1.6",
+    author: "TAREK",
     shortDescription: "Display bot and owner info",
-    longDescription: "Shows owner's and bot's details with videos.",
+    longDescription: "Shows owner's and bot's details with an image.",
     category: "INFO",
     guide: { en: "[user]" },
   },
 
   onStart: async function ({ api, event }) {
-    const videoUrls = [
-      // ✅ Fixed: Converted to direct-download format
-      "https://drive.google.com/uc?export=download&id=1T76MSnPSi4oIK4UFP9Uhy3QW53K6jAw1"
+    const imageUrls = [
+      // ✅ Google Drive direct image link
+      "https://drive.google.com/uc?export=download&id=1EERnL5BOxHeIKdUjmyxwT1RkI5x2gG7g"
     ];
 
     const msgBody = `
@@ -39,11 +39,11 @@ module.exports = {
 💫 𝗧𝗵𝗮𝗻𝗸𝘀 𝗳𝗼𝗿 𝘂𝘀𝗶𝗻𝗴 𝗺𝗲 💫
     `;
 
-    const randomVideo = videoUrls[Math.floor(Math.random() * videoUrls.length)];
+    const randomImage = imageUrls[Math.floor(Math.random() * imageUrls.length)];
 
     api.sendMessage({
       body: msgBody,
-      attachment: await global.utils.getStreamFromURL(randomVideo),
+      attachment: await global.utils.getStreamFromURL(randomImage),
     }, event.threadID, event.messageID);
   },
 };
