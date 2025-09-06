@@ -5,10 +5,10 @@ const path = require("path");
 module.exports = {
   config: {
     name: "owner",
-    version: "2.0",
-    author: "Tarek",
+    version: "2.3",
+    author: "TAREK",
     shortDescription: "Display bot and owner information",
-    longDescription: "Shows detailed info including bot name, prefix, and owner's personal information.",
+    longDescription: "Shows detailed info including bot name, prefix, and owner's personal information with an image.",
     category: "Special",
     guide: {
       en: "{p}{n}",
@@ -21,12 +21,12 @@ module.exports = {
     const name = userData.name;
     const mention = [{ id, tag: name }];
 
-    // 🛠 Convert Google Drive view link to direct download link
-    const fileId = "1QQ4rcb5mnLytHKuavPxOjx0rF-YuOTaS";
+    // 🖼 Google Drive Image Link
+    const fileId = "1EAyMa-sklY_3BfTwDXloyPB2T2MSbDZa";
     const directURL = `https://drive.google.com/uc?export=download&id=${fileId}`;
 
-    // ⏬ Download the file temporarily
-    const filePath = path.join(__dirname, "owner-video.mp4");
+    // ⏬ Download the image temporarily
+    const filePath = path.join(__dirname, "owner-image.jpg");
     const response = await axios({
       url: directURL,
       method: "GET",
@@ -46,7 +46,7 @@ module.exports = {
 👋 𝗛𝗲𝗹𝗹𝗼, ${name}
 
 📌 𝗕𝗢𝗧 𝗜𝗡𝗙𝗢
-• 𝗡𝗮𝗺𝗲➝ ᴇʀʀᴏʀ
+• 𝗡𝗮𝗺𝗲 ➝ ᴇʀʀᴏʀ
 • 𝗣𝗿𝗲𝗳𝗶𝘅 ➝ .
 
 👤 𝗢𝗪𝗡𝗘𝗥 𝗜𝗡𝗙𝗢
