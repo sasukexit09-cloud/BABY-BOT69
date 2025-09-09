@@ -6,7 +6,7 @@ module.exports = {
  config: {
  name: "catmeme",
  version: "1.0",
- author: "Chitron Bhattacharjee",
+ author: "C-b",
  countDown: 5,
  role: 0,
  shortDescription: { en: "Generate a cat image with your text" },
