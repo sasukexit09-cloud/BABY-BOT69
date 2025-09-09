@@ -6,7 +6,7 @@ module.exports = {
  config: {
  name: "cat",
  version: "1.0",
- author: "Chitron Bhattacharjee",
+ author: "cb",
  countDown: 5,
  role: 0,
  shortDescription: { en: "random cat image" },
