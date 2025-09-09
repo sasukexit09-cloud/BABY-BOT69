@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "caution",
     version: "1.0",
-    author: "Chitron Bhattacharjee",
+    author: "C-b",
     countDown: 5,
     role: 0,
     shortDescription: {
