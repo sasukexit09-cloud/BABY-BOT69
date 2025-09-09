@@ -57,7 +57,7 @@ module.exports = {
 
  const allImages = await Promise.all(attachments);
  return message.reply({
- body: text + "\n📩 𝗥𝗲𝗽𝗹𝘆 𝘄𝗶𝘁𝗵 𝘁𝗵𝗲 𝗩𝗶𝗱𝗲𝗼 𝗡𝗼. (1-20) 𝘁𝗼 𝗴𝗲𝘁 𝗳𝘂𝗹𝗹 𝘃𝗶𝗱𝗲𝗼.\n👑 𝗔𝗣𝗜 𝗢𝘄𝗻𝗲𝗿: Chitron Bhattacharjee",
+ body: text + "\n📩 𝗥𝗲𝗽𝗹𝘆 𝘄𝗶𝘁𝗵 𝘁𝗵𝗲 𝗩𝗶𝗱𝗲𝗼 𝗡𝗼. (1-20) 𝘁𝗼 𝗴𝗲𝘁 𝗳𝘂𝗹𝗹 𝘃𝗶𝗱𝗲𝗼.\n👑 𝗢𝘄𝗻𝗲𝗿: Tarek Shikdar ",
  attachment: allImages
  }, (err, info) => {
  global.GoatBot.onReply.set(info.messageID, {
