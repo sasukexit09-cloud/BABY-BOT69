@@ -1,11 +1,18 @@
 const fs = require("fs");
 const path = require("path");
 
+const rolesFile = path.join(__dirname, "roles.json");
+
+// Ensure roles.json exists
+if (!fs.existsSync(rolesFile)) {
+  fs.writeFileSync(rolesFile, JSON.stringify({}, null, 2));
+}
+
 module.exports = {
   config: {
     name: "set",
     aliases: ['ap'],
-    version: "2.1",
+    version: "3.0",
     author: "Tarek",
     role: 0,
     shortDescription: {
@@ -39,26 +46,28 @@ module.exports = {
       }
 
       try {
+        // Load roles.json
+        let rolesData = JSON.parse(fs.readFileSync(rolesFile, "utf8"));
+        rolesData[commandName] = newRole;
+
+        // Save back to file
+        fs.writeFileSync(rolesFile, JSON.stringify(rolesData, null, 2), "utf8");
+
+        // Reload command
         const cmdPath = path.join(__dirname, `${commandName}.js`);
         if (!fs.existsSync(cmdPath)) {
           return api.sendMessage(`❌ Command file '${commandName}.js' not found.`, event.threadID);
         }
 
-        let content = fs.readFileSync(cmdPath, "utf8");
-
-        if (!/role:\s*\d+/.test(content)) {
-          return api.sendMessage(`❌ No 'role' property found in '${commandName}.js'`, event.threadID);
-        }
-
-        content = content.replace(/role:\s*\d+/, `role: ${newRole}`);
-        fs.writeFileSync(cmdPath, content, "utf8");
-
-        // 🔥 AUTO-RELOAD COMMAND
         delete require.cache[require.resolve(cmdPath)];
         const newCmd = require(cmdPath);
+
+        // Override role from saved data
+        newCmd.config.role = newRole;
+
         global.GoatBot.commands.set(newCmd.config.name, newCmd);
 
-        return api.sendMessage(`⚡ Role of '${commandName}' command updated to ${newRole} (auto-reloaded).`, event.threadID);
+        return api.sendMessage(`⚡ Role of '${commandName}' command updated to ${newRole} (saved & auto-reloaded).`, event.threadID);
 
       } catch (err) {
         return api.sendMessage("❌ Error while changing command role: " + err.message, event.threadID);
