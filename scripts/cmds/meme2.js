@@ -7,8 +7,8 @@ const mahmud = async () => {
 
 module.exports = {
   config: {
-    name: "meme",
-    aliases: ["memes"],
+    name: "meme2",
+    aliases: ["memes2"],
     version: "1.7",
     author: "MahMUD",
     countDown: 10,
