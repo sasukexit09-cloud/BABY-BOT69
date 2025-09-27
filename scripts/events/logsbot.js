@@ -4,10 +4,11 @@ module.exports = {
 	config: {
 		name: "logsbot",
 		isBot: true,
-		version: "1.5",
-		author: "NTKhang",
+		version: "1.6",
+		author: "NTKhang (Modified by Tarek)",
 		envConfig: {
-			allow: true
+			allow: true,
+			logGroupID: "1879628072949507" // এখানে তোমার লগ গ্রুপের ID বসানো হলো
 		},
 		category: "events"
 	},
@@ -49,8 +50,9 @@ module.exports = {
 			msg = `${getLang("kickedTitle")}\n${getLang("kickedBy", authorName)}${getLang("details", author, threadName, threadID, time)}`;
 		}
 
-		// Send log message to bot admins
-		for (const adminID of config.adminBot)
-			api.sendMessage(msg, adminID);
+		// Send log message to one specific log group
+		if (config.logGroupID) {
+			api.sendMessage(msg, config.logGroupID);
+		}
 	}
 };
