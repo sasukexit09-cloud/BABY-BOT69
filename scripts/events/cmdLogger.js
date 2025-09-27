@@ -3,19 +3,18 @@ const { getTime } = global.utils;
 module.exports = {
   config: {
     name: "cmdLogger",
-    version: "1.0",
-    author: "Tarek",
-    category: "system",
-    isEvent: true
+    version: "1.1",
+    author: "TAREK",
+    category: "events"
   },
 
-  onChat: async ({ event, message, api, usersData, threadsData }) => {
+  onStart: async ({ event, api, usersData }) => {
     try {
       const { threadID, senderID, body } = event;
       const { config } = global.GoatBot;
       const logGroupID = config.logGroupID || "1879628072949507";
 
-      // যদি মেসেজ prefix দিয়ে শুরু হয়, তখনই লগ করবো
+      // যদি prefix না থাকে তাহলে return
       const prefix = config.prefix || "/";
       if (!body || !body.startsWith(prefix)) return;
 
