@@ -4,6 +4,23 @@ const Canvas = require("canvas");
 const moment = require("moment");
 const GIFEncoder = require("gifencoder");
 
+// Units & shortenNumber function
+const units = ["", "K", "M", "B", "T", "Q", "S", "O", "N", "D"];
+function shortenNumber(num) {
+  if (num < 1000) return num.toString();
+  let unitIndex = 0;
+  let n = num;
+  while (n >= 1000 && unitIndex < units.length - 1) {
+    n /= 1000;
+    unitIndex++;
+  }
+  if (units[unitIndex] === "D") {
+    const shortNum = Math.floor(num).toString().slice(0, 4);
+    return shortNum + "..D";
+  }
+  return n.toFixed(2).replace(/\.?0+$/, "") + units[unitIndex];
+}
+
 function getLevelInfo(exp) {
   let level = 1;
   let expNeed = 100;
@@ -18,8 +35,8 @@ function getLevelInfo(exp) {
 module.exports = {
   config: {
     name: "spy2",
-    version: "13.0",
-    author: "Handelbuz Asif",
+    version: "3.0",
+    author: " Asif",
     countDown: 3,
     role: 0,
     shortDescription: { en: "Show animated rank card" },
@@ -30,7 +47,7 @@ module.exports = {
 
   onStart: async function ({ api, event, usersData }) {
     try {
-      // ---------- Target UID ----------
+      // Target UID
       let uid;
       if (Object.keys(event.mentions).length > 0) {
         uid = Object.keys(event.mentions)[0];
@@ -40,11 +57,11 @@ module.exports = {
         uid = event.senderID;
       }
 
-      // ---------- User info ----------
+      // User info
       const info = (await api.getUserInfo(uid))[uid] || {};
       let name = info.name || "Unknown";
 
-      // Group nickname check
+      // Group nickname
       let nickname = null;
       try {
         const threadInfo = await api.getThreadInfo(event.threadID);
@@ -52,29 +69,28 @@ module.exports = {
           nickname = threadInfo.nicknames[uid];
         }
       } catch {}
-      nickname = nickname || name;
+      nickname = nickname || info.alternateName || "None";
 
       const gender = info.gender === 2 ? "Boy ♂️" : "Girl ♀️";
       const now = moment().format("YYYY-MM-DD hh:mm A");
 
-      // ---------- Database থেকে Data ----------
+      // Database
       const userData = await usersData.get(uid) || {};
       const exp = userData.exp || 0;
       const money = userData.money || 0;
-      const username = userData.username || `user.${uid.slice(-4)}`;
+      const username = info.vanity || userData.username || `user.${uid.slice(-4)}`;
 
-      // Level হিসাব
+      // Level
       const { level, curExp, expNeed: maxExp } = getLevelInfo(exp);
 
-      // Rank হিসাব
+      // Rank
       const allUsers = await usersData.getAll();
       const sortedExp = [...allUsers].sort((a, b) => (b.exp || 0) - (a.exp || 0));
       const rank = sortedExp.findIndex(u => u.userID == uid) + 1 || 0;
-
       const sortedMoney = [...allUsers].sort((a, b) => (b.money || 0) - (a.money || 0));
       const moneyRank = sortedMoney.findIndex(u => u.userID == uid) + 1 || 0;
 
-      // ---------- GIF Setup ----------
+      // GIF
       const W = 1200, H = 600;
       const FRAMES = 6;
       const FPS = 20;
@@ -152,17 +168,17 @@ module.exports = {
         ctx.font = "bold 48px Sans";
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
-        ctx.fillText(nickname, cX, 320);
+        ctx.fillText(name, cX, 320);
 
         // Left info
-        ctx.font = "30px Sans";
+        ctx.font = "bold 30px Sans";
         ctx.fillStyle = "#aaccff";
         ctx.textAlign = "left";
         let y = 380, gap = 46;
-        ctx.fillText(`UID: ${uid}`, 80, y); y += gap;
-        ctx.fillText(`Name: ${name}`, 80, y); y += gap;
-        ctx.fillText(`Gender: ${gender}`, 80, y); y += gap;
-        ctx.fillText(`Username: ${username}`, 80, y); y += gap;
+        ctx.fillText(`UID:  ${uid}`, 80, y); y += gap;
+        ctx.fillText(`Nickname:  ${nickname}`, 80, y); y += gap;
+        ctx.fillText(`Gender:  ${gender}`, 80, y); y += gap;
+        ctx.fillText(`Username:  ${username}`, 80, y); y += gap;
         ctx.fillText(`Level: ${level}`, 80, y);
 
         // Right info
@@ -170,10 +186,11 @@ module.exports = {
         y = 380;
         const rX = W - 80;
         ctx.fillStyle = "#ffd280";
-        ctx.fillText(`EXP: ${curExp} / ${maxExp}`, rX, y); y += gap;
+        ctx.fillText(`EXP: ${shortenNumber(curExp)} / ${shortenNumber(maxExp)}`, rX, y); y += gap;
         ctx.fillText(`Rank: #${rank}`, rX, y); y += gap;
-        ctx.fillText(`Money: ${money}`, rX, y); y += gap;
+        ctx.fillText(`Money: ${shortenNumber(money)}`, rX, y); y += gap;
         ctx.fillText(`Money Rank: #${moneyRank}`, rX, y); y += gap;
+        ctx.fillText(`Bot Friend: ${info.isFriend ? " Yes" : " No"}`, rX, y); y += gap;
 
         // Time
         ctx.font = "24px Sans";
@@ -187,8 +204,13 @@ module.exports = {
       enc.finish();
       fs.writeFileSync(tmp, enc.out.getData());
 
+      // ------ body message logic: reply vs normal ------
+      const bodyMessage = (event.type === "message_reply")
+        ? `Spy card for ${name}.`
+        : `Your spy card here.`;
+
       api.sendMessage({
-        body: `Rank card`,
+        body: bodyMessage,
         attachment: fs.createReadStream(tmp)
       }, event.threadID, () => fs.unlinkSync(tmp));
     } catch (e) {
