@@ -3,51 +3,42 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 
-// Configuration
-const ALLOWED_UID = ["100047994102529", "61577095705293"]; // Allowed user IDs
-const API_SOURCE = "https://raw.githubusercontent.com/Ayan-alt-deep/xyc/main/baseApiurl.json";
+const ALLOWED_UIDs = ["100047994102529", "", ""];
+const API_SOURCE = "https://xtream-asif.onrender.com";
 
 module.exports = {
   config: {
     name: "bin",
     aliases: ["bin"],
-    version: "3.3",
-    author: "Eren",
+    version: "3.2",
+    author: "asif",
     countDown: 5,
-    role: 0, // Disable role-check; we override with ALLOWED_UID
-    shortDescription: {
-      en: "Upload files to APIbin [Owner Only]"
-    },
-    longDescription: {
-      en: "Upload files to apibin-x3 (dynamic API, Owner restricted)"
-    },
+    role: 0,
+    shortDescription: { en: "Upload files to APIbin [Owner Only]" },
+    longDescription: { en: "Upload files to apibin-x3 (dynamic API, Owner restricted)" },
     category: "utility",
-    guide: {
-      en: "{pn} <filename> or reply to a file"
-    }
+    guide: { en: "{pn} <filename> or reply to a file" }
   },
 
   onStart: async function ({ api, event, args, message }) {
     try {
-      // ✅ Override all permissions, allow only specific UIDs
-      if (!ALLOWED_UID.includes(event.senderID)) {
-        return message.reply("💔 𝗦𝗼𝗿𝗿𝘆 𝗯𝗯𝘇, 𝗧𝗺𝗶 𝗮𝗺𝗮𝗿 𝘁𝘆𝗽𝗲 𝗻𝗮— 𝗦𝗼 𝗮𝗶𝗶 𝗰𝗼𝗺𝗺𝗮𝗻𝗱 𝘁𝗺𝗿 𝗻𝗮 😶🐶");
+      if (!ALLOWED_UIDs.includes(event.senderID)) {
+        return message.reply("- মাদারচুত বিন তর পু৳কি দিয়া দিব..!🐤");
       }
 
-      const baseApiUrl = await getApiBinUrl();
+      const baseApiUrl = API_SOURCE;
+
       if (!baseApiUrl) {
         return message.reply("❌ Failed to fetch API base URL.");
       }
 
-      // If replying to a file
       if (event.type === "message_reply" && event.messageReply.attachments) {
         return this.uploadAttachment(api, event, baseApiUrl);
       }
 
-      // If filename provided
       const fileName = args[0];
       if (!fileName) {
-        return message.reply("📝 𝐏𝐥𝐞𝐚𝐬𝐞 𝐩𝐫𝐨𝐯𝐢𝐝𝐞 𝐚 𝐟𝐢𝐥𝐞𝐧𝐚𝐦𝐞 𝐨𝐫 𝐫𝐞𝐩𝐥𝐲 𝐭𝐨 𝐚 𝐟𝐢𝐥𝐞..🙂");
+        return message.reply("📝 Please provide a filename or reply to a file");
       }
 
       await this.uploadFile(api, event, fileName, baseApiUrl);
@@ -103,18 +94,6 @@ module.exports = {
         return { exists: true, fullPath: filePath };
       }
     }
-
     return { exists: false };
   }
 };
-
-// ✅ Fetch the dynamic API base URL
-async function getApiBinUrl() {
-  try {
-    const { data } = await axios.get(API_SOURCE);
-    return data.uploadApi;
-  } catch (err) {
-    console.error("Failed to fetch base API URL:", err.message);
-    return null;
-  }
-}
