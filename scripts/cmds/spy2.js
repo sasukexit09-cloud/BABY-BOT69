@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports = {
   config: {
-    name: "spy",
+    name: "spy2",
     version: "3.5",
     author: "TAREK",
     countDown: 5,
@@ -140,3 +140,4 @@ module.exports = {
     }
   },
 };
+
