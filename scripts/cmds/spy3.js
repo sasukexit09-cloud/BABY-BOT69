@@ -34,7 +34,7 @@ function getLevelInfo(exp) {
 
 module.exports = {
   config: {
-    name: "spy2",
+    name: "spy3",
     version: "3.0",
     author: " Asif",
     countDown: 3,
