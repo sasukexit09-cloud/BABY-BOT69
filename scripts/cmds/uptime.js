@@ -162,7 +162,7 @@ module.exports = {
     ctx.font = '20px sans-serif';
     ctx.fillStyle = '#6272a4';
     ctx.textAlign = 'center';
-    ctx.fillText('Developed by Tarek Shikdar', width / 2, height - 20);
+    ctx.fillText('Developed by 𝗔𝘆𝗮𝗻 𝗔𝗵𝗺𝗲𝗗 𝘇', width / 2, height - 20);
 
     // --- ৩. ইমেজ বাফার তৈরি ও পাঠানো ---
     const buffer = canvas.toBuffer('image/png');
