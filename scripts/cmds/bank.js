@@ -94,7 +94,7 @@ module.exports = {
         ctx.font = '16px Arial';
         ctx.fillStyle = '#a5a8ac';
         ctx.textAlign = 'center';
-        ctx.fillText('TAREK Bank System', width / 2, height - 30);
+        ctx.fillText('𝗔𝗬𝗔𝗡 Bank System', width / 2, height - 30);
 
         const imagePath = path.join(__dirname, 'tmp', `bank_${uid}.png`);
         const out = fs.createWriteStream(imagePath);
