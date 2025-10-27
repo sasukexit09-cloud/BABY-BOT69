@@ -154,7 +154,7 @@ module.exports = {
         };
 
         // --- ৩. হেডার সেকশন ---
-        drawText('TAREK HOST', 40, 50, TEXT_COLOR, 32, 'bold'); // "TAREK HOST" বসানো হলো
+        drawText('𝗔𝗬𝗔𝗡 HOST', 40, 50, TEXT_COLOR, 32, 'bold'); // "TAREK HOST" বসানো হলো
         drawText(`${formattedDate}`, width - 40, 25, LABEL_COLOR, 14, 'normal', 'right');
         drawText(`${hostID} • Linux`, width - 40, 50, LABEL_COLOR, 18, 'normal', 'right');
         
