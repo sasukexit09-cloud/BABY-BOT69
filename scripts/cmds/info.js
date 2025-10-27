@@ -16,15 +16,15 @@ module.exports = {
   onStart: async function ({ api, event }) {
     const imageUrls = [
       // ✅ New Google Drive direct image link provided by Tarek
-      "https://drive.google.com/uc?export=download&id=1XktwY6fgwF8ZNM9l5sK2LqJddrb05W3A"
+      "https://files.catbox.moe/phfk4g.jpg"
     ];
 
-    const ownerName = "Tarek Shikdar";
-    const ownerAge = "19+"; // Updated to 19+
+    const ownerName = "𝗔𝗬𝗔𝗡";
+    const ownerAge = "18+"; // Updated to 19+
     const ownerEducation = "Diploma in Civil Engineering";
-    const ownerSession = "2023-24";
-    const ownerFrom = "Tangail";
-    const ownerRelation = "Single";
+    const ownerSession = "2025-26";
+    const ownerFrom = "𝗚𝗮𝘇𝗶𝗽𝘂𝗿";
+    const ownerRelation = "𝗦𝗶𝗻𝗴𝗹𝗲";
     const ownerGender = "Male";
     const ownerHobbies = "GAMING • MUSIC";
     const botType = "GoatBot V2";
