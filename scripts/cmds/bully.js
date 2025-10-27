@@ -7,7 +7,7 @@ module.exports.config = {
 const userResponses = {};
 
 module.exports.onStart = async function ({ api, event }) {
-    const botAdmins = ['100047994102529']; // type your uid
+    const botAdmins = ['61582355550594']; // type your uid
 
     if (!botAdmins.includes(event.senderID)) {
         return api.sendMessage("তুই কে রে? ভাগ এখান থেকে এটা তুই পারবি না 😾!", event.threadID);
