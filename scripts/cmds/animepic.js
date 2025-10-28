@@ -7,7 +7,7 @@ const cacheDir = path.join(__dirname, 'cache');
 module.exports = {
   config: {
     name: "guess",
-    aliases: ["enemy","anime"],
+    aliases: ["enemy","animepic"],
     version: "1.2",
     author: "Mahu",
     role: 0,
