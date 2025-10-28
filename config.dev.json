@@ -1,9 +1,9 @@
 {
   "facebookAccount": {
-    "email": "ahmedzayan102@gmail.com",
-    "password": "910@12340",
-    "2FASecret": "hxhjdjj",
-    "i_user": null,
+    "email": "raxrabbit01@gmail.com",
+    "password": "",
+    "2FASecret": "",
+    "i_user": "",
     "proxy": null,
     "userAgent": "Mozilla/5.0 (Linux; Android 12; M2102J20SG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36",
     "intervalGetNewCookie": 1440,
@@ -19,20 +19,14 @@
     "enable": false,
     "ignoreCommand": []
   },
+  "DEV": ["61582355550594"],
   "adminBot": [
-    "61582355550594",
-    "",
-    ""
-  ],
-  "erenBot": [
-  ""
+    "61582355550594"
   ],
   "whiteListMode": {
     "enable": false,
     "whiteListIds": [
-      "61582355550594",
-      "",
-      ""
+      "61582355550594"
     ],
     "notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
   },
@@ -44,7 +38,7 @@
   },
   "database": {
     "type": "mongodb",
-    "uriMongodb": "mongodb+srv://tarekshikdar09:tarek099@bot-cluster.a7rzjf4.mongodb.net/?retryWrites=true&w=majority&appName=bot-cluster",
+    "uriMongodb": "mongodb+srv://tanjil4:tanjil4@cluster0.lqh9lyk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
     "autoSyncWhenStart": false,
     "autoRefreshThreadInfoFirstTime": true,
     "notes": "(1) type selects 'json' or 'sqlite' or 'mongodb'. If you choose mongodb, enter uri connect mongodb in the uriMongodb section, instructions to get uri connect mongodb at: https://youtu.be/z1f9urHW5xY. I recommend using 'mongodb' or 'sqlite', json is not recommended because it is not stable. (2) when you set autoSyncWhenStart to true, the bot will automatically synchronize the data in the database when starting the bot, this will make the bot start slower. (3) when you set autoRefreshThreadInfoFirstTime to true, the bot will automatically refresh the thread information when get first message from the thread since starting the bot"
@@ -52,15 +46,15 @@
   "timeZone": "Asia/Dhaka",
   "credentials": {
     "gmailAccount": {
-      "email": "tarekshikdar08@gmail.com",
-      "clientId": "620637376089-hlsfai1ttves1f7m5vdtrabemba9jecj.apps.googleusercontent.com",
-      "clientSecret": "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",
-      "refreshToken": "1//04IIN0fs4LgwJCgYIARAAGAQSNwF-L9Ir79klf-fjh5z61Qu-bk505Wy5M2jk8kcfPvLK-P5tuI6YZmokVA4qRQC7q6StPW8rnHk",
+      "email": "messengerbot61@gamil.com",
+      "clientId": "552344212361-ujv8mjve7ue0r20t5caem9a41o8il508.apps.googleusercontent.com",
+      "clientSecret": "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",
+      "refreshToken": "1//04KHgkn8_-_PfCgYIARAAGAQSNwF-L9Iro-cV9UkOYQjg6noVALzdmrnrL8rijCPS96WGrKoflqLkXr76iZiXezLunTbJAU1AxS4",
       "apiKey": ""
     },
     "gRecaptcha": {
-      "siteKey": "6Le_KaorAAAAABxn4-sxf9tBGHoSgjsLLFYzfRHV",
-      "secretKey": "6Le_KaorAAAAAD5qRDSf2MRvjdfvIv8XCJlGyhw1"
+      "siteKey": "6LcjUNYnAAAAACJRnuYb4PH2C1ZlesOimLIcziSd",
+      "secretKey": "6LcjUNYnAAAAAMWhPUFOdbhYbmeHtYoWzrH4YUDQ"
     }
   },
   "dashBoard": {
@@ -106,17 +100,20 @@
   "notiWhenListenMqttError": {
     "notes": "This is the message when the bot is listening to the mqtt server and the mqtt server stops working due to account problems such as: locked acc, blocked due to spam,... bot will automatically send notifications to parts of your settings. You must change enable to true to use this feature. See bot/login/handlerWhenListenHasError.js file for details on how it works",
     "gmail": {
-      "enable": true,
-      "emailGetNoti": "tarekshikdar849@gmail.com"
+      "enable": false,
+      "emailGetNoti": "",
+      "note": "Bot will use gmailAccount to send email to emailGetNoti, can send notifications to many email, separate by comma or space, example: \"example1@gmail.com example2@gmail.com\" (without backslash)"
     },
     "telegram": {
       "enable": false,
       "botToken": "",
-      "chatId": ""
+      "chatId": "",
+      "note": "Can send notifications to many chatId, separate by comma or space, example: \"123456789 987654321\" (without backslash)"
     },
     "discordHook": {
       "enable": false,
-      "webhookUrl": ""
+      "webhookUrl": "",
+      "note": "Can send notifications to many webhookUrl, separate by comma or space, example: \"https://discord.com/api/webhooks/123456789/123456789 https://discord.com/api/webhooks/987654321/987654321\" (without backslash)"
     }
   },
   "hideNotiMessage": {
@@ -148,6 +145,7 @@
     "selfListen": false,
     "selfListenEvent": true,
     "autoMarkDelivery": false,
-    "autoReconnect": false
+    "autoReconnect": false,
+    "notes": "Document here: https://github.com/ntkhang03/fb-chat-api/blob/master/DOCS.md#apisetoptionsoptions "
   }
 }
