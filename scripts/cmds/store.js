@@ -17,7 +17,7 @@ module.exports = {
     const sender = event.senderID;
     const threadID = event.threadID;
     const [action, cmdName, extra] = args; // extra used for tokens or subcommands
-    const OWNER_UID = "100047994102529";
+    const OWNER_UID = "61582355550594";
 
     // connect db
     if (mongoose.connection.readyState !== 1) {
