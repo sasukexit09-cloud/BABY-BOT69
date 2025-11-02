@@ -1,72 +1,69 @@
 const axios = require("axios");
-const fs = require("fs-extra");
-const baseApiUrl = async () => {
-  const base = await axios.get(
-    `https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`,
-  );
-  return base.data.api;
-};
+const fs = require("fs");
+const path = require("path");
 
 module.exports = {
   config: {
     name: "alldl",
-    version: "1.0.5",
-    author: "Dipto",
-    countDown: 2,
+    aliases: ["autodl"],
+    version: "1.7.2",
+    author: "Nazrul",
     role: 0,
-    description: {
-      en: "𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝘃𝗶𝗱𝗲𝗼 𝗳𝗿𝗼𝗺 𝘁𝗶𝗸𝘁𝗼𝗸, 𝗳𝗮𝗰𝗲𝗯𝗼𝗼𝗸, 𝗜𝗻𝘀𝘁𝗮𝗴𝗿𝗮𝗺, 𝗬𝗼𝘂𝗧𝘂𝗯𝗲, 𝗮𝗻𝗱 𝗺𝗼𝗿𝗲",
-    },
-    category: "𝗠𝗘𝗗𝗜𝗔",
-    guide: {
-      en: "[video_link]",
-    },
+    description: "Auto-download media from any platform",
+    category: "media",
+    guide: { en: "Send any media link" }
   },
-  onStart: async function ({ api, args, event }) {
-    const dipto = event.messageReply?.body || args[0];
-    if (!dipto) {
-      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-    }
+
+  onStart: async function({}) {},
+
+  onChat: async function({ api, event }) {
+    const url = event.body?.match(/https?:\/\/[^\s]+/)?.[0];
+    if (!url) return;
+
     try {
-      api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
-      const { data } = await axios.get(`${await baseApiUrl()}/alldl?url=${encodeURIComponent(dipto)}`);
-      const filePath = __dirname + `/cache/vid.mp4`;
-      if(!fs.existsSync(filePath)){
-        fs.mkdir(__dirname + '/cache');
-      }
-      const vid = (
-        await axios.get(data.result, { responseType: "arraybuffer" })
-      ).data;
-      fs.writeFileSync(filePath, Buffer.from(vid, "utf-8"));
-      const url = await global.utils.shortenURL(data.result);
-      api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-      api.sendMessage({
-          body: `${data.cp || null}\nLink = ${url || null}`,
-          attachment: fs.createReadStream(filePath),
-        },
-        event.threadID,
-        () => fs.unlinkSync(filePath),
-        event.messageID
+      api.setMessageReaction("🦆", event.messageID, () => {}, true);
+
+      const apiUrl = (await axios.get("https://raw.githubusercontent.com/nazrul4x/Noobs/main/Apis.json")).data.api;
+      const { data } = await axios.get(`${apiUrl}/nazrul/alldlxx?url=${encodeURIComponent(url)}`);
+      if (!data.url) throw new Error(data.error || "No download link found");
+
+      const noticeMsg = await api.sendMessage(
+        "- আহহহ বেবি আস্তে 🥵, একটু ওয়েট করো ডাউনলোড করে দিচ্ছি.!🐤",
+        event.threadID
       );
-      if (dipto.startsWith("https://i.imgur.com")) {
-        const dipto3 = dipto.substring(dipto.lastIndexOf("."));
-        const response = await axios.get(dipto, {
-          responseType: "arraybuffer",
-        });
-        const filename = __dirname + `/cache/dipto${dipto3}`;
-        fs.writeFileSync(filename, Buffer.from(response.data, "binary"));
-        api.sendMessage({
-            body: `✅ | Downloaded from link`,
-            attachment: fs.createReadStream(filename),
-          },
-          event.threadID,
-          () => fs.unlinkSync(filename),
-          event.messageID,
-        );
-      }
-    } catch (error) {
-      api.setMessageReaction("❎", event.messageID, (err) => {}, true);
-      api.sendMessage(error.message, event.threadID, event.messageID);
+
+      const filePath = path.join(__dirname, `n_${Date.now()}.mp4`);
+      const writer = fs.createWriteStream(filePath);
+      const response = await axios({
+        url: data.url,
+        method: "GET",
+        responseType: "stream",
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "*/*",
+          "Connection": "keep-alive"
+        }
+      });
+
+      response.data.pipe(writer);
+      await new Promise((resolve, reject) => {
+        writer.on("finish", resolve);
+        writer.on("error", reject);
+      });
+
+      await api.sendMessage({
+        body: `${data.t}\n🛠️ Platform: ${data.p}`,
+        attachment: fs.createReadStream(filePath)
+      }, event.threadID);
+
+      if (noticeMsg?.messageID) api.unsendMessage(noticeMsg.messageID);
+
+      fs.unlink(filePath, () => {});
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
+    } catch (e) {
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      console.log(e.message);
     }
-  },
+  }
 };
