@@ -41,7 +41,7 @@ module.exports = {
     const ctx = canvas.getContext("2d");
 
     // Load owner photo (fixed URL)
-    const ownerImg = await loadImage("https://files.catbox.moe/mhcn45.jpg");
+    const ownerImg = await loadImage("https://files.catbox.moe/a6s54p.jpg");
 
     // Stars and particles
     const stars = Array.from({ length: 150 }, () => ({
