@@ -92,7 +92,7 @@ module.exports = {
 					form.body = welcomeMessage;
 
 					// এখানে new member এর জন্য আলাদা ভিডিও সেট
-					const video = await drive.getFile("1a9ttCB2ghA_S5-7AJvr7xL7NZsg2zPkr", "stream");
+					const video = await drive.getFile("1dfj4eITb9zWcBokrm22AbmNTiDlqrqJo", "stream");
 					form.attachment = video;
 
 					message.send(form);
