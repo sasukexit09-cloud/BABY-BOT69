@@ -50,7 +50,7 @@ module.exports = {
         api.sendMessage(result, event.threadID, event.messageID);
       } catch (err) {
         console.error("Error:", err.message);
-        api.sendMessage("Boss SAHU re Dakh ei file gece 😑", event.threadID, event.messageID);
+        api.sendMessage("Boss 𝐀𝐘𝐀𝐍 re Dakh ai file gece 😑", event.threadID, event.messageID);
       }
     }
   }
