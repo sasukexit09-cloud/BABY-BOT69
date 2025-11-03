@@ -14,7 +14,7 @@ module.exports.run = async ({ api, event }) => {
  const fs = global.nodemodule["fs-extra"];
  const path = __dirname + "/cache/1.png";
 
- const targetDate = new Date("December 16, 2025 00:00:00");
+ const targetDate = new Date("November 13, 2025 00:00:00");
  const now = new Date();
 
  const diffMs = targetDate - now;
