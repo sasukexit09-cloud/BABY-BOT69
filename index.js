@@ -34,7 +34,4 @@ function startProject() {
 	});
 }
 
-startProject();
-const { onStart } = require("./commands/globalOnStart");
-onStart({ api }); // Global onStart auto run
 
