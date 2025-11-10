@@ -1,11 +1,11 @@
-!cmd install prefix.js const fs = require("fs-extra");
+const fs = require("fs-extra");
 const { utils } = global;
 
 module.exports = {
   config: {
     name: "prefix",
-    version: "1.5",
-    author: "NTkhang || Kari Gori By Eren",
+    version: "1.6.0",
+    author: "NTkhang || Modified by Shahadat SAHU",
     countDown: 5,
     role: 0,
     description: "Change the bot prefix in your chat box or globally (admin only)",
@@ -13,19 +13,19 @@ module.exports = {
     guide: {
       en:
         "┌─『 Prefix Settings 』─┐\n"
-      + "│\n"
-      + "│ 🔹 {pn} <prefix>\n"
-      + "│     Set prefix for this chat\n"
-      + "│     Example: {pn} $\n"
-      + "│\n"
-      + "│ 🔹 {pn} <prefix> -g\n"
-      + "│     Set global prefix (Admin only)\n"
-      + "│     Example: {pn} $ -g\n"
-      + "│\n"
-      + "│ ♻️ {pn} reset\n"
-      + "│     Reset to default prefix\n"
-      + "│\n"
-      + "└──────────────────────┘"
+        + "│\n"
+        + "│ 🔹 {pn} <prefix>\n"
+        + "│     Set prefix for this chat\n"
+        + "│     Example: {pn} $\n"
+        + "│\n"
+        + "│ 🔹 {pn} <prefix> -g\n"
+        + "│     Set global prefix (Admin only)\n"
+        + "│     Example: {pn} $ -g\n"
+        + "│\n"
+        + "│ ♻️ {pn} reset\n"
+        + "│     Reset to default prefix\n"
+        + "│\n"
+        + "└──────────────────────┘"
     }
   },
 
@@ -33,42 +33,42 @@ module.exports = {
     en: {
       reset:
         "┌─『 Prefix Reset 』─┐\n"
-      + `│ ✅ Reset to default: %1\n`
-      + "└────────────────────┘",
+        + `│ ✅ Reset to default: %1\n`
+        + "└────────────────────┘",
       onlyAdmin:
         "┌─『 Permission Denied 』─┐\n"
-      + "│ ⛔ Only bot admins can change global prefix!\n"
-      + "└──────────────────────────┘",
+        + "│ ⛔ Only bot admins can change global prefix!\n"
+        + "└──────────────────────────┘",
       confirmGlobal:
         "┌─『 Global Prefix Change 』─┐\n"
-      + "│ ⚙️ React to confirm global prefix update.\n"
-      + "└────────────────────────────┘",
+        + "│ ⚙️ React to confirm global prefix update.\n"
+        + "└────────────────────────────┘",
       confirmThisThread:
         "┌─『 Chat Prefix Change 』─┐\n"
-      + "│ ⚙️ React to confirm this chat's prefix update.\n"
-      + "└──────────────────────────┘",
+        + "│ ⚙️ React to confirm this chat's prefix update.\n"
+        + "└──────────────────────────┘",
       successGlobal:
         "┌─『 Prefix Updated 』─┐\n"
-      + `│ ✅ Global prefix: %1\n`
-      + "└─────────────────────┘",
+        + `│ ✅ Global prefix: %1\n`
+        + "└─────────────────────┘",
       successThisThread:
         "┌─『 Prefix Updated 』─┐\n"
-      + `│ ✅ Chat prefix: %1\n`
-      + "└─────────────────────┘",
+        + `│ ✅ Chat prefix: %1\n`
+        + "└─────────────────────┘",
       myPrefix:
         "┌─『 Current Prefix 』─┐\n"
-      + `│ 🌍 Global: %1\n`
-      + `│ 💬 This Chat: %2\n`
-      + "│\n"
-      + `│ ➤ Type: ${2}help\n`
-      + "└─────────────────────┘"
+        + `│ 🌍 Global: %1\n`
+        + `│ 💬 This Chat: %2\n`
+        + "│\n"
+        + "│ ➤ Type: %2help\n"
+        + "└─────────────────────┘"
     }
   },
 
   onStart: async function ({ message, role, args, commandName, event, threadsData, getLang }) {
-    if (!args[0]) return message.SyntaxError();
+    if (!args[0]) return message.SyntaxError?.() || message.reply(getLang("myPrefix", global.GoatBot.config.prefix, await threadsData.get(event.threadID, "data.prefix") || global.GoatBot.config.prefix));
 
-    if (args[0] === "reset") {
+    if (args[0].toLowerCase() === "reset") {
       await threadsData.set(event.threadID, null, "data.prefix");
       return message.reply(getLang("reset", global.GoatBot.config.prefix));
     }
@@ -87,6 +87,7 @@ module.exports = {
 
     const confirmMessage = formSet.setGlobal ? getLang("confirmGlobal") : getLang("confirmThisThread");
     return message.reply(confirmMessage, (err, info) => {
+      if (err) return;
       formSet.messageID = info.messageID;
       global.GoatBot.onReaction.set(info.messageID, formSet);
     });
@@ -113,11 +114,14 @@ module.exports = {
     if (event.body && event.body.toLowerCase() === "prefix") {
       return message.reply({
         body:
-          "╔══『 𝐏𝐑𝐄𝐅𝐈𝐗 』══╗\n"
-        + `║ 🌍 System : ${globalPrefix}\n`
-        + `║ 💬 Chatbox : ${threadPrefix}\n`
-        + `║ ➤ ${threadPrefix}help to see all available cmds 🥵\n`
-        + "╚═══════════════╝",
+            "╔══『 𝐏𝐑𝐄𝐅𝐈𝐗 𝐈𝐍𝐅𝐎 』══╗\n"
+          + `║ 🌍 System : ${globalPrefix}\n`
+          + `║ 💬 Chatbox : ${threadPrefix}\n`
+          + "║───────────────────────\n"
+          + `║ 𝗘𝗡𝗬 𝗣𝗥𝗢𝗕𝗟𝗘𝗠 𝗕𝗢𝗧 𝗧𝗢 𝗖𝗢𝗡𝗧𝗔𝗖𝗧 𝗢𝗨𝗥 𝗔𝗗𝗠𝗜𝗡 𝗔𝗬𝗔𝗡\n`
+          + `║ ➤ 𝐌𝐄𝐒𝐒𝐄𝐍𝐆𝐄𝐑 :- https://m.me/Ayanokujo.69\n`
+          + `║ ➤ 𝐈𝐍𝐒𝐓𝐀 :- wahat_12am\n`
+          + "╚═══════════════════════╝",
         attachment: await utils.getStreamFromURL("https://files.catbox.moe/lobwms.mp4")
       });
     }
