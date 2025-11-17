@@ -3,7 +3,7 @@ module.exports = {
     name: "help",
     aliases: ["h", "help"],
     version: "2.8",
-    author: "TAREK",
+    author: "AYAN",
     countDown: 5,
     role: 0,
     shortDescription: "Display categorized command list",
