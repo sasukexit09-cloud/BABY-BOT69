@@ -58,33 +58,38 @@ ${fancyText("YOUR CRUSH ME BBE")}: 𝐔𝐦𝐦𝐦𝐦𝐦𝐦𝐦𝐚𝐡 💋
 module.exports = {
   config: {
     name: "bbyintro",
-    version: "1.0.5",
+    version: "1.0.7",
     hasPermssion: 0,
     credits: "Maya x Shahadat",
     description: "Fancy quotes with Alaya intro + picture",
-    commandCategory: "fun",
+    commandCategory: "Fun",
     usages: "bbyintro",
     cooldowns: 5
   },
 
   onStart: async function ({ api, event }) {
-    const imgURL = "https://files.catbox.moe/az6u1h.jpeg";
+    const imgURL = "https://files.catbox.moe/tzwbmb.jpg";
     const path = __dirname + "/cache/bbyintro.jpg";
 
     try {
       const response = await axios.get(imgURL, { responseType: "arraybuffer" });
-      fs.writeFileSync(path, Buffer.from(response.data, "utf-8"));
+      fs.writeFileSync(path, Buffer.from(response.data));
 
       const msg = {
         body: makeIntro(),
         attachment: fs.createReadStream(path)
       };
 
-      await api.sendMessage(msg, event.threadID);
+      await api.sendMessage(msg, event.threadID, event.messageID);
       fs.unlinkSync(path);
     } catch (err) {
       console.error(err);
-      return api.sendMessage("❌ | Couldn't send the intro image!", event.threadID);
+      return api.sendMessage("❌ | Couldn't send the intro image!", event.threadID, event.messageID);
     }
+  },
+
+  // Optional onLoad if your bot framework uses startup initialization
+  onLoad: function () {
+    console.log("✅ | bbyintro command loaded successfully!");
   }
 };
