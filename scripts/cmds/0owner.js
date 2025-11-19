@@ -23,7 +23,7 @@ module.exports = {
 
     // 🛠 Convert Google Drive view link to direct download link
     const fileId = "1QQ4rcb5mnLytHKuavPxOjx0rF-YuOTaS";
-    const directURL = `https://files.catbox.moe/bigeq3.mp4`;
+    const directURL = `https://files.catbox.moe/uykag6.mp4`;
 
     // ⏬ Download the file temporarily
     const filePath = path.join(__dirname, "owner-video.mp4");
