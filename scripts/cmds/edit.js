@@ -1,50 +1,58 @@
-const axios = require("axios");
-const fs = require("fs-extra");
-const path = require("path");
-
 module.exports = {
-config: {
-name: "edit",
-version: "1.0",
-author: "Rifat | nxo_here",
-countDown: 5,
-role: 0,
-shortDescription: { en: "Edit image using prompt" },
-longDescription: { en: "Edit an uploaded image based on your prompt." },
-category: "image",
-guide: { en: "{p}edit [prompt] (reply to image)" }
-},
+  config: {
+    name: "edit",
+    aliases: ["e", "aiedit"],
+    version: "1.6.9",
+    author: "Nazrul",
+    role: 0,
+    description: "Edit image by URL or reply with model selection",
+    category: "ai",
+    usePrefix: true,
+    isPremium: true,
+    countDown: 10,
+    guide: {
+      en: "{pn} [url] [prompt] [model]\nModels: 1=nano 2=4o 3=flash 4=qwen 5=flux"
+    }
+  },
 
-onStart: async function ({ api, event, args, message }) {
-const prompt = args.join(" ");
-const repliedImage = event.messageReply?.attachments?.[0];
+  onStart: async ({ message, event, args }) => {
+    const models = [
+      { n: "1", name: "nano-banana", s: "nano", as: ["nano", "nano-banana"] },
+      { n: "2", name: "4o-image", s: "4o", as: ["4o", "4o-image", "gpt"] },
+      { n: "3", name: "gemini-flash-edit", s: "flash", as: ["flash", "gemini", "gemini-flash-edit"] },
+      { n: "4", name: "qwen-image-edit", s: "qwen", as: ["qwen", "qwen-image-edit"] },
+      { n: "5", name: "flux-dev", s: "flux", as: ["flux", "flux-dev"] }
+    ];
 
-if (!prompt || !repliedImage || repliedImage.type !== "photo") {
-return message.reply("⚠️ | Please reply to a photo with your prompt to edit it.");
-}
+    let imgUrl = event.messageReply?.attachments?.[0]?.type === "photo" ? event.messageReply.attachments[0].url : args[0];
+    let l = (args.slice(-1)[0] || "").replace(/^--/, "").toLowerCase();
+    let model = models.find(m => m.n === l || m.name === l || m.as.includes(l));
+    let mt = model ? l : null;
+    let prompt = args.slice(event.messageReply?.attachments?.[0]?.type === "photo" ? 0 : 1, model ? -1 : undefined).join(" ");
+    model = model || models[2];
+    let { n: mn, s: ms } = model;
 
-const imgPath = path.join(__dirname, "cache", `${Date.now()}_edit.jpg`);
-const waitMsg = await message.reply(`🧪 Editing image for: "${prompt}"...\nPlease wait...`);
+    if (!imgUrl) return message.reply("• Reply to an image or provide image URL!\n• Add prompt and model (-- nano/4o/qwen/flash/flux)");
 
-try {
-const imgURL = repliedImage.url;
-const imageUrl = `https://edit-and-gen.onrender.com/gen?prompt=${encodeURIComponent(prompt)}&image=${encodeURIComponent(imgURL)}`;
-const res = await axios.get(imageUrl, { responseType: "arraybuffer" });
+    message.reaction('⏳', event.messageID);
+    const wm = await message.reply(`⏳ Editing your image with Model ${ms} ...!`);
 
-await fs.ensureDir(path.dirname(imgPath));
-await fs.writeFile(imgPath, Buffer.from(res.data, "binary"));
+    try {
+      const apiUrl = (await require("axios").get("https://raw.githubusercontent.com/nazrul4x/Noobs/main/Apis.json")).data.m;
+      const res = await require("axios").get(`${apiUrl}/nazrul/edit?imgUrl=${encodeURIComponent(imgUrl)}&prompt=${encodeURIComponent(prompt)}&model=${mn}`);
+      const u = res.data?.data?.imageResponseVo?.urls?.[0];
 
-await message.reply({
-body: `✅ | Edited image for: "${prompt}"`,
-attachment: fs.createReadStream(imgPath)
-});
+      message.reaction('✅', event.messageID);
+      await message.unsend(wm.messageID);
 
-} catch (err) {
-console.error("EDIT Error:", err);
-message.reply("❌ | Failed to edit image. Please try again later.");
-} finally {
-await fs.remove(imgPath);
-api.unsendMessage(waitMsg.messageID);
-}
-}
+      if (u) {
+        const i = await require("axios").get(u, { responseType: "stream" });
+        return message.reply({ body: `✅ Here's your Edited image!\n• (Model: ${ms})`, attachment: i.data });
+      } 
+      return message.reply("• Not found any result!");
+    } catch {
+      message.reaction('❌', event.messageID);
+      await message.unsend(wm.messageID);
+    }
+  }
 };
