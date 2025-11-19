@@ -1,90 +1,86 @@
-const fs = require("fs-extra");
-const axios = require("axios");
-const Canvas = require("canvas");
+const fs = require("fs");
 const path = require("path");
+const axios = require("axios");
+const { loadImage, createCanvas } = require("canvas");
 
 module.exports = {
   config: {
     name: "hug",
     aliases: ["hug"],
-    version: "1.0",
-    author: "T A N J I L ",
+    version: "1.1",
+    author: "AYAN⚡",
     countDown: 5,
     role: 0,
-    shortDescription: "Hug with custom image",
-    longDescription: "Generate a hug image with the mentioned user using a custom background.",
-    category: "funny",
-    guide: "{pn} @mention"
+    shortDescription: "Give someone a hug!",
+    longDescription: "A fun command to give someone a hug with a picture.",
+    category: "fun",
+    guide: "{pn} @mention or reply",
   },
 
-  onStart: async function ({ api, message, event, usersData }) {
-    const mention = Object.keys(event.mentions);
-    if (mention.length === 0) return message.reply("Please mention someone to hug.");
+  onStart: async function ({ event, api, usersData }) {
+    let mention = Object.keys(event.mentions)[0];
+    let targetID = mention || event.messageReply?.senderID;
 
-    let senderID = event.senderID;
-    let mentionedID = mention[0];
+    if (!targetID)
+      return api.sendMessage("Who would you like to hug? Please tag someone or reply to a message!", event.threadID, event.messageID);
 
-    try {
-      // Get avatar URLs
-      const avatar1 = await usersData.getAvatarUrl(mentionedID); // left
-      const avatar2 = await usersData.getAvatarUrl(senderID);    // right
+    const huggerID = event.senderID;
 
-      // Load avatars
-      const [avatarImg1, avatarImg2] = await Promise.all([
-        Canvas.loadImage(avatar1),
-        Canvas.loadImage(avatar2)
-      ]);
+    const getAvatar = async (uid) => {
+      try {
+        const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
+        const avatarPath = path.join(__dirname, `${uid}_avatar.png`);
+        const res = await axios.get(url, { responseType: "arraybuffer" });
+        fs.writeFileSync(avatarPath, res.data);
+        return avatarPath;
+      } catch (err) {
+        console.error(`Error fetching avatar for user ${uid}: ${err.message}`);
+        return "";
+      }
+    };
 
-      // Load and scale background
-      const bgUrl = "http://remakeai-production.up.railway.app/Remake_Ai/Nyx_Remake_1746746979872.jpg";
-      const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
-      const bg = await Canvas.loadImage(bgRes.data);
+    const bg = await loadImage("https://i.imgur.com/eUNHCj3.jpeg");
+    const canvas = createCanvas(bg.width, bg.height);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bg, 0, 0);
 
-      // Set new canvas size
-      const canvasWidth = 900;
-      const canvasHeight = 600;
+    const huggerAvatarPath = await getAvatar(huggerID);
+    const targetAvatarPath = await getAvatar(targetID);
 
-      const canvas = Canvas.createCanvas(canvasWidth, canvasHeight);
-      const ctx = canvas.getContext("2d");
+    const huggerAvatar = await loadImage(huggerAvatarPath);
+    const targetAvatar = await loadImage(targetAvatarPath);
 
-      // Draw scaled background
-      ctx.drawImage(bg, 0, 0, canvasWidth, canvasHeight);
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(285, 110, 50, 0, Math.PI * 2);  
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(huggerAvatar, 235, 60, 100, 100);  
+    ctx.restore();
 
-      // Avatar settings
-      const avatarSize = 230;
-      const y = canvasHeight / 2 - avatarSize - 90;
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(460, 160, 50, 0, Math.PI * 2);  
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(targetAvatar, 410, 110, 100, 100);  
 
-      // Left (mentioned user)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(150 + avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatarImg1, 150, y, avatarSize, avatarSize);
-      ctx.restore();
+    const output = path.join(__dirname, "hug_output.png");
+    fs.writeFileSync(output, canvas.toBuffer("image/png"));
 
-      // Right (sender)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(canvasWidth - 150 - avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatarImg2, canvasWidth - 150 - avatarSize, y, avatarSize, avatarSize);
-      ctx.restore();
+    const senderName = await usersData.getName(huggerID);
+    const targetName = event.mentions[mention] || (event.messageReply?.senderName || "Friend");
 
-      // Save and send image
-      const imgPath = path.join(__dirname, "tmp", `${senderID}_${mentionedID}_hug.png`);
-      await fs.ensureDir(path.dirname(imgPath));
-      fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
-
-      message.reply({
-        body: "Hugggg!",
-        attachment: fs.createReadStream(imgPath)
-      }, () => fs.unlinkSync(imgPath));
-
-    } catch (err) {
-      console.error("Error in hug command:", err);
-      message.reply("There was an error creating the hug image.");
-    }
+    api.sendMessage({
+      body: `😍 I've just hugged ${targetName}! \n${senderName} is giving a warm hug to ${targetName}!`,
+      attachment: fs.createReadStream(output),
+      mentions: [{ tag: targetName, id: targetID }],
+}, event.threadID, () => {
+      fs.unlinkSync(output);
+      fs.unlinkSync(huggerAvatarPath);
+      fs.unlinkSync(targetAvatarPath);
+    }, event.messageID);
   }
 };
