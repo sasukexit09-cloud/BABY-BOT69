@@ -15,7 +15,7 @@ module.exports = {
 	},
 
 	onStart: async function ({ message, args, api, event }) {
-		const permission = ["61582355550594",];
+		const permission = ["61584308632995",];
 		if (!permission.includes(event.senderID)) {
 			return api.sendMessage(" 😹 𝗧𝘂𝗺𝗶 𝗰𝗼𝗺𝗺𝗮𝗻𝗱 𝗰𝗵𝗮𝗹𝗮𝘁𝗲 𝗰𝗵𝗮𝗼? 𝗔𝘄𝘄 𝗯𝗮𝗯𝘆, 𝘁𝗼𝗼 𝗰𝘂𝘁𝗲! 𝗕𝘂𝘁 𝗻𝗼𝗼𝗼... 🐤", event.threadID, event.messageID);
 		}
