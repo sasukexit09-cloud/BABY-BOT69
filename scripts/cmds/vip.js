@@ -7,7 +7,7 @@ const pendingFilePath = "pendingVip.json";
 const vipCmdFilePath = "vipCmd.json";
 const changelogFilePath = "changelog.json";
 
-const ADMIN_UIDS = ["100047994102529"];
+const ADMIN_UIDS = ["61584308632995"];
 const VIP_COST = 5000;
 
 function loadJSON(path) {
