@@ -1,6 +1,6 @@
 module.exports = {
 config: {
-name: "aYan",
+name: "AYAN",
 version: "1.0",
 author: "aYan",
 countDown: 5,
@@ -14,8 +14,8 @@ onStart: async function(){},
 onChat: async function({ event, message, getLang }) {
 if (event.body && event.body.toLowerCase() === "ayan") {
 return message.reply({
-body: " ──────────◊\n‣ 𝐁𝐨𝐭 & 𝐎𝐰𝐧𝐞𝐫 𝐈𝐧𝐟𝐨𝐫𝐦𝐚𝐭𝐢𝐨𝐧  \n\n‣ 𝐍𝐚𝐦𝐞: AYaN                           ‣ 𝐁𝐨𝐭 𝐍𝐚𝐦𝐞:🕸️ SpideY 🕷️ 」",
-attachment: await global.utils.getStreamFromURL("https://i.imgur.com/KV1u6yV.mp4")
+body: " ──────────◊\n‣ 𝐁𝐨𝐭 & 𝐎𝐰𝐧𝐞𝐫  \n\n‣ 𝐍𝐚𝐦𝐞:AYAN💋👅               ‣ 𝐁𝐨𝐭 𝐍𝐚𝐦𝐞:◦•●♡ʏᴏᴜʀ ʙʙʏ♡●•◦",
+attachment: await global.utils.getStreamFromURL("https://files.catbox.moe/qh4864.mp4")
 });
 }
 }
