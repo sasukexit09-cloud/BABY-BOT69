@@ -5,7 +5,7 @@ module.exports = {
 		name: "notice",
 		aliases: ["notif"],
 		version: "1.4",
-		author: "BaYjid",
+		author: "AYAN",
 		countDown: 5,
 		role: 2,
 		shortDescription: "Send a premium notice to all groups",
@@ -32,7 +32,7 @@ module.exports = {
 			: "";
 
 		// Stylish text format
-		const stylishText = `『 𝗕𝗮𝗬𝗷𝗶𝗱 - 𝗢𝗳𝗳𝗶𝗰𝗶𝗮𝗹 𝗡𝗼𝘁𝗶𝗰𝗲 』\n━━━━━━━━━━━━━━━━━━\n📅 Date & Time: ${timestamp}\n${userMention}\n\n📢 Notice:\n${args.join(" ")}\n━━━━━━━━━━━━━━━━━━\n✅ Admin Announcement - Please Take Action`;
+		const stylishText = `『 AYAN🥰 - 𝗡𝗼𝘁𝗶𝗰𝗲 』\n━━━━━━━━━━━━━━━━━━\n📅 Date & Time: ${timestamp}\n${userMention}\n\n📢 Notice:\n${args.join(" ")}\n━━━━━━━━━━━━━━━━━━\n✅ Admin Announcement - Please Take Action`;
 
 		// Create the message format
 		const formSend = {
