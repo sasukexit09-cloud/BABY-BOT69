@@ -12,7 +12,7 @@ module.exports.config = {
   cooldowns: 5,
 };
 
-module.exports.run = async function ({ api, event, Threads, Users }) {
+module.exports.onStart = async function ({ api, event, Threads, Users }) {
   const prefix = global.config.PREFIX || "!";
   const ping = Date.now() - event.timestamp;
 
