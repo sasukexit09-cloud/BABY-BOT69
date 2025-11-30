@@ -1,6 +1,8 @@
 const axios = require("axios");
 const fs = require("fs-extra");
+const path = require("path");
 
+// Optimized fancy text function
 const fancyText = (text) => {
   const letters = {
     A: '𝐀', B: '𝐁', C: '𝐂', D: '𝐃', E: '𝐄', F: '𝐅', G: '𝐆',
@@ -15,6 +17,7 @@ const fancyText = (text) => {
   return text.split('').map(c => letters[c] || c).join('');
 };
 
+// Quotes
 const quotes = [
   "I know you wanna ride the wave gotta wait in line but you",
   "Be low key & let em wonder",
@@ -32,6 +35,7 @@ const quotes = [
   "Ironic you been sleepin on the one you been dreaming bout...."
 ];
 
+// Generate intro text
 function makeIntro() {
   const randomQuotes = quotes
     .sort(() => 0.5 - Math.random())
@@ -58,7 +62,7 @@ ${fancyText("YOUR CRUSH ME BBE")}: 𝐔𝐦𝐦𝐦𝐦𝐦𝐦𝐦𝐚𝐡 💋
 module.exports = {
   config: {
     name: "bbyintro",
-    version: "1.0.7",
+    version: "1.0.8",
     hasPermssion: 0,
     credits: "Maya x Shahadat",
     description: "Fancy quotes with Alaya intro + picture",
@@ -68,27 +72,29 @@ module.exports = {
   },
 
   onStart: async function ({ api, event }) {
-    const imgURL = "https://files.catbox.moe/tzwbmb.jpg";
-    const path = __dirname + "/cache/bbyintro.jpg";
+    const imgURL = "https://files.catbox.moe/t2qm8n.jpeg"; // new image
+    const cacheDir = path.join(__dirname, "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+    const filePath = path.join(cacheDir, "bbyintro.jpg");
 
     try {
       const response = await axios.get(imgURL, { responseType: "arraybuffer" });
-      fs.writeFileSync(path, Buffer.from(response.data));
+      fs.writeFileSync(filePath, Buffer.from(response.data));
 
       const msg = {
         body: makeIntro(),
-        attachment: fs.createReadStream(path)
+        attachment: fs.createReadStream(filePath)
       };
 
       await api.sendMessage(msg, event.threadID, event.messageID);
-      fs.unlinkSync(path);
     } catch (err) {
       console.error(err);
-      return api.sendMessage("❌ | Couldn't send the intro image!", event.threadID, event.messageID);
+      await api.sendMessage("❌ | Couldn't send the image, but here’s the text:\n\n" + makeIntro(), event.threadID, event.messageID);
+    } finally {
+      try { fs.unlinkSync(filePath); } catch(e) {}
     }
   },
 
-  // Optional onLoad if your bot framework uses startup initialization
   onLoad: function () {
     console.log("✅ | bbyintro command loaded successfully!");
   }
