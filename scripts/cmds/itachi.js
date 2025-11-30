@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 
-module.exports.config = {
+module.exports.onStart = {
   name: "elisa",
   aliases: ["itachi", "Itachi", "Uchiha"],
   version: "1.0.0",
@@ -55,7 +55,7 @@ module.exports.onChat = async function({
       "𝗬𝗲𝘀 𝘀𝗶𝗿 𝗵𝗼𝘄 𝗰𝗮𝗻 𝗶 𝗵𝗲𝗹𝗽 𝘆𝗼𝘂??🌟🍂",
       "বলো আমার ফুলটুসি____😽💙",
       "আজও কারো হতে পারলাম নাহ___😌💙",
-      "𝗛𝗲𝘆 𝗯𝗯𝘆 𝗶 𝗮𝗺 𝗶𝘁𝗮𝗰𝗵𝗶 𝗳𝗿𝗼𝗺 𝗛4𝗦𝗦𝗔1𝗡 𝘀𝗮𝗿𝘃𝗲𝗿🇧🇩🤖",
+      "𝗛𝗲𝘆 𝗯𝗯𝘆 𝗶 𝗮𝗺 𝗶𝘁𝗮𝗰𝗵𝗶 𝗳𝗿𝗼𝗺 BABY WORLD 𝘀𝗮𝗿𝘃𝗲𝗿🇧🇩🤖",
       "𝗜𝘁𝗮𝗰𝗵𝗶 বললে চাকরি থাকবে না____😰😰☠",
       "এত 𝗜𝘁𝗮𝗰𝗵𝗶 𝗜𝘁𝗮𝗰𝗵𝗶 করস কেন কি হইছে বল___😾😾🔪🔪",
       "দূরে গিয়ে মর এত 𝗜𝘁𝗮𝗰𝗵𝗶 𝗜𝘁𝗮𝗰𝗵𝗶 না করে___😾😾🔪🔪"
