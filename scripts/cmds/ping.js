@@ -5,7 +5,7 @@ const https = require("https");
 const imageUrl = "https://i.imgur.com/CbScwwJ.jpeg";
 const localPath = path.join(__dirname, "ping_image.jpg");
 
-module.exports = {
+module.exports.onStart = {
   config: {
     name: "ping",
     version: "1.0",
