@@ -7,33 +7,22 @@ module.exports = {
     config: {
         name: "fakechat",
         aliases: ["fc"],
-        version: "1.0",
-        author: "Vex_kshitiz",
-        countDown: 5,
-        role: 0,
-        shortDescription: "Messenger style fake chat",
-        longDescription: "Create Messenger style fake chat images",
+        version: "1.6",
+        author: "🥵AYAN BBE🥵💋",
+        shortDescription: "Messenger dark chat with dynamic bubble",
+        longDescription: "Fully dynamic bubble size based on text length and lines",
         category: "fun",
-        guide: "{p} fakechat uid | {text} or {p} fakechat @mention | {text} or reply to someone text by fakechat {text} -{theme}"
+        guide: "{p} fakechat uid | {text} or {p} fakechat @mention | {text} or reply to someone text by fakechat {text}"
     },
 
     onStart: async function({ event, message, usersData, api, args }) {
         const { senderID, type, messageReply, mentions } = event;
 
-        // Determine UID and text
-        let uid, mentionName;
+        let uid;
         let textSegments = args.slice(1).join(" ").split(" | ");
-        let theme = null;
-
-        const themeMatch = args.join(" ").match(/-\d+$/);
-        if (themeMatch) {
-            theme = themeMatch[0];
-            textSegments = args.join(" ").replace(theme, '').split(" | ");
-        }
 
         if (mentions && Object.keys(mentions).length > 0) {
             uid = Object.keys(mentions)[0];
-            mentionName = mentions[uid].replace('@', '').split(' ')[0];
             textSegments = args.slice(2).join(" ").split(" | ");
         } else if (/^\d+$/.test(args[0])) {
             uid = args[0];
@@ -46,18 +35,18 @@ module.exports = {
 
         try {
             const userInfo = await getUserInfo(api, uid);
-            const firstName = userInfo.name.split(' ')[0];
+            const senderInfo = await getUserInfo(api, senderID);
             const avatarUrl = await usersData.getAvatarUrl(uid);
+            const senderAvatar = await usersData.getAvatarUrl(senderID);
 
-            // Canvas setup
             const canvasWidth = 800;
-            const lineHeight = 35;
-            const sidePadding = 20;
-            const bubblePadding = 15;
-            let currentY = 50;
+            const lineHeight = 30;
+            const bubblePaddingX = 20;
+            const bubblePaddingY = 15;
+            let currentY = 80;
             const chatBubbles = [];
 
-            // Load font (cached locally)
+            // Load font
             const fontPath = path.join(__dirname, 'MessengerFont.ttf');
             if (!fs.existsSync(fontPath)) {
                 const fontUrl = 'https://drive.google.com/uc?export=download&id=1MYZkDHgHtGgyVEf2bFrOc0A-tlFvzYqL';
@@ -65,56 +54,85 @@ module.exports = {
             }
             registerFont(fontPath, { family: 'Messenger' });
 
-            // Prepare bubbles
             const ctxTemp = createCanvas(1,1).getContext('2d');
             ctxTemp.font = `25px Messenger`;
             const maxTextWidth = canvasWidth - 200;
 
+            // Prepare chat bubbles
             for (let text of textSegments) {
-                const lines = wrapText(ctxTemp, text, maxTextWidth - bubblePadding*2);
-                const bubbleHeight = lines.length * lineHeight + bubblePadding*2;
-                chatBubbles.push({ text, lines, height: bubbleHeight });
+                const lines = wrapText(ctxTemp, text, maxTextWidth - bubblePaddingX*2);
+                let textWidth = Math.max(...lines.map(line => ctxTemp.measureText(line).width));
+                const bubbleWidth = Math.min(maxTextWidth, Math.max(textWidth + bubblePaddingX*2, 60)); // dynamic width
+                const bubbleHeight = lines.length * lineHeight + bubblePaddingY*2; // dynamic height
+                chatBubbles.push({ text, lines, width: bubbleWidth, height: bubbleHeight });
             }
 
-            // Calculate canvas height dynamically
-            let totalHeight = chatBubbles.reduce((sum, b) => sum + b.height + 15, 0) + 50;
+            // calculate canvas height
+            let totalHeight = chatBubbles.reduce((sum, b) => sum + b.height + 50, 0) + 50;
             const canvas = createCanvas(canvasWidth, totalHeight);
             const ctx = canvas.getContext('2d');
 
-            // Background (dark like Messenger)
-            ctx.fillStyle = theme === '-1' ? '#2b2b2b' : '#f0f0f0';
+            // Dark theme
+            const backgroundColor = '#2b2b2b';
+            const leftBubbleColor = '#3a3a3a';
+            const rightBubbleColor = '#056fff';
+            const leftTextColor = '#fff';
+            const rightTextColor = '#fff';
+
+            ctx.fillStyle = backgroundColor;
             ctx.fillRect(0,0,canvas.width,canvas.height);
 
-            // Draw bubbles
+            let isLeft = true;
             for (let bubble of chatBubbles) {
-                const bubbleWidth = Math.min(maxTextWidth, ctx.measureText(bubble.text).width + bubblePadding*2 + 20);
+                const bubbleX = isLeft ? 100 : canvasWidth - bubble.width - 100;
+                const avatarImg = isLeft ? await loadImage(avatarUrl) : await loadImage(senderAvatar);
+                const avatarSize = 50;
 
-                // Left bubble = user
-                const bubbleX = 100;
-                ctx.fillStyle = '#0078ff';
-                roundRect(ctx, bubbleX, currentY, bubbleWidth, bubble.height, 20, true, false);
+                // Draw sender name
+                const name = isLeft ? userInfo.name.split(' ')[0] : senderInfo.name.split(' ')[0];
+                ctx.fillStyle = isLeft ? leftTextColor : rightTextColor;
+                ctx.font = `20px Messenger`;
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(name, isLeft ? 40 : canvasWidth - 40 - ctx.measureText(name).width, currentY - 10);
 
-                // Draw text
-                ctx.fillStyle = '#fff';
+                // Bubble with shadow
+                ctx.fillStyle = isLeft ? leftBubbleColor : rightBubbleColor;
+                ctx.shadowColor = "rgba(0,0,0,0.2)";
+                ctx.shadowBlur = 4;
+                roundRect(ctx, bubbleX, currentY, bubble.width, bubble.height, 20, true, false);
+
+                // Vertical center text
+                ctx.fillStyle = isLeft ? leftTextColor : rightTextColor;
                 ctx.font = `25px Messenger`;
-                ctx.textBaseline = 'top';
-                let textY = currentY + bubblePadding;
+                ctx.textBaseline = 'middle';
+                let totalTextHeight = bubble.lines.length * lineHeight;
+                let textY = currentY + (bubble.height - totalTextHeight)/2 + lineHeight/2;
                 for (let line of bubble.lines) {
-                    ctx.fillText(line, bubbleX + bubblePadding, textY);
+                    ctx.fillText(line, bubbleX + bubblePaddingX, textY);
                     textY += lineHeight;
                 }
 
-                currentY += bubble.height + 15;
-            }
+                // Avatar
+                const avatarX = isLeft ? 40 : canvasWidth - 40 - avatarSize;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(avatarX + avatarSize/2, currentY + bubble.height/2, avatarSize/2, 0, Math.PI*2);
+                ctx.closePath();
+                ctx.clip();
+                ctx.drawImage(avatarImg, avatarX, currentY + (bubble.height - avatarSize)/2, avatarSize, avatarSize);
+                ctx.restore();
 
-            // Draw avatar
-            const avatarImg = await loadImage(avatarUrl);
-            const avatarSize = 60;
-            ctx.beginPath();
-            ctx.arc(60 + avatarSize/2, 50 + avatarSize/2, avatarSize/2, 0, Math.PI*2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(avatarImg, 60, 50, avatarSize, avatarSize);
+                // Seen tick for right messages
+                if(!isLeft){
+                    ctx.fillStyle = '#00a2ff';
+                    ctx.font = '20px Messenger';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('✔', bubbleX + bubble.width + 5, currentY + bubble.height - 5);
+                }
+
+                currentY += bubble.height + 50;
+                isLeft = !isLeft;
+            }
 
             // Save output
             const outputPath = path.join(__dirname, `fakechat_${Date.now()}.png`);
@@ -135,7 +153,7 @@ module.exports = {
     }
 };
 
-// Helper: Wrap text
+// Helpers
 function wrapText(ctx, text, maxWidth) {
     const words = text.split(' ');
     const lines = [];
@@ -143,19 +161,16 @@ function wrapText(ctx, text, maxWidth) {
     for (let word of words) {
         const testLine = line + (line ? ' ' : '') + word;
         if (ctx.measureText(testLine).width > maxWidth) {
-            if (line) lines.push(line);
+            if(line) lines.push(line);
             line = word;
-        } else {
-            line = testLine;
-        }
+        } else line = testLine;
     }
-    if (line) lines.push(line);
+    if(line) lines.push(line);
     return lines;
 }
 
-// Helper: Draw rounded rectangle
 function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-    if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+    if(typeof r === 'number') r={tl:r,tr:r,br:r,bl:r};
     ctx.beginPath();
     ctx.moveTo(x+r.tl, y);
     ctx.lineTo(x+w-r.tr, y);
@@ -167,21 +182,19 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
     ctx.lineTo(x, y+r.tl);
     ctx.quadraticCurveTo(x, y, x+r.tl, y);
     ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
 }
 
-// Helper: Download file
 async function downloadFile(url, outputPath) {
     const res = await axios.get(url, { responseType: 'arraybuffer' });
     fs.writeFileSync(outputPath, res.data);
 }
 
-// Helper: Get user info
 async function getUserInfo(api, uid) {
     return new Promise((resolve, reject) => {
         api.getUserInfo(uid, (err, ret) => {
-            if (err) return reject(err);
+            if(err) return reject(err);
             resolve(ret[uid]);
         });
     });
