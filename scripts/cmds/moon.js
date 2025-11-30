@@ -9,7 +9,7 @@ const agent = new https.Agent({
 });
 const { getStreamFromURL } = global.utils;
 
-module.exports = {
+module.exports.onStart = {
 	config: {
 		name: "moon",
 		version: "1.4",
