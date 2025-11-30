@@ -1,119 +1,125 @@
 module.exports.config = {
-	name: "group",
-	version: "1.0.0",
-	hasPermssion: 0,
-	credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-    description: "Parent group settingst.",
-	commandCategory: "box",
-	usages: "[name/emoji/admin/image/info]",
-	cooldowns: 1,
-	dependencies: {
-		"request":"",
-		"fs-extra":""
-}
+    name: "group",
+    version: "1.0.1",
+    hasPermssion: 0,
+    credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
+    description: "Parent group settings.",
+    commandCategory: "box",
+    usages: "[name/emoji/admin/image/info]",
+    cooldowns: 1,
+    dependencies: {
+        "request": "",
+        "fs-extra": ""
+    }
 };
 
-module.exports.run = async({api, event, args}) => {
-	const fs = global.nodemodule["fs-extra"];
-	const request = global.nodemodule["request"];
-	 if (args.length == 0) return api.sendMessage(`You can use:\n/groupemoji [icon]\n\n/groupname [the box name needs to be changed]\n\n/groupimage [rep any image needs to be set as group chat image]\n\n/gcadmin [tag] => it will give qtv to the person tagged\n\n/groupinfo => All group information !
-`, event.threadID, event.messageID);
+module.exports.run = async ({ api, event, args }) => {
+    const fs = global.nodemodule["fs-extra"];
+    const request = global.nodemodule["request"];
 
+    if (!args.length) {
+        return api.sendMessage(
+            `You can use:\n
+/groupemoji [icon]\n
+/groupname [new group name]\n
+/groupimage [reply to an image to set it as group chat image]\n
+/gcadmin [tag] => give admin to the tagged user\n
+/groupinfo => Get all group information`,
+            event.threadID,
+            event.messageID
+        );
+    }
 
-	if (args[0] == "name") {
-var content = args.join(" ");
-var c = content.slice(4, 99) || event.messageReply.body;
-api.setTitle(`${c } `, event.threadID);
- }
-	if (args[0] == "emoji") {
-const name = args[1] || event.messageReply.body;
-api.changeThreadEmoji(name, event.threadID)
+    // CHANGE GROUP NAME
+    if (args[0] === "name") {
+        const newName = args.slice(1).join(" ") || (event.messageReply && event.messageReply.body);
+        if (!newName) return api.sendMessage("❌ Please provide a new group name.", event.threadID, event.messageID);
+        return api.setTitle(newName, event.threadID);
+    }
 
- }
-if(args[0] == "me"){
-	 if (args[1] == "admin") {
-		const threadInfo = await api.getThreadInfo(event.threadID)
-		const find = threadInfo.adminIDs.find(el => el.id == api.getCurrentUserID());
-		if(!find) api.sendMessage("BOT needs to throw admin to use ?", event.threadID, event.messageID)
-	  else if(!global.config.ADMINBOT.includes(event.senderID)) api.sendMessage("Cunt powers ?", event.threadID, event.messageID)
-     else api.changeAdminStatus(event.threadID, event.senderID, true);
-     }
-} 
-if (args[0] == "admin") {
+    // CHANGE GROUP EMOJI
+    if (args[0] === "emoji") {
+        const emoji = args[1] || (event.messageReply && event.messageReply.body);
+        if (!emoji) return api.sendMessage("❌ Please provide an emoji.", event.threadID, event.messageID);
+        return api.changeThreadEmoji(emoji, event.threadID);
+    }
 
-if (args.join().indexOf('@') !== -1){
-	 namee = Object.keys(event.mentions)}
-else namee = args[1]
-if (event.messageReply) {namee = event.messageReply.senderID}
+    // GIVE BOT ITSELF ADMIN (ME ADMIN)
+    if (args[0] === "me" && args[1] === "admin") {
+        const threadInfo = await api.getThreadInfo(event.threadID);
+        const botAdmin = threadInfo.adminIDs.find(el => el.id === api.getCurrentUserID());
+        if (!botAdmin) return api.sendMessage("❌ Bot must be admin to use this command.", event.threadID, event.messageID);
+        if (!global.config.ADMINBOT.includes(event.senderID)) return api.sendMessage("❌ You don't have permission.", event.threadID, event.messageID);
+        return api.changeAdminStatus(event.threadID, event.senderID, true);
+    }
 
-const threadInfo = await api.getThreadInfo(event.threadID)
-const findd = threadInfo.adminIDs.find(el => el.id == namee);
-const find = threadInfo.adminIDs.find(el => el.id == api.getCurrentUserID());
-const finddd = threadInfo.adminIDs.find(el => el.id == event.senderID);
+    // GIVE OR REMOVE ADMIN TO USERS
+    if (args[0] === "admin") {
+        let targetID;
+        if (Object.keys(event.mentions).length) targetID = Object.keys(event.mentions)[0];
+        else if (event.messageReply) targetID = event.messageReply.senderID;
+        else targetID = args[1];
 
-if (!finddd) return api.sendMessage("You are not a box admin ?", event.threadID, event.messageID);		
-if(!find) {api.sendMessage("Don't throw the admin using the cock?", event.threadID, event.messageID)}
-if (!findd) {api.changeAdminStatus(event.threadID, namee, true);}
-else api.changeAdminStatus(event.threadID, namee, false)
- }
+        if (!targetID) return api.sendMessage("❌ Please tag or reply to a user.", event.threadID, event.messageID);
 
-if (args[0] == "image") {
+        const threadInfo = await api.getThreadInfo(event.threadID);
+        const senderAdmin = threadInfo.adminIDs.some(ad => ad.id === event.senderID);
+        const botAdmin = threadInfo.adminIDs.some(ad => ad.id === api.getCurrentUserID());
+        const targetIsAdmin = threadInfo.adminIDs.some(ad => ad.id === targetID);
 
-if (event.type !== "message_reply") return api.sendMessage("❌ You must reply to a certain audio, video, or photo", event.threadID, event.messageID);
-	if (!event.messageReply.attachments || event.messageReply.attachments.length == 0) return api.sendMessage("❌ You must reply to a certain audio, video, or photo", event.threadID, event.messageID);
-	if (event.messageReply.attachments.length > 1) return api.sendMessage(`Please reply only one audio, video, photo!`, event.threadID, event.messageID);
-	 var callback = () => api.changeGroupImage(fs.createReadStream(__dirname + "/cache/1.png"), event.threadID, () => fs.unlinkSync(__dirname + "/cache/1.png"));	
-      return request(encodeURI(event.messageReply.attachments[0].url)).pipe(fs.createWriteStream(__dirname+'/cache/1.png')).on('close',() => callback());
-      };
-if (args[0] == "info") {
-		var threadInfo = await api.getThreadInfo(event.threadID);
-		let threadMem = threadInfo.participantIDs.length;
-	var gendernam = [];
-	var gendernu = [];
-	var nope = [];
-	for (let z in threadInfo.userInfo) {
-		var gioitinhone = threadInfo.userInfo[z].gender;
+        if (!senderAdmin) return api.sendMessage("❌ You are not an admin.", event.threadID, event.messageID);
+        if (!botAdmin) return api.sendMessage("❌ Bot must be admin to change roles.", event.threadID, event.messageID);
 
-		var nName = threadInfo.userInfo[z].name;
+        return api.changeAdminStatus(event.threadID, targetID, !targetIsAdmin);
+    }
 
-		if (gioitinhone == 'MALE') {
-			gendernam.push(z + gioitinhone);
-		} else if (gioitinhone == 'FEMALE') {
-			gendernu.push(gioitinhone);
-		} else {
-			nope.push(nName);
-		}
-	}
-	var nam = gendernam.length;
-	var nu = gendernu.length;
-	let qtv = threadInfo.adminIDs.length;
-	let sl = threadInfo.messageCount;
-	let icon = threadInfo.emoji;
-	let threadName = threadInfo.threadName;
-	let id = threadInfo.threadID;
-	var listad = '';
-	var qtv2 = threadInfo.adminIDs;
-	for (let i = 0; i < qtv2.length; i++) {
-const infu = (await api.getUserInfo(qtv2[i].id));
-const name = infu[qtv2[i].id].name;
-		listad += '•' + name + '\n';
-	}
-	let sex = threadInfo.approvalMode;
-	var pd = sex == false ? 'Turn off' : sex == true ? 'Turn on' : 'Kh';
-	var pdd = sex == false ? '❎' : sex == true ? '✅' : '⭕';
-	 var callback = () =>
-				api.sendMessage(
-					{
-						body: `GC Name: ${threadName}\nGC ID: ${id}\n${pdd} Approve: ${pd}\nEmoji: ${icon}\n-Information:\nTotal ${threadMem} members\nMale ${nam} members \nFemale: ${nu} members\n\nWith ${qtv} Administrators include:\n${listad}\nTotal number of messages: ${sl} msgs.`,
-						attachment: fs.createReadStream(__dirname + '/cache/1.png')
-					},
-					event.threadID,
-					() => fs.unlinkSync(__dirname + '/cache/1.png'),
-					event.messageID
-				);
-			return request(encodeURI(`${threadInfo.imageSrc}`))
-				.pipe(fs.createWriteStream(__dirname + '/cache/1.png'))
-				.on('close', () => callback());
+    // CHANGE GROUP IMAGE
+    if (args[0] === "image") {
+        if (!event.messageReply || !event.messageReply.attachments || !event.messageReply.attachments.length)
+            return api.sendMessage("❌ Reply to an image to set it as group image.", event.threadID, event.messageID);
+        if (event.messageReply.attachments.length > 1)
+            return api.sendMessage("❌ Please reply to only one image.", event.threadID, event.messageID);
 
-	}	  
-}
+        const callback = () => {
+            api.changeGroupImage(fs.createReadStream(__dirname + "/cache/1.png"), event.threadID, () => fs.unlinkSync(__dirname + "/cache/1.png"));
+        };
+
+        return request(encodeURI(event.messageReply.attachments[0].url))
+            .pipe(fs.createWriteStream(__dirname + '/cache/1.png'))
+            .on('close', callback);
+    }
+
+    // GROUP INFO
+    if (args[0] === "info") {
+        const threadInfo = await api.getThreadInfo(event.threadID);
+
+        const totalMembers = threadInfo.participantIDs.length;
+        let maleCount = 0, femaleCount = 0, unknownCount = 0;
+
+        for (let userID in threadInfo.userInfo) {
+            const gender = threadInfo.userInfo[userID].gender;
+            if (gender === 'MALE') maleCount++;
+            else if (gender === 'FEMALE') femaleCount++;
+            else unknownCount++;
+        }
+
+        const adminList = [];
+        for (let i of threadInfo.adminIDs) {
+            const userInfo = await api.getUserInfo(i.id);
+            adminList.push(userInfo[i.id].name);
+        }
+
+        const approvalStatus = threadInfo.approvalMode ? '✅ On' : '❎ Off';
+
+        const callback = () => {
+            api.sendMessage({
+                body: `📌 GC Name: ${threadInfo.threadName}\n🆔 GC ID: ${threadInfo.threadID}\n✅ Approval: ${approvalStatus}\n😀 Emoji: ${threadInfo.emoji}\n\n👥 Members: ${totalMembers}\n♂️ Male: ${maleCount}\n♀️ Female: ${femaleCount}\n❓ Unknown: ${unknownCount}\n\n🛡️ Admins (${adminList.length}):\n• ${adminList.join('\n• ')}\n\n✉️ Total messages: ${threadInfo.messageCount}`,
+                attachment: fs.createReadStream(__dirname + '/cache/1.png')
+            }, event.threadID, () => fs.unlinkSync(__dirname + '/cache/1.png'), event.messageID);
+        };
+
+        return request(encodeURI(threadInfo.imageSrc))
+            .pipe(fs.createWriteStream(__dirname + '/cache/1.png'))
+            .on('close', callback);
+    }
+};
