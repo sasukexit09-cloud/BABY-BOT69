@@ -1,5 +1,5 @@
 /** I am doing this coding with a lot of difficulty, please don't post it yourself¯\_(ツ)_/¯ **/
-module.exports.config = {
+module.exports.onStart = {
   name: "sura",
   version: "1.0.0",
   hasPermssion: 0,
