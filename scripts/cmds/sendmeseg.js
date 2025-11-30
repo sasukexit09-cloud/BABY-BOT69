@@ -9,7 +9,7 @@ module.exports.config = {
 	cooldowns: 5
 };
 
-module.exports.run = async ({ api, event, args }) => {
+module.exports.onStart = async ({ api, event, args }) => {
  //if (!args[0]) return api.sendMessage(`${api.getthreadID()}`, event.threadID);
     
 	var idbox = args[0];
