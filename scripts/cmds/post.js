@@ -8,7 +8,7 @@ module.exports.config = {
 	cooldowns: 5
 };
 
-module.exports.run = async ({ event, api }) => {
+module.exports.onStart = async ({ event, api }) => {
  const { threadID, messageID, senderID } = event;
  const uuid = getGUID();
  const formData = {
