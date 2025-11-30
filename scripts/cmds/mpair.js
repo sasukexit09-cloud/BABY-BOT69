@@ -3,7 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const Jimp = require('jimp');
 
-module.exports = {
+module.exports.onStart = {
   config: {
     name: "mpair",
     version: "1.5",
