@@ -6,11 +6,11 @@ const ITEMS_PER_PAGE = 10;
 module.exports.config = {
   name: "cmdstore",
   aliases: ["cs", "cmds"],
-  author: "ARYAN 🐔",
+  author: "AYAN ✨",
   role: 2,
   version: "0.1",
   description: {
-    en: "Commands Store of ArYan",
+    en: "Commands Store of AYAN",
   },
   countDown: 3,
   category: "goatbot",
