@@ -6,7 +6,7 @@ module.exports = {
     name: "songname",
     aliases: ["songname", "song"],
     version: "1.0",
-    author: "Tarek",
+    author: "Ayan",
     countDown: 5,
     role: 0,
     shortDescription: "Detect song name from audio/video",
