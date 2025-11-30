@@ -23,44 +23,38 @@ module.exports.run = async function({ api, event, args }) {
 
     if (action === "me") action = "add";
 
-    if (!["add", "remove"].includes(action)) 
-      return api.sendMessage("🌸 Usage : boxadmin me | boxadmin add/remove @mention | reply", threadID, event.messageID);
+    if (!["add", "remove"].includes(action)) {
+      return api.sendMessage("🌸 Usage: boxadmin me | boxadmin add/remove @mention | reply", threadID, event.messageID);
+    }
 
     let uid;
-    let targetName;
-
-    if (args[0]?.toLowerCase() === "me") {
+    if (args[0]?.toLowerCase() === "me" || args[1]?.toLowerCase() === "me") {
       uid = event.senderID;
     } else if (event.mentions && Object.keys(event.mentions).length > 0) {
       uid = Object.keys(event.mentions)[0];
     } else if (event.type === "message_reply" && event.messageReply) {
       uid = event.messageReply.senderID;
-    } else if (args[1]?.toLowerCase() === "me") {
-      uid = event.senderID;
     } else {
-      return api.sendMessage("🌸 Usage : boxadmin me | boxadmin add/remove @mention | reply", threadID, event.messageID);
+      return api.sendMessage("🌸 Usage: boxadmin me | boxadmin add/remove @mention | reply", threadID, event.messageID);
     }
 
     const userInfo = await api.getUserInfo([uid, event.senderID]);
-    
     const senderName = cleanName(userInfo[event.senderID]?.name) || "আপনি";
-    
+    let targetName = uid === event.senderID ? senderName : cleanName(userInfo[uid]?.name) || "User";
+
     if (event.mentions && Object.keys(event.mentions).length > 0) {
       targetName = cleanName(Object.values(event.mentions)[0]);
     } else if (event.type === "message_reply" && event.messageReply) {
-      targetName = cleanName(event.messageReply.senderName) || cleanName(userInfo[uid]?.name);
-    } else {
-      targetName = cleanName(userInfo[uid]?.name);
+      targetName = cleanName(event.messageReply.senderName) || targetName;
     }
-    
-    if (!targetName) targetName = "User";
 
     const threadInfo = await api.getThreadInfo(threadID);
     const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
     const targetIsAdmin = threadInfo.adminIDs.some(admin => admin.id == uid);
 
-    if (!botIsAdmin && uid !== event.senderID) 
-      return api.sendMessage("এই কমান্ডটি Usage  করার জন্য আগে আমাকে গ্রুপের এডমিন দিতে হবে 🌺", threadID, event.messageID);
+    if (!botIsAdmin && uid !== event.senderID) {
+      return api.sendMessage("এই কমান্ডটি Usage করার জন্য আগে আমাকে গ্রুপের এডমিন দিতে হবে 🌺", threadID, event.messageID);
+    }
 
     if (action === "add") {
       if (targetIsAdmin) 
@@ -78,12 +72,13 @@ module.exports.run = async function({ api, event, args }) {
 
       await api.changeAdminStatus(threadID, uid, false);
       if (uid === event.senderID) 
-        return api.sendMessage(` ${senderName} নিজেকে এডমিন থেকে রিমুভ করেছে! 🐸`, threadID, event.messageID);
+        return api.sendMessage(`${senderName} নিজেকে এডমিন থেকে রিমুভ করেছে! 🐸`, threadID, event.messageID);
       else 
-        return api.sendMessage(` ${targetName} কে এডমিন থেকে রিমুভ করেছে! 🤣`, threadID, event.messageID);
+        return api.sendMessage(`${targetName} কে এডমিন থেকে রিমুভ করেছে! 🤣`, threadID, event.messageID);
     }
 
-  } catch (e) {
-    return api.sendMessage("⚠️ Error: " + e.message, threadID, event.messageID);
+  } catch (error) {
+    console.error("Boxadmin Error:", error);
+    return api.sendMessage("⚠️ Error: " + error.message, threadID, event.messageID);
   }
 };
