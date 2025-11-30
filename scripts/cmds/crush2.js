@@ -15,7 +15,7 @@ module.exports.config = {
   }
 };
 
-module.exports.onLoad = async () => {
+module.exports.onStart = async () => {
   const { resolve } = global.nodemodule["path"];
   const { existsSync, mkdirSync } = global.nodemodule["fs-extra"];
   const { downloadFile } = global.utils;
