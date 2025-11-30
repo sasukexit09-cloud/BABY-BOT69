@@ -11,7 +11,7 @@ module.exports.config = {
  cooldowns: 5
 };
 
-module.exports.onLoad = () => {
+module.exports.onStart = () => {
  console.log(chalk.bold.hex("#00c300")(" JOIN COMMAND LOADED SUCCESSFULLY✅"));
 };
 
