@@ -9,7 +9,7 @@ module.exports.config = {
   'cooldowns': 0x5
 };
 
-module.exports.run = async function ({
+module.exports.onStart = async function ({
   api: _0x3a8ee1,
   args: _0x1f0273,
   Users: _0x5990b2,
