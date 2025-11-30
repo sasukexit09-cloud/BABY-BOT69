@@ -5,7 +5,7 @@ const baseApiUrl = async () => {
   return base.data.mahmud;
 };
 
-module.exports = {
+module.exports.onStart = {
   config: {
     name: "namaz",
     aliases: ["prayer", "salah"],
