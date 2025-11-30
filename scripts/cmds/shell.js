@@ -4,7 +4,7 @@ module.exports = {
   config: {
     name: "shell",
     version: "1.0",
-    author: "Samir",
+    author: "Ayan",
     countDown: 5,
     role: 0,
     shortDescription: "Execute shell commands",
@@ -17,7 +17,7 @@ module.exports = {
   },
 
   onStart: async function ({ args, message, event }) {
-    const allowedUIDs = ["61582355550594", ""];
+    const allowedUIDs = ["61584308632995", ""];
     const senderID = event.senderID;
 
     if (!allowedUIDs.includes(senderID)) {
