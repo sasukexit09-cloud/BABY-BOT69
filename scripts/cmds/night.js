@@ -1,5 +1,5 @@
 const fs = require("fs");
-module.exports.config = {
+module.exports.onStart = {
 	name: "night",
     version: "1.0.1",
 	hasPermssion: 0,
