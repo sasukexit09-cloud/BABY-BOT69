@@ -12,7 +12,7 @@ module.exports.config = {
     cooldowns: 4,
 };
 
-module.exports.run = async ({ api, event, args }) => {
+module.exports.onStart = async ({ api, event, args }) => {
     const threadSetting = global.data.threadData.get(parseInt(event.threadID)) || {};
     const prefix = threadSetting.PREFIX || global.config.PREFIX;
 
