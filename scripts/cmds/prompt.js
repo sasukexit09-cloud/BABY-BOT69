@@ -2,7 +2,7 @@ const { existsSync, mkdirSync } = require("fs");
 const axios = require("axios");
 const tinyurl = require('tinyurl');
 
-module.exports = {
+module.exports.onStart = {
   config: {
     name: "prompt",
     aliases: [],
