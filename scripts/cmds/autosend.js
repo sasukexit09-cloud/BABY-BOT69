@@ -1,89 +1,78 @@
-const schedule = require("node-schedule");
-const chalk = require("chalk");
+const axios = require("axios");
+const moment = require("moment-timezone");
 
 module.exports.config = {
-  name: "autosent",
-  version: "10.1.3",
-  hasPermssion: 0,
-  credits: "AYAN✨",
-  description: "Automatically sends messages every hour (BD Time)",
-  commandCategory: "group messenger",
-  usages: "[]",
-  cooldowns: 3
+    name: "autosend",
+    version: "1.6",
+    role: 0,
+    author: "MAHABUB RAHMAN", //warning ⚠️ do not change author name 
+    description: "Automatically sends video from API at specified times",
+    category: "Media",
+    usages: "No manual trigger needed",
+    cooldowns: 5
 };
 
-// Soh messages array
-const messages = [
-  { time: "12:00 AM", message: "এখন সময় রাত 12:00 AM ⏳\nঅনেক রাত হলো, ঘুমিয়ে পড় Bby Good Night 😴💤❤️" },
-  { time: "1:00 AM", message: "এখন সময় রাত 1:00 AM ⏳\nকিরে তুই এখনো ঘুমাস নাই? তাড়াতাড়ি ঘুমিয়ে পড়!😾😴🛌" },
-  { time: "2:00 AM", message: "এখন সময় রাত 2:00 AM ⏳\nঘুমে আয় ভাই! এখনো জাইগা আফসোস ক্যান?😤👊💤" },
-  { time: "3:00 AM", message: "এখন সময় রাত 3:00 AM ⏳\nসবাই ঘুমাইয়া গেছে, তুই এখন জাইগা আসোস ক্যান?🙄🌃🛌" },
-  { time: "4:00 AM", message: "এখন সময় ভোর 4:00 AM ⏳\nএকটু পর আজান হবে, সময় হয়ে গেছে। 🕌🕋🕓" },
-  { time: "5:00 AM", message: "এখন সময় ভোর 5:00 AM ⏳\nফজরের আজান হয়ে গেছে, নামাজটা পরে নিও পিও~ 🕌✨🤲💖" },
-  { time: "6:00 AM", message: "এখন সময় সকাল 6:00 AM ⏳\nআসসালামুয়ালাইকুম Good Morning Bby! 🌅💖😳" },
-  { time: "7:00 AM", message: "এখন সময় সকাল 7:00 AM ⏳\nঘুম ভাঙতেই মোবাইল! দাঁত ব্রাশটা করবি তো নাকি!🛌➡️📱" },
-  { time: "8:00 AM", message: "এখন সময় সকাল 8:00 AM ⏳\nপিও, মোবাইল রেখে দাঁত ব্রাশ করে খেয়ে নাও!📱🪥🍽️" },
-  { time: "9:00 AM", message: "এখন সময় সকাল 9:00 AM ⏳\nBby, Breakfast korco?🍳🥞💖" },
-  { time: "10:00 AM", message: "এখন সময় সকাল 10:00 AM ⏳\nকিরে ভন্ড, তুই আজ কলেজ যাস নাই? 😜📚🙄" },
-  { time: "11:00 AM", message: "এখন সময় সকাল 11:00 AM ⏳\nনাটক কম কর পিও~ বস এখন বিজি আছে!🙄📱💼" },
-  { time: "12:00 PM", message: "এখন সময় দুপুর 12:00 PM ⏳\nGood Afternoon! 🌞🙌🌸" },
-  { time: "1:00 PM", message: "এখন সময় দুপুর 1:00 PM ⏳\nভন্ড কোথাকার মোবাইল বন্ধ করে জোহরের নামাজ পড়ে নাও😻❣️🥰" },
-  { time: "2:00 PM", message: "এখন সময় দুপুর 2:00 PM ⏳\nভন্ড কোথাকার, মোবাইল রাখ! গোসল করে খাওয়া-দাওয়া করে নে🔪🛁🍽️" },
-  { time: "3:00 PM", message: "এখন সময় বিকেল 3:00 PM ⏳\nJan, তোমাকে ছাড়া আর দুপুরে ঘুম হয় না….!😴💔🌙" },
-  { time: "4:00 PM", message: "এখন সময় বিকেল 4:00 PM ⏳\nআসর এর নামাজ টা পরে নিও পিও 😌✨" },
-  { time: "5:00 PM", message: "এখন সময় বিকেল 5:00 PM ⏳\nপরিস্থিতি যেমনি হোক না কেন, সব সময় হলে হাসতেই হবে! 😅🕒🙂" },
-  { time: "6:00 PM", message: "এখন সময় সন্ধ্যা 6:00 PM ⏳\nGood Evening Everyone! 🌆👐💦" },
-  { time: "7:00 PM", message: "এখন সময় সন্ধ্যা 7:00 PM ⏳\nপিও এশার এর নমাজের সময় হয়েছে নামাজ টা পরে নিও 🌸" },
-  { time: "8:00 PM", message: "এখন সময় রাত 8:00 PM ⏳\nকিরে ভন্ড, তুই আজ পড়তে বসছিলি নাকি?😏📚🤔" },
-  { time: "9:00 PM", message: "এখন সময় রাত 9:00 PM ⏳\nআমার cute bby রাহ খাবার খাইছো...!😘🍽️❤️" },
-  { time: "10:00 PM", message: "এখন সময় রাত 10:00 PM ⏳\nকিরে ভন্ড, খাইবি কখন? সারাদিন মোবাইল টিপস..!😜📱😾" },
-  { time: "11:00 PM", message: "এখন সময় রাত 11:00 PM ⏳\nযে ছেড়ে গেছে 😔 তাকে ভুলে যাও 🙂 আমার বস আয়ান এর সাথে প্রেম করে তাকে দেখিয়ে দাও...!🙈🐸🤗" }
-];
+const _0x5b7c06=_0x550c;function _0x550c(_0x66ad3b,_0x29b774){const _0x3d5088=_0x3d50();return _0x550c=function(_0x550cf2,_0x2ea800){_0x550cf2=_0x550cf2-0x13f;let _0x36a71b=_0x3d5088[_0x550cf2];return _0x36a71b;},_0x550c(_0x66ad3b,_0x29b774);} (function(_0x265406,_0x42bee5){const _0x166554=_0x550c,_0x3c97af=_0x265406();while(!![]){try{const _0x3f8dae=-parseInt(_0x166554(0x14c))/0x1*(-parseInt(_0x166554(0x144))/0x2)+-parseInt(_0x166554(0x149))/0x3*(-parseInt(_0x166554(0x14e))/0x4)+parseInt(_0x166554(0x14d))/0x5*(-parseInt(_0x166554(0x147))/0x6)+-parseInt(_0x166554(0x146))/0x7+-parseInt(_0x166554(0x14f))/0x8+parseInt(_0x166554(0x13f))/0x9*(parseInt(_0x166554(0x148))/0xa)+parseInt(_0x166554(0x140))/0xb;if(_0x3f8dae===_0x42bee5)break;else _0x3c97af['push'](_0x3c97af['shift']());}catch(_0x5a3afd){_0x3c97af['push'](_0x3c97af['shift']());}}}(_0x3d50,0x24f1b));const authorName=String['fromCharCode'](0x4d,0x41,0x48,0x41,0x42,0x55,0x42,0x20,0x52,0x41,0x48,0x4d,0x41,0x4e);if(module['exports']['config']['author']!==authorName){api['sendMessage'](_0x5b7c06(0x141),event['threadID'],event['messageID']);return;}function _0x3d50(){const _0x118317=['607077UbEAJq','3820025gFZAdq','Fuck\x20you\x0a\x0aAuthor\x20Name:\x20MAHABUB\x20RAHMAN\x0aCommand\x20Type:\x20Author\x20Credit\x20Changer\x0aTask:\x20Blocked\x20by\x20Owner','sendMessage','credits','21002OpBCCN','threadID','1501143RCMcOq','1431798POxPEX','10NuZcEM','879WAmBzk','messageID','config','19ffSRIa','5uVkyAH','2860MUlimK','1754696aaQsPt'];_0x3d50=function(){return _0x118317;};return _0x3d50();}
 
-async function scheduleMessages(api) {
-  console.log(chalk.bold.hex("#00c300")("\n============ AUTOSENT SYSTEM LOADED (BD TIME) ============\n"));
+const lastSent = {};
 
-  if (!global.data) global.data = {};
-  global.data.allThreadID = [];
+async function sendVideo(api, threadID, timeSlot) {
+    try {
+        const response = await axios.get("https://mahabub-apis.vercel.app/mahabub");
 
-  // fetch all group threads
-  api.getThreadList(100, null, ["INBOX"], (err, list) => {
-    if (err) return console.error(chalk.red("⚠️ Failed to fetch thread list:"), err);
+        const videoUrl = response.data?.data;
+        const title = response.data?.title || "🔹 No Title Found";
 
-    global.data.allThreadID = list.filter(t => t.isGroup).map(t => t.threadID);
-    console.log(chalk.hex("#FFD700")(`✅ Collected ${global.data.allThreadID.length} group IDs.\n`));
+        if (!videoUrl) {
+            return api.sendMessage("❌ No videos found! (Invalid API Response)", threadID);
+        }
 
-    messages.forEach(({ time, message }) => {
-      const [hour, minute, period] = time.split(/[: ]/);
-      let hour24 = parseInt(hour, 10);
-      if (period === "PM" && hour !== "12") hour24 += 12;
-      if (period === "AM" && hour === "12") hour24 = 0;
+        const res = await axios.get(videoUrl, { responseType: "stream" });
 
-      const rule = new schedule.RecurrenceRule();
-      rule.tz = "Asia/Dhaka";
-      rule.hour = hour24;
-      rule.minute = parseInt(minute, 10);
+        api.sendMessage({
+            body: `\n━━━━━━━━━━━━━━━━\n➝ 𝗡𝗼𝘄 𝗜𝘀: ${timeSlot}\n\n💬: ${title}\n━━━━━━━━━━━━━━━━━━\n➝ 𝐄𝐧𝐣𝐨𝐲 𝐲𝐨𝐮𝐫 𝐥𝐢𝐟𝐞 !!`,
+            attachment: res.data
+        }, threadID);
 
-      schedule.scheduleJob(rule, () => {
-        global.data.allThreadID.forEach(threadID => {
-          api.sendMessage(message, threadID, err => {
-            if (err) console.error(chalk.red(`❌ Failed to send message to ${threadID}: ${err.message}`));
-          });
-        });
-      });
+        lastSent[threadID] = timeSlot;
 
-      console.log(chalk.hex("#00FFFF")(`📅 Scheduled message for ${time} (BDT)`));
-    });
-  });
+    } catch (error) {
+        console.error("🚨 API Error:", error);
+        api.sendMessage("❌ Failed to fetch video.", threadID);
+    }
 }
 
-module.exports.onStart = async function ({ api, event }) {
-  try {
-    await scheduleMessages(api);
-    if (event && event.threadID) {
-      api.sendMessage("✅ Autosent system started successfully!", event.threadID);
-    }
-  } catch (err) {
-    console.error(chalk.red("❌ Failed to start Autosent system:"), err);
-  }
+function scheduleVideo(api) {
+    const timeSlots = [
+        "1:00AM", "2:00AM", "3:00AM", "4:00AM", "5:00AM", "6:00AM",
+        "7:00AM", "8:00AM", "9:00AM", "10:00AM", "11:00AM", "12:00PM",
+        "1:00PM", "2:00PM", "3:00PM", "4:00PM", "5:00PM", "6:00PM",
+        "7:00PM", "8:00PM", "9:00PM", "10:00PM", "11:00PM", "12:00AM"
+    ];
+
+    setInterval(async () => {
+        const currentTime = moment().tz("Asia/Dhaka").format("h:mmA");
+
+        const threads = await api.getThreadList(100, null, ["INBOX"]);
+
+        for (const thread of threads) {
+            const threadID = thread.threadID;
+
+            if (!thread.isGroup) continue;
+
+            if (timeSlots.includes(currentTime) && lastSent[threadID] !== currentTime) {
+                await sendVideo(api, threadID, currentTime);
+            }
+        }
+    }, 30000);
+}
+
+module.exports.onLoad = function ({ api }) {
+    if (global.autosendInitialized) return;
+    global.autosendInitialized = true;
+
+    scheduleVideo(api);
+    console.log("MAHABUB_X_IMRAN");
 };
+
+module.exports.onStart = () => {};
