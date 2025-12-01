@@ -53,7 +53,7 @@ module.exports = {
         `╭────֍  
 │ PREFIX : !
 │ OWNER : AYAN 🕷️
-│ CONTACT : https://www.facebook.com/Ayanokujo.69
+│ CONTACT : https://www.facebook.com/Ayanokujo.6969
 ╰──────────────֍
 
 ╭────֍
