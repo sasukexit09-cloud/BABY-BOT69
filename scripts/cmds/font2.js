@@ -11,7 +11,7 @@ module.exports.config = {
   version: "1.7",
   role: 0,
   countDowns: 5,
-  author: "MahMUD",
+  author: "AYAN",
   category: "general",
   guide: { en: "[number] [text] or list" }
 };
