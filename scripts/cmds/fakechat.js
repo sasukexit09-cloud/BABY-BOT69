@@ -1,201 +1,185 @@
-const { createCanvas, loadImage, registerFont } = require('canvas');
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
+const { createCanvas, loadImage, registerFont } = require("canvas");
+const fs = require("fs");
+const path = require("path");
+const axios = require("axios");
 
 module.exports = {
-    config: {
-        name: "fakechat",
-        aliases: ["fc"],
-        version: "1.6",
-        author: "🥵AYAN BBE🥵💋",
-        shortDescription: "Messenger dark chat with dynamic bubble",
-        longDescription: "Fully dynamic bubble size based on text length and lines",
-        category: "fun",
-        guide: "{p} fakechat uid | {text} or {p} fakechat @mention | {text} or reply to someone text by fakechat {text}"
-    },
+  config: {
+    name: "fakechat",
+    aliases: ["fc"],
+    version: "FINAL-ONLINE",
+    author: "🥵AYAN BBE🥵💋",
+    category: "fun",
+    guide: "Reply → {p}fc Hi | How are you?"
+  },
 
-    onStart: async function({ event, message, usersData, api, args }) {
-        const { senderID, type, messageReply, mentions } = event;
+  onStart: async function ({ event, message, api, args }) {
+    if (event.type !== "message_reply")
+      return message.reply("❌ Reply করে fc command দাও");
 
-        let uid;
-        let textSegments = args.slice(1).join(" ").split(" | ");
+    const uid = event.messageReply.senderID;
+    const texts = args.join(" ").split("|").map(t => t.trim());
 
-        if (mentions && Object.keys(mentions).length > 0) {
-            uid = Object.keys(mentions)[0];
-            textSegments = args.slice(2).join(" ").split(" | ");
-        } else if (/^\d+$/.test(args[0])) {
-            uid = args[0];
-        } else if (type === "message_reply") {
-            uid = messageReply.senderID;
-            textSegments = args.join(" ").split(" | ");
-        } else {
-            return message.reply("Please mention or provide a UID.");
+    try {
+      /* ===== USER INFO ===== */
+      const userInfo = await getUserInfo(api, uid);
+
+      /* ===== REAL FB AVATAR ===== */
+      const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
+      let avatarImg;
+      try {
+        avatarImg = await loadImage(avatarUrl);
+      } catch {
+        avatarImg = await loadImage("https://i.imgur.com/6VBx3io.png");
+      }
+
+      /* ===== FONT ===== */
+      const fontPath = path.join(__dirname, "MessengerFont.ttf");
+      if (!fs.existsSync(fontPath)) {
+        await downloadFile(
+          "https://drive.google.com/uc?export=download&id=1MYZkDHgHtGgyVEf2bFrOc0A-tlFvzYqL",
+          fontPath
+        );
+      }
+      registerFont(fontPath, { family: "Messenger" });
+
+      /* ===== CANVAS SETUP ===== */
+      const canvasWidth = 820;
+      const lineHeight = 28;
+      const bubblePadX = 18;
+      const bubblePadY = 14;
+      const gapY = 22;
+      let y = 90;
+
+      const tempCtx = createCanvas(1, 1).getContext("2d");
+      tempCtx.font = "24px Messenger";
+
+      const maxBubbleWidth = canvasWidth - 240;
+      const bubbles = [];
+
+      for (const text of texts) {
+        const lines = wrapText(tempCtx, text, maxBubbleWidth - bubblePadX * 2);
+        const textWidth = Math.max(...lines.map(l => tempCtx.measureText(l).width));
+        bubbles.push({
+          lines,
+          width: textWidth + bubblePadX * 2,
+          height: lines.length * lineHeight + bubblePadY * 2
+        });
+      }
+
+      const canvasHeight =
+        bubbles.reduce((s, b) => s + b.height + gapY, 0) + 140;
+
+      const canvas = createCanvas(canvasWidth, canvasHeight);
+      const ctx = canvas.getContext("2d");
+
+      /* ===== DARK MESSENGER BG ===== */
+      ctx.fillStyle = "#0f1115";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (const bubble of bubbles) {
+        /* name */
+        ctx.fillStyle = "#b0b3b8";
+        ctx.font = "16px Messenger";
+        ctx.fillText(userInfo.name.split(" ")[0], 92, y - 8);
+
+        /* bubble */
+        ctx.fillStyle = "#2a2d31";
+        roundRect(ctx, 92, y, bubble.width, bubble.height, 22);
+
+        /* text (perfect center) */
+        ctx.fillStyle = "#e4e6eb";
+        ctx.font = "24px Messenger";
+        ctx.textBaseline = "middle";
+
+        const totalTextHeight = bubble.lines.length * lineHeight;
+        let ty = y + bubble.height / 2 - totalTextHeight / 2 + lineHeight / 2;
+
+        for (const line of bubble.lines) {
+          ctx.fillText(line, 92 + bubblePadX, ty);
+          ty += lineHeight;
         }
 
-        try {
-            const userInfo = await getUserInfo(api, uid);
-            const senderInfo = await getUserInfo(api, senderID);
-            const avatarUrl = await usersData.getAvatarUrl(uid);
-            const senderAvatar = await usersData.getAvatarUrl(senderID);
+        /* avatar */
+        const avatarCenterY = y + bubble.height / 2;
 
-            const canvasWidth = 800;
-            const lineHeight = 30;
-            const bubblePaddingX = 20;
-            const bubblePaddingY = 15;
-            let currentY = 80;
-            const chatBubbles = [];
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(55, avatarCenterY, 22, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(avatarImg, 33, avatarCenterY - 22, 44, 44);
+        ctx.restore();
 
-            // Load font
-            const fontPath = path.join(__dirname, 'MessengerFont.ttf');
-            if (!fs.existsSync(fontPath)) {
-                const fontUrl = 'https://drive.google.com/uc?export=download&id=1MYZkDHgHtGgyVEf2bFrOc0A-tlFvzYqL';
-                await downloadFile(fontUrl, fontPath);
-            }
-            registerFont(fontPath, { family: 'Messenger' });
+        /* active dot */
+        ctx.beginPath();
+        ctx.arc(68, avatarCenterY + 14, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#31a24c";
+        ctx.fill();
 
-            const ctxTemp = createCanvas(1,1).getContext('2d');
-            ctxTemp.font = `25px Messenger`;
-            const maxTextWidth = canvasWidth - 200;
+        ctx.beginPath();
+        ctx.arc(68, avatarCenterY + 14, 7.5, 0, Math.PI * 2);
+        ctx.strokeStyle = "#0f1115";
+        ctx.lineWidth = 3;
+        ctx.stroke();
 
-            // Prepare chat bubbles
-            for (let text of textSegments) {
-                const lines = wrapText(ctxTemp, text, maxTextWidth - bubblePaddingX*2);
-                let textWidth = Math.max(...lines.map(line => ctxTemp.measureText(line).width));
-                const bubbleWidth = Math.min(maxTextWidth, Math.max(textWidth + bubblePaddingX*2, 60)); // dynamic width
-                const bubbleHeight = lines.length * lineHeight + bubblePaddingY*2; // dynamic height
-                chatBubbles.push({ text, lines, width: bubbleWidth, height: bubbleHeight });
-            }
+        y += bubble.height + gapY;
+      }
 
-            // calculate canvas height
-            let totalHeight = chatBubbles.reduce((sum, b) => sum + b.height + 50, 0) + 50;
-            const canvas = createCanvas(canvasWidth, totalHeight);
-            const ctx = canvas.getContext('2d');
+      /* ===== SEND ===== */
+      const file = path.join(__dirname, `fc_${Date.now()}.png`);
+      fs.writeFileSync(file, canvas.toBuffer());
 
-            // Dark theme
-            const backgroundColor = '#2b2b2b';
-            const leftBubbleColor = '#3a3a3a';
-            const rightBubbleColor = '#056fff';
-            const leftTextColor = '#fff';
-            const rightTextColor = '#fff';
+      message.reply(
+        { attachment: fs.createReadStream(file) },
+        () => fs.unlinkSync(file)
+      );
 
-            ctx.fillStyle = backgroundColor;
-            ctx.fillRect(0,0,canvas.width,canvas.height);
-
-            let isLeft = true;
-            for (let bubble of chatBubbles) {
-                const bubbleX = isLeft ? 100 : canvasWidth - bubble.width - 100;
-                const avatarImg = isLeft ? await loadImage(avatarUrl) : await loadImage(senderAvatar);
-                const avatarSize = 50;
-
-                // Draw sender name
-                const name = isLeft ? userInfo.name.split(' ')[0] : senderInfo.name.split(' ')[0];
-                ctx.fillStyle = isLeft ? leftTextColor : rightTextColor;
-                ctx.font = `20px Messenger`;
-                ctx.textBaseline = 'bottom';
-                ctx.fillText(name, isLeft ? 40 : canvasWidth - 40 - ctx.measureText(name).width, currentY - 10);
-
-                // Bubble with shadow
-                ctx.fillStyle = isLeft ? leftBubbleColor : rightBubbleColor;
-                ctx.shadowColor = "rgba(0,0,0,0.2)";
-                ctx.shadowBlur = 4;
-                roundRect(ctx, bubbleX, currentY, bubble.width, bubble.height, 20, true, false);
-
-                // Vertical center text
-                ctx.fillStyle = isLeft ? leftTextColor : rightTextColor;
-                ctx.font = `25px Messenger`;
-                ctx.textBaseline = 'middle';
-                let totalTextHeight = bubble.lines.length * lineHeight;
-                let textY = currentY + (bubble.height - totalTextHeight)/2 + lineHeight/2;
-                for (let line of bubble.lines) {
-                    ctx.fillText(line, bubbleX + bubblePaddingX, textY);
-                    textY += lineHeight;
-                }
-
-                // Avatar
-                const avatarX = isLeft ? 40 : canvasWidth - 40 - avatarSize;
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(avatarX + avatarSize/2, currentY + bubble.height/2, avatarSize/2, 0, Math.PI*2);
-                ctx.closePath();
-                ctx.clip();
-                ctx.drawImage(avatarImg, avatarX, currentY + (bubble.height - avatarSize)/2, avatarSize, avatarSize);
-                ctx.restore();
-
-                // Seen tick for right messages
-                if(!isLeft){
-                    ctx.fillStyle = '#00a2ff';
-                    ctx.font = '20px Messenger';
-                    ctx.textBaseline = 'bottom';
-                    ctx.fillText('✔', bubbleX + bubble.width + 5, currentY + bubble.height - 5);
-                }
-
-                currentY += bubble.height + 50;
-                isLeft = !isLeft;
-            }
-
-            // Save output
-            const outputPath = path.join(__dirname, `fakechat_${Date.now()}.png`);
-            const out = fs.createWriteStream(outputPath);
-            const stream = canvas.createPNGStream();
-            stream.pipe(out);
-            out.on('finish', () => {
-                message.reply({
-                    body: '',
-                    attachment: fs.createReadStream(outputPath)
-                }, () => fs.unlinkSync(outputPath));
-            });
-
-        } catch (err) {
-            console.error(err);
-            message.reply('❌ Failed to create Messenger style fake chat.');
-        }
+    } catch (e) {
+      console.error(e);
+      message.reply("❌ Fake Messenger generate failed");
     }
+  }
 };
 
-// Helpers
+/* ===== HELPERS ===== */
+
 function wrapText(ctx, text, maxWidth) {
-    const words = text.split(' ');
-    const lines = [];
-    let line = '';
-    for (let word of words) {
-        const testLine = line + (line ? ' ' : '') + word;
-        if (ctx.measureText(testLine).width > maxWidth) {
-            if(line) lines.push(line);
-            line = word;
-        } else line = testLine;
-    }
-    if(line) lines.push(line);
-    return lines;
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxWidth) {
+      lines.push(line);
+      line = w;
+    } else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
-function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-    if(typeof r === 'number') r={tl:r,tr:r,br:r,bl:r};
-    ctx.beginPath();
-    ctx.moveTo(x+r.tl, y);
-    ctx.lineTo(x+w-r.tr, y);
-    ctx.quadraticCurveTo(x+w, y, x+w, y+r.tr);
-    ctx.lineTo(x+w, y+h-r.br);
-    ctx.quadraticCurveTo(x+w, y+h, x+w-r.br, y+h);
-    ctx.lineTo(x+r.bl, y+h);
-    ctx.quadraticCurveTo(x, y+h, x, y+h-r.bl);
-    ctx.lineTo(x, y+r.tl);
-    ctx.quadraticCurveTo(x, y, x+r.tl, y);
-    ctx.closePath();
-    if(fill) ctx.fill();
-    if(stroke) ctx.stroke();
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  ctx.fill();
 }
 
-async function downloadFile(url, outputPath) {
-    const res = await axios.get(url, { responseType: 'arraybuffer' });
-    fs.writeFileSync(outputPath, res.data);
+async function downloadFile(url, p) {
+  const res = await axios.get(url, { responseType: "arraybuffer" });
+  fs.writeFileSync(p, res.data);
 }
 
-async function getUserInfo(api, uid) {
-    return new Promise((resolve, reject) => {
-        api.getUserInfo(uid, (err, ret) => {
-            if(err) return reject(err);
-            resolve(ret[uid]);
-        });
+function getUserInfo(api, uid) {
+  return new Promise((res, rej) => {
+    api.getUserInfo(uid, (e, d) => {
+      if (e) return rej(e);
+      res(d[uid]);
     });
+  });
 }
