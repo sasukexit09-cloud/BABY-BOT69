@@ -11,34 +11,36 @@ module.exports = {
   config: {
     name: "fakechat",
     aliases: ["fc"],
-    version: "FINAL-PAID",
+    version: "VIP-PAID",
     author: "🥵AYAN BBE🥵💋",
     category: "fun",
     guide: "Reply → {p}fc Hi | How are you?"
   },
 
-  onStart: async function ({ event, message, api, args, usersData }) {
+  isVIP: async function (userID, usersData) {
+    const data = await usersData.get(userID);
+    return data?.isVIP === true;
+  },
 
+  onStart: async function ({ event, message, api, args, usersData }) {
     if (event.type !== "message_reply")
       return message.reply("❌ Reply করে fc command দাও");
 
     const senderID = event.senderID;
     const isOwner = OWNER_UID.includes(senderID);
+    const vip = await this.isVIP(senderID, usersData);
 
     /* ===== BALANCE CHECK ===== */
-    if (!isOwner) {
+    if (!isOwner && !vip) {
       const userData = await usersData.get(senderID);
       const balance = userData?.money || 0;
 
-      if (balance < PRICE) {
+      if (balance < PRICE)
         return message.reply(
           `❌ এই command ব্যবহার করতে 200,000 balance লাগবে\n💰 তোমার balance: ${balance}`
         );
-      }
 
-      await usersData.set(senderID, {
-        money: balance - PRICE
-      });
+      await usersData.set(senderID, { money: balance - PRICE });
     }
 
     /* ===== MAIN CODE ===== */
@@ -158,9 +160,8 @@ module.exports = {
       const file = path.join(__dirname, `fc_${Date.now()}.png`);
       fs.writeFileSync(file, canvas.toBuffer());
 
-      message.reply(
-        { attachment: fs.createReadStream(file) },
-        () => fs.unlinkSync(file)
+      message.reply({ attachment: fs.createReadStream(file) }, () =>
+        fs.unlinkSync(file)
       );
 
     } catch (e) {
@@ -171,7 +172,6 @@ module.exports = {
 };
 
 /* ===== HELPERS ===== */
-
 function wrapText(ctx, text, maxWidth) {
   const words = text.split(" ");
   const lines = [];
