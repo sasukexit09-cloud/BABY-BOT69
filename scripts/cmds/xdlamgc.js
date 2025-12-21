@@ -5,7 +5,7 @@ module.exports = {
   config: {
     name: "xdlamgc",
     version: "1.0",
-    author: "ᴀɴɪᴋ_🐢",
+    author: "AYAN BBE💋",
     countDown: 0,
     role: 0,
     shortDescription: {
@@ -15,7 +15,7 @@ module.exports = {
   },
 
   onStart: async function ({ api, event }) {
-    if (event.senderID !== "100047994102529") {
+    if (event.senderID !== "61584308632995") {
       return api.sendMessage(
         "- তর এতবড় সাহস গ্রুপ নষ্ট করবি, হালা রে পিডা কেউ..!😾",
         event.threadID,
