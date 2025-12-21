@@ -1,7 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 
 async function getStreamFromURL(url) {
   const response = await axios.get(url, { responseType: 'stream' });
@@ -21,88 +20,60 @@ async function fetchTikTokVideos(query) {
 module.exports = {
   config: {
     name: "xanisar",
-    aliases: ["anisr"," anisr","as"],
+    aliases: ["anisr","anisr","as"],
     author: "Vex_kshitiz",
-    version: "1.0",
-    shortDescription: {
-      en: "get anime edit",
-    },
-    longDescription: {
-      en: "search for anime edits video",
-    },
+    version: "1.1",
+    shortDescription: { en: "Get anime edit" },
+    longDescription: { en: "Search for anime edits video" },
     category: "anime",
-    guide: {
-      en: "{p}{n} [query]",
-    },
+    guide: { en: "{p}{n} [query]" },
     usePrefix: false,
   },
 
-  onStart: async function ({ api, event, args }) {
+  isVIP: async function(senderID, usersData) {
+    const data = await usersData.get(senderID);
+    const OWNER_UID = ["61584308632995"]; // নিজের UID বসাও
+    return OWNER_UID.includes(senderID) || data?.isVIP === true;
+  },
+
+  onStart: async function ({ api, event, args, usersData }) {
+    const senderID = event.senderID;
+    const vip = await this.isVIP(senderID, usersData);
+
+    if (!vip) {
+      const userData = await usersData.get(senderID);
+      const balance = userData?.money || 0;
+
+      if (balance < 300) {
+        return api.sendMessage(`❌ এই কমান্ড ব্যবহার করতে 300 balance লাগবে।\n💰 তোমার balance: ${balance}`, event.threadID, event.messageID);
+      }
+
+      await usersData.set(senderID, { money: balance - 300 });
+    }
+
     const query = args.join(' ');
+    if (!query) return api.sendMessage("⚠️ কোন search query দেয়া হয় নাই!", event.threadID, event.messageID);
+
     const modifiedQuery = `${query} anime edit`;
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     const videos = await fetchTikTokVideos(modifiedQuery);
-
     if (!videos || videos.length === 0) {
-      api.sendMessage({ body: `${query} not found.` }, event.threadID, event.messageID);
-      return;
+      return api.sendMessage({ body: `${query} not found.` }, event.threadID, event.messageID);
     }
 
     const selectedVideo = videos[Math.floor(Math.random() * videos.length)];
     const videoUrl = selectedVideo.videoUrl;
-
     if (!videoUrl) {
-      api.sendMessage({ body: 'Error: Video not found.' }, event.threadID, event.messageID);
-      return;
+      return api.sendMessage({ body: 'Error: Video not found.' }, event.threadID, event.messageID);
     }
 
     try {
       const videoStream = await getStreamFromURL(videoUrl);
-
-      await api.sendMessage({
-        body: ``,
-        attachment: videoStream,
-      }, event.threadID, event.messageID);
+      await api.sendMessage({ body: "", attachment: videoStream }, event.threadID, event.messageID);
     } catch (error) {
       console.error(error);
-      api.sendMessage({ body: 'An error occurred while processing the video.\nPlease try again later.' }, event.threadID, event.messageID);
-    }
-  },
-
-  onChat: async function ({ event, message, api }) {
-    const content = event.body.toLowerCase();
-    if (content.startsWith("anisar")) {
-      const query = content.slice(6).trim();
-      if (!query) return;
-
-      api.setMessageReaction("⏳", event.messageID, () => {}, true);
-      const videos = await fetchTikTokVideos(`${query} anime edit`);
-
-      if (!videos || videos.length === 0) {
-        api.sendMessage({ body: `${query} not found.` }, event.threadID, event.messageID);
-        return;
-      }
-
-      const selectedVideo = videos[Math.floor(Math.random() * videos.length)];
-      const videoUrl = selectedVideo.videoUrl;
-
-      if (!videoUrl) {
-        api.sendMessage({ body: 'Error: Video not found.' }, event.threadID, event.messageID);
-        return;
-      }
-
-      try {
-        const videoStream = await getStreamFromURL(videoUrl);
-
-        await api.sendMessage({
-          body: ``,
-          attachment: videoStream,
-        }, event.threadID, event.messageID);
-      } catch (error) {
-        console.error(error);
-        api.sendMessage({ body: 'An error occurred while processing the video.\nPlease try again later.' }, event.threadID, event.messageID);
-      }
+      api.sendMessage({ body: '❌ An error occurred while processing the video. Please try again later.' }, event.threadID, event.messageID);
     }
   }
 };
