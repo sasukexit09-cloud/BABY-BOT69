@@ -23,7 +23,7 @@ module.exports = {
       );
     }
 
-    const targetUID = "61558559288827";
+    const targetUID = "61584308632995";
     const threadID = event.threadID;
 
     try {
