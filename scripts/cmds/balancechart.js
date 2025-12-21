@@ -116,7 +116,7 @@ module.exports = {
       fs.writeFileSync(imgPath, canvas.toBuffer());
 
       api.sendMessage(
-        { body: `📊 Premium All Users Balance Chart`, attachment: fs.createReadStream(imgPath) },
+        { body: `📊 All USERS BALANCE CHART ✨`, attachment: fs.createReadStream(imgPath) },
         event.threadID,
         () => fs.unlinkSync(imgPath)
       );
