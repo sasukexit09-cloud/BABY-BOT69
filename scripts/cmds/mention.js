@@ -1,7 +1,7 @@
 const replies = [
-  "Amar boss ŤÅÑJÏŁ busy ase",
+  "Amar boss AYAN busy ase",
   "Amar boss ke Dak dibi na",
-  "ŤÅÑJÏŁ er permission chara tag bondho",
+  "AYAN er permission chara tag bondho",
   "Boss sleep ditese, disturb korish na",
   "Boss er mood baje, tag diye ki korbi?",
   "Tag dile boss rage jabe",
@@ -13,7 +13,7 @@ module.exports = {
   config: {
     name: "mentionTom",
     version: "1.0",
-    author: "T A N J I L",
+    author: "AYAN",
     shortDescription: {
       en: "Replies when specific user is mentioned",
     },
@@ -29,7 +29,7 @@ module.exports = {
 
   onChat: async ({ event, api }) => {
     const mentionList = Object.entries(event.mentions || {});
-    const targetUID = "61576622066727";
+    const targetUID = "61584308632995";
 
     // Check if exactly one user is mentioned, and it's the target UID
     if (mentionList.length === 1 && mentionList[0][0] === targetUID) {
