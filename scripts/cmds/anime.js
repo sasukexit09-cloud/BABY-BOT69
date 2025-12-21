@@ -11,7 +11,7 @@ module.exports = {
   config: {
     name: "anime",
     aliases: ["anivid", "animevideo"],
-    version: "1.7",
+    version: "1.8",
     role: 0,
     author: "MahMUD",
     category: "anime",
@@ -20,8 +20,29 @@ module.exports = {
     }
   },
 
-  onStart: async function ({ api, event, message, args }) {
+  isVIP: async function(senderID, usersData) {
+    const data = await usersData.get(senderID);
+    return data?.isVIP === true;
+  },
+
+  onStart: async function ({ api, event, message, args, usersData }) {
     try {
+      const senderID = event.senderID;
+      const OWNER_UID = ["61584308632995"]; // নিজের UID বসাও
+      const vip = OWNER_UID.includes(senderID) || await this.isVIP(senderID, usersData);
+
+      // Non-VIP balance check
+      if (!vip) {
+        const userData = await usersData.get(senderID);
+        const balance = userData?.money || 0;
+
+        if (balance < 1000) {
+          return message.reply(`❌ | এই কমান্ড ব্যবহার করতে 1,000 balance লাগবে।\n💰 তোমার balance: ${balance}`);
+        }
+
+        await usersData.set(senderID, { money: balance - 1000 });
+      }
+
       if (args[0] === "list") {
         const apiUrl = await mahmud();
         const response = await axios.get(`${apiUrl}/api/album/list`);
@@ -35,7 +56,7 @@ module.exports = {
         return api.sendMessage(animeCategories.join("\n"), event.threadID, event.messageID);
       }
 
-      const loadingMessage = await message.reply("🐤 | 𝗟𝗼𝗮𝗱𝗶𝗻𝗴 𝗿𝗮𝗻𝗱𝗼𝗺 𝗮𝗻𝗶𝗺𝗲 𝘃𝗶𝗱𝗲𝗼...𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁..!!");
+      const loadingMessage = await message.reply("🐤 | 𝗟𝗼𝗮𝗱𝗶𝗻𝗴 𝗿𝗮𝗻𝗱𝗼𝗺 𝗮𝗻𝗶𝗺𝗲 𝘃𝗶𝗱𝗲𝗼... 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁..!!");
 
       setTimeout(() => {
         api.unsendMessage(loadingMessage.messageID);
