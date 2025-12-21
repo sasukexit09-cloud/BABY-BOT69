@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "slot",
     version: "2.1",
-    author: "T A N J I L 🎀",
+    author: "AYAN BBE💋",
     shortDescription: { en: "Stylish slot machine game" },
     longDescription: { en: "Slot machine game with emoji rarity and beautiful design." },
     category: "Game",
