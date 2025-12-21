@@ -7,14 +7,24 @@ module.exports = {
   config: {
     name: "fingering",
     aliases: ["fg"],
-    version: "1.1",
+    version: "1.2",
     author: "Jun",
     countDown: 5,
-    role: 2,
-    shortDescription: "fingering",
-    longDescription: "",
+    role: 0, // role 0 রাখি, VIP check আমরা নিজে করবো
+    shortDescription: "fingering (VIP only)",
+    longDescription: "18+ fingering image (VIP users only)",
     category: "18+",
     guide: "{pn}"
+  },
+
+  // 🔐 VIP auto detect
+  isVIP: async function (userID, usersData) {
+    try {
+      const data = await usersData.get(userID);
+      return data?.isVIP === true;
+    } catch (e) {
+      return false;
+    }
   },
 
   onLoad: async function () {
@@ -42,14 +52,13 @@ module.exports = {
   makeImage: async function ({ one, two }) {
     const templatePath = path.resolve(__dirname, "fingeringv2.png");
     if (!fs.existsSync(templatePath)) {
-      throw new Error("❌ Template image fingeringv2.png not found!");
+      throw new Error("❌ Template image not found!");
     }
 
     const pathImg = path.resolve(__dirname, `fingering_${one}_${two}.png`);
     const avatarOne = path.resolve(__dirname, `avt_${one}.png`);
     const avatarTwo = path.resolve(__dirname, `avt_${two}.png`);
 
-    // Download avatars
     const getAvatar = async (id, savePath) => {
       const data = (await axios.get(
         `https://graph.facebook.com/${id}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`,
@@ -61,39 +70,48 @@ module.exports = {
     await getAvatar(one, avatarOne);
     await getAvatar(two, avatarTwo);
 
-    // Circle crop avatars
     const circleOne = await jimp.read(await this.circle(avatarOne));
     const circleTwo = await jimp.read(await this.circle(avatarTwo));
 
-    // Base template
     const baseImg = await jimp.read(templatePath);
     baseImg.composite(circleOne.resize(70, 70), 180, 110);
     baseImg.composite(circleTwo.resize(70, 70), 120, 140);
 
-    // Save final image
     const raw = await baseImg.getBufferAsync("image/png");
     fs.writeFileSync(pathImg, raw);
 
-    // Cleanup
     fs.unlinkSync(avatarOne);
     fs.unlinkSync(avatarTwo);
 
     return pathImg;
   },
 
-  onStart: async function ({ event, api }) {
+  onStart: async function ({ event, api, usersData }) {
     const { threadID, messageID, senderID, messageReply } = event;
-    const mention = Object.keys(event.mentions);
 
+    // ❌ VIP check
+    const vip = await this.isVIP(senderID, usersData);
+    if (!vip) {
+      return api.sendMessage(
+        "🚫 এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।",
+        threadID,
+        messageID
+      );
+    }
+
+    const mention = Object.keys(event.mentions);
     let targetID;
 
-    // Priority: reply > mention
-    if (messageReply && messageReply.senderID) {
+    if (messageReply?.senderID) {
       targetID = messageReply.senderID;
     } else if (mention[0]) {
       targetID = mention[0];
     } else {
-      return api.sendMessage("⚠️ Please mention or reply to 1 person.", threadID, messageID);
+      return api.sendMessage(
+        "⚠️ Please mention or reply to 1 person.",
+        threadID,
+        messageID
+      );
     }
 
     const one = senderID;
@@ -102,7 +120,7 @@ module.exports = {
     this.makeImage({ one, two })
       .then(filePath => {
         api.sendMessage(
-          { body: "", attachment: fs.createReadStream(filePath) },
+          { attachment: fs.createReadStream(filePath) },
           threadID,
           () => fs.unlinkSync(filePath),
           messageID
