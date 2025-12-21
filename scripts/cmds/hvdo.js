@@ -1,68 +1,57 @@
 module.exports = {
   config: {
-    name: "hvd",
+    name: "hvd2",
     aliases: ["hvdo"],
-    version: "1.2",
+    version: "1.1",
     author: "kshitiz",
     countDown: 60,
-    role: 2, // VIP-only
-    shortDescription: "Get a random hentai video (VIP only)",
-    longDescription: "Sends a random 18+ hentai video. VIP users only.",
-    category: "18+",
+    role: 2,
+    shortDescription: "get hentai video",
+    longDescription: "it will send hentai video",
+    category: "𝟭𝟴+",
     guide: "{p}{n}hvdo",
   },
 
   sentVideos: [],
 
-  onStart: async function ({ api, event, message, usersData }) {
+  // Example VIP check function
+  isVIP: async function(userID) {
+    // এখানে তোমার database বা array থেকে VIP users চেক করো
+    const vipUsers = ["1234567890", "9876543210"]; // উদাহরণ
+    return vipUsers.includes(userID);
+  },
+
+  onStart: async function({ api, event, message }) {
     const senderID = event.senderID;
 
-    // Check VIP status
-    const senderData = await usersData.get(senderID);
-    if (!senderData || !senderData.isVIP) {
-      return message.reply("❌ This command is VIP-only. Upgrade to VIP to use it.");
+    // VIP চেক
+    if (!await this.isVIP(senderID)) {
+      return message.reply("❌ এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।");
     }
 
-    const loadingMessage = await message.reply({
-      body: "⏳ Loading random hentai video... Please wait!"
-    });
+    const loadingMessage = await message.reply({ body: "Loading random hentai... Please wait! upto 5min 🤡" });
+
+    const link = [ /* সব Google Drive লিঙ্ক */ ];
+
+    // Filter out already sent videos
+    let availableVideos = link.filter(video => !this.sentVideos.includes(video));
+    if (availableVideos.length === 0) {
+      this.sentVideos = [];
+      availableVideos = [...link];
+    }
+
+    const randomIndex = Math.floor(Math.random() * availableVideos.length);
+    const randomVideo = availableVideos[randomIndex];
+    this.sentVideos.push(randomVideo);
 
     try {
-      const link = [
-        // your Google Drive video links here...
-      ];
-
-      // Filter out already sent videos
-      let availableVideos = link.filter(video => !this.sentVideos.includes(video));
-
-      // Reset if all videos have been sent
-      if (availableVideos.length === 0) {
-        this.sentVideos = [];
-        availableVideos = [...link];
-      }
-
-      // Pick a random video
-      const randomIndex = Math.floor(Math.random() * availableVideos.length);
-      const randomVideo = availableVideos[randomIndex];
-
-      // Track sent video
-      this.sentVideos.push(randomVideo);
-
-      // Send video
-      await message.reply({
-        body: '🎬 Make sure to watch the full video! 🥵',
-        attachment: await global.utils.getStreamFromURL(randomVideo)
-      });
-
-      // Delete loading message
-      setTimeout(() => {
-        api.unsendMessage(loadingMessage.messageID).catch(() => {});
-      }, 3000);
-
+      const attachment = await global.utils.getStreamFromURL(randomVideo);
+      await message.reply({ body: 'make sure to watch full video🥵', attachment });
     } catch (err) {
-      console.error(err);
-      message.reply("❌ Failed to send video.");
-      api.unsendMessage(loadingMessage.messageID).catch(() => {});
+      await message.reply("⚠️ Failed to send video. Try again!");
     }
+
+    // Remove loading message after 30 seconds
+    setTimeout(() => api.unsendMessage(loadingMessage.messageID), 30000);
   }
 };
