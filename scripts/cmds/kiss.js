@@ -7,8 +7,8 @@ module.exports = {
   config: {
     name: "kiss",
     aliases: ["kiss"],
-    version: "2.1",
-    author: "Efat",
+    version: "2.2",
+    author: "AYAN💋",
     countDown: 5,
     role: 0,
     shortDescription: "Kiss with custom image",
@@ -18,43 +18,49 @@ module.exports = {
   },
 
   onStart: async function ({ api, message, event, usersData }) {
-    const mention = Object.keys(event.mentions);
-    if (mention.length === 0) return message.reply("Please mention someone to kiss.");
-
-    let senderID = event.senderID;
-    let mentionedID = mention[0];
-
     try {
-      // Get avatar URLs
-      const avatar1 = await usersData.getAvatarUrl(mentionedID); // left
-      const avatar2 = await usersData.getAvatarUrl(senderID);    // right
+      // VIP check (optional, enable if needed)
+      /*
+      const senderData = await usersData.get(event.senderID);
+      if (!senderData.vip) {
+        return message.reply("❌ This command is only available for VIP users.");
+      }
+      */
 
-      // Load avatars
-      const [avatarImg1, avatarImg2] = await Promise.all([
-        Canvas.loadImage(avatar1),
-        Canvas.loadImage(avatar2)
+      const mentionIDs = Object.keys(event.mentions);
+      if (mentionIDs.length === 0) return message.reply("Please mention someone to kiss.");
+
+      const senderID = event.senderID;
+      const mentionedID = mentionIDs[0];
+
+      // Fetch avatar URLs
+      const avatarURLs = await Promise.all([
+        usersData.getAvatarUrl(mentionedID), // mentioned user
+        usersData.getAvatarUrl(senderID)     // sender
       ]);
 
-      // Load and scale background
+      const [avatarImg1, avatarImg2] = await Promise.all([
+        Canvas.loadImage(avatarURLs[0]),
+        Canvas.loadImage(avatarURLs[1])
+      ]);
+
+      // Load background
       const bgUrl = "https://bit.ly/44bRRQG";
       const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
       const bg = await Canvas.loadImage(bgRes.data);
 
-      // Set new canvas size
       const canvasWidth = 900;
       const canvasHeight = 600;
-
       const canvas = Canvas.createCanvas(canvasWidth, canvasHeight);
       const ctx = canvas.getContext("2d");
 
-      // Draw scaled background
+      // Draw background
       ctx.drawImage(bg, 0, 0, canvasWidth, canvasHeight);
 
-      // Avatar settings
       const avatarSize = 230;
-      const y = canvasHeight / 2 - avatarSize - 90; // adjusted to stay upward // shifted upward
+      const y = canvasHeight / 2 - avatarSize - 90;
 
-      // Left (mentioned user)
+      // Draw left avatar (mentioned user)
       ctx.save();
       ctx.beginPath();
       ctx.arc(150 + avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
@@ -63,7 +69,7 @@ module.exports = {
       ctx.drawImage(avatarImg1, 150, y, avatarSize, avatarSize);
       ctx.restore();
 
-      // Right (sender)
+      // Draw right avatar (sender)
       ctx.save();
       ctx.beginPath();
       ctx.arc(canvasWidth - 150 - avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
@@ -72,19 +78,20 @@ module.exports = {
       ctx.drawImage(avatarImg2, canvasWidth - 150 - avatarSize, y, avatarSize, avatarSize);
       ctx.restore();
 
-      // Save and send image
-      const imgPath = path.join(__dirname, "tmp", `${senderID}_${mentionedID}_kiss.png`);
+      // Save image with unique filename
+      const imgPath = path.join(__dirname, "tmp", `kiss_${Date.now()}_${senderID}_${mentionedID}.png`);
       await fs.ensureDir(path.dirname(imgPath));
       fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
 
+      // Send image
       message.reply({
-        body: "Kisssssss!",
+        body: "💋 Kisssssss!",
         attachment: fs.createReadStream(imgPath)
       }, () => fs.unlinkSync(imgPath));
 
     } catch (err) {
       console.error("Error in kiss command:", err);
-      message.reply("There was an error creating the kiss image.");
+      message.reply("❌ There was an error creating the kiss image.");
     }
   }
 };
