@@ -6,22 +6,40 @@ const path = require("path");
 module.exports = {
   config: {
     name: "fk",
-    aliases: ["fk","fuck"],
-    version: "1.0",
+    aliases: ["fk", "fuck"],
+    version: "1.2",
     author: "Tarek",
     countDown: 5,
     role: 0,
-    shortDescription: "FK with custom image",
-    longDescription: "Generate a fk image with the mentioned user using a custom background. Male on right, female on left.",
+    shortDescription: "FK with custom image (VIP only, auto-detect)",
+    longDescription: "Generate a fk image with the mentioned user using a custom background. Male on right, female on left. Only VIP users can use.",
     category: "funny",
     guide: "{pn} @mention"
   },
 
+  // 🔐 VIP auto-detect
+  isVIP: async function(userID, usersData) {
+    // Example: usersData এ VIP flag থাকলে detect করা
+    try {
+      const data = await usersData.get(userID);
+      // ধরো data.isVIP true হলে VIP
+      return data.isVIP === true;
+    } catch (e) {
+      return false;
+    }
+  },
+
   onStart: async function ({ api, message, event, usersData }) {
+    const senderID = event.senderID;
+
+    // ❌ VIP না হলে block
+    if (!(await this.isVIP(senderID, usersData))) {
+      return message.reply("❌ এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।");
+    }
+
     const mention = Object.keys(event.mentions);
     if (mention.length === 0) return message.reply("Please mention someone to FK.");
 
-    let senderID = event.senderID;
     let mentionedID = mention[0];
 
     try {
@@ -49,7 +67,6 @@ module.exports = {
         Canvas.loadImage(avatarFemale)
       ]);
 
-      // ✅ Updated: Google Drive direct download link
       const bgUrl = "https://drive.google.com/uc?export=download&id=1QnmVdwJgqNcOIN1QTsxwB0dbWzTpD2BJ";
       const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
       const bg = await Canvas.loadImage(bgRes.data);
@@ -61,11 +78,10 @@ module.exports = {
 
       ctx.drawImage(bg, 0, 0, canvasWidth, canvasHeight);
 
-      // 🛠️ Avatar size increased
       const avatarSize = 170;
       const y = canvasHeight / 2 - avatarSize - 90;
 
-      // 👩 Female avatar (slightly up and left)
+      // 👩 Female avatar
       ctx.save();
       const femaleX = 300;
       const yFemale = y - 30;
@@ -76,7 +92,7 @@ module.exports = {
       ctx.drawImage(avatarImgFemale, femaleX, yFemale, avatarSize, avatarSize);
       ctx.restore();
 
-      // 👨 Male avatar (down)
+      // 👨 Male avatar
       ctx.save();
       const maleX = 130;
       const yMale = y + 290;
@@ -97,7 +113,7 @@ module.exports = {
       }, () => fs.unlinkSync(imgPath));
 
     } catch (err) {
-      console.error("Error in fk2 command:", err);
+      console.error("Error in fk command:", err);
       message.reply("❌ There was an error creating the FK image.");
     }
   }
