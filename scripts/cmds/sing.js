@@ -1,16 +1,22 @@
 const axios = require("axios");
 const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
 
+// ================= CACHED BASE API =================
+let cachedBaseAPI = null;
 const baseApiUrl = async () => {
-  if (global.cachedBaseAPI) return global.cachedBaseAPI;
-  const base = await axios.get("https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json");
-  return global.cachedBaseAPI = base.data.api;
+  if (cachedBaseAPI) return cachedBaseAPI;
+  const { data } = await axios.get("https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json");
+  cachedBaseAPI = data.api;
+  return cachedBaseAPI;
 };
 
+// ================= MODULE EXPORT =================
 module.exports = {
   config: {
-    name: "sing",
-    version: "2.0 FAST ✨",
+    name: "sing2",
+    version: "2.1 FAST ✨",
     aliases: ["music", "play"],
     author: "Dipto | Optimized by Maya",
     countDown: 3,
@@ -26,7 +32,7 @@ module.exports = {
 
     const ytCheck = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//;
 
-    // ========== If direct YouTube link ==========
+    // ========= DIRECT YOUTUBE LINK =========
     if (ytCheck.test(q)) {
       try {
         const { data } = await axios.get(`${await baseApiUrl()}/ytDl3?link=${encodeURIComponent(q)}&format=mp3`);
@@ -37,7 +43,7 @@ module.exports = {
       }
     }
 
-    // ========== Search ==========
+    // ========= SEARCH =========
     let search;
     try {
       search = (await axios.get(`${await baseApiUrl()}/ytFullSearch?songName=${encodeURIComponent(q)}`)).data.slice(0, 5);
@@ -99,7 +105,6 @@ module.exports = {
   onChat: async ({ event, api, commandName }) => {
     const body = event.body?.toLowerCase();
     const triggers = ["sing", "music", "play"];
-
     if (body && triggers.some(t => body.startsWith(t))) {
       const sliced = body.split(" ").slice(1);
       event.body = sliced.join(" ");
@@ -109,35 +114,41 @@ module.exports = {
 };
 
 // ================= FAST FUNCTIONS =================
-
-async function fastSend(api, event, title, link) {
+async function fastBuffer(url) {
+  const file = path.join(__dirname, crypto.randomBytes(8).toString("hex") + ".mp3");
   try {
-    const file = await fastBuffer(link);
-    return api.sendMessage({
-      body: title,
-      attachment: fs.createReadStream(file)
-    }, event.threadID, () => fs.unlinkSync(file), event.messageID);
+    const { data } = await axios.get(url, { responseType: "arraybuffer" });
+    fs.writeFileSync(file, data);
+    return file;
   } catch (err) {
-    console.error(err);
-    return api.sendMessage(cuteError("ফাইল সেফ করা যায়নি 😵‍💫"), event.threadID, event.messageID);
+    console.error("FastBuffer Error:", err);
+    throw new Error("ফাইল ডাউনলোডে সমস্যা 😵‍💫");
   }
 }
 
-async function fastBuffer(url) {
-  const file = "fast_audio.mp3";
-  const data = (await axios.get(url, { responseType: "arraybuffer" })).data;
-  fs.writeFileSync(file, data);
-  return file;
+async function fastSend(api, event, title, link) {
+  let file;
+  try {
+    file = await fastBuffer(link);
+    return api.sendMessage({
+      body: title,
+      attachment: fs.createReadStream(file)
+    }, event.threadID, () => {
+      if (fs.existsSync(file)) fs.unlinkSync(file);
+    }, event.messageID);
+  } catch (err) {
+    console.error(err);
+    if (file && fs.existsSync(file)) fs.unlinkSync(file);
+    return api.sendMessage("ফাইল পাঠানো যায়নি 😵‍💫", event.threadID, event.messageID);
+  }
 }
 
 async function fastImg(url) {
   return (await axios.get(url, { responseType: "stream" })).data;
 }
 
-// ================= Cute / Stylish Error Text =================
-
+// ================= CUTE ERROR TEXT =================
 function cuteError(msg) {
-  // multiple templates — pick one randomly for variety
   const templates = [
     `❌✨ Oopsie! ✨\n${msg}\n🐾 Try again, pretty please!`,
     `🌸 𝓞𝓸𝓹𝓼! 𝓐 𝓣𝓲𝓷𝔂 𝓟𝓻𝓸𝓫𝓵𝓮𝓶:\n${msg}\n💖 Send another one~`,
@@ -145,6 +156,5 @@ function cuteError(msg) {
     `😺 Cute-bot says:\n${msg}\n🎵 Ready when you are!`,
     `🌟 𝓗𝓮𝔂 𝓕𝓻𝓲𝓮𝓷𝓭!\n${msg}\n💫 Let's give it another go!`
   ];
-  const pick = templates[Math.floor(Math.random() * templates.length)];
-  return pick;
+  return templates[Math.floor(Math.random() * templates.length)];
 }
