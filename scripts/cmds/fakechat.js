@@ -3,34 +3,61 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
+/* ===== SETTINGS ===== */
+const PRICE = 200000; // 200k balance
+const OWNER_UID = ["61584308632995"]; // 👉 নিজের FB UID বসাও
+
 module.exports = {
   config: {
     name: "fakechat",
     aliases: ["fc"],
-    version: "FINAL-ONLINE",
+    version: "FINAL-PAID",
     author: "🥵AYAN BBE🥵💋",
     category: "fun",
     guide: "Reply → {p}fc Hi | How are you?"
   },
 
-  onStart: async function ({ event, message, api, args }) {
+  onStart: async function ({ event, message, api, args, usersData }) {
+
     if (event.type !== "message_reply")
       return message.reply("❌ Reply করে fc command দাও");
 
+    const senderID = event.senderID;
+    const isOwner = OWNER_UID.includes(senderID);
+
+    /* ===== BALANCE CHECK ===== */
+    if (!isOwner) {
+      const userData = await usersData.get(senderID);
+      const balance = userData?.money || 0;
+
+      if (balance < PRICE) {
+        return message.reply(
+          `❌ এই command ব্যবহার করতে 200,000 balance লাগবে\n💰 তোমার balance: ${balance}`
+        );
+      }
+
+      await usersData.set(senderID, {
+        money: balance - PRICE
+      });
+    }
+
+    /* ===== MAIN CODE ===== */
     const uid = event.messageReply.senderID;
     const texts = args.join(" ").split("|").map(t => t.trim());
 
     try {
-      /* ===== USER INFO ===== */
       const userInfo = await getUserInfo(api, uid);
 
-      /* ===== REAL FB AVATAR ===== */
-      const avatarUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
+      /* ===== AVATAR ===== */
       let avatarImg;
       try {
-        avatarImg = await loadImage(avatarUrl);
+        avatarImg = await loadImage(
+          `https://graph.facebook.com/${uid}/picture?width=512&height=512`
+        );
       } catch {
-        avatarImg = await loadImage("https://i.imgur.com/6VBx3io.png");
+        avatarImg = await loadImage(
+          "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+        );
       }
 
       /* ===== FONT ===== */
@@ -41,9 +68,13 @@ module.exports = {
           fontPath
         );
       }
-      registerFont(fontPath, { family: "Messenger" });
 
-      /* ===== CANVAS SETUP ===== */
+      if (!global.__messengerFontLoaded) {
+        registerFont(fontPath, { family: "Messenger" });
+        global.__messengerFontLoaded = true;
+      }
+
+      /* ===== CANVAS PREP ===== */
       const canvasWidth = 820;
       const lineHeight = 28;
       const bubblePadX = 18;
@@ -53,10 +84,9 @@ module.exports = {
 
       const tempCtx = createCanvas(1, 1).getContext("2d");
       tempCtx.font = "24px Messenger";
-
       const maxBubbleWidth = canvasWidth - 240;
-      const bubbles = [];
 
+      const bubbles = [];
       for (const text of texts) {
         const lines = wrapText(tempCtx, text, maxBubbleWidth - bubblePadX * 2);
         const textWidth = Math.max(...lines.map(l => tempCtx.measureText(l).width));
@@ -73,21 +103,23 @@ module.exports = {
       const canvas = createCanvas(canvasWidth, canvasHeight);
       const ctx = canvas.getContext("2d");
 
-      /* ===== DARK MESSENGER BG ===== */
+      /* ===== BG ===== */
       ctx.fillStyle = "#0f1115";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      const displayName =
+        userInfo.name.length > 18
+          ? userInfo.name.slice(0, 18) + "…"
+          : userInfo.name;
+
       for (const bubble of bubbles) {
-        /* name */
         ctx.fillStyle = "#b0b3b8";
         ctx.font = "16px Messenger";
-        ctx.fillText(userInfo.name.split(" ")[0], 92, y - 8);
+        ctx.fillText(displayName, 92, y - 8);
 
-        /* bubble */
         ctx.fillStyle = "#2a2d31";
         roundRect(ctx, 92, y, bubble.width, bubble.height, 22);
 
-        /* text (perfect center) */
         ctx.fillStyle = "#e4e6eb";
         ctx.font = "24px Messenger";
         ctx.textBaseline = "middle";
@@ -100,7 +132,6 @@ module.exports = {
           ty += lineHeight;
         }
 
-        /* avatar */
         const avatarCenterY = y + bubble.height / 2;
 
         ctx.save();
@@ -110,7 +141,6 @@ module.exports = {
         ctx.drawImage(avatarImg, 33, avatarCenterY - 22, 44, 44);
         ctx.restore();
 
-        /* active dot */
         ctx.beginPath();
         ctx.arc(68, avatarCenterY + 14, 6, 0, Math.PI * 2);
         ctx.fillStyle = "#31a24c";
@@ -125,7 +155,6 @@ module.exports = {
         y += bubble.height + gapY;
       }
 
-      /* ===== SEND ===== */
       const file = path.join(__dirname, `fc_${Date.now()}.png`);
       fs.writeFileSync(file, canvas.toBuffer());
 
@@ -136,7 +165,7 @@ module.exports = {
 
     } catch (e) {
       console.error(e);
-      message.reply("❌ Fake Messenger generate failed");
+      message.reply("❌ Fakechat generate failed");
     }
   }
 };
@@ -151,7 +180,7 @@ function wrapText(ctx, text, maxWidth) {
   for (const w of words) {
     const test = line ? line + " " + w : w;
     if (ctx.measureText(test).width > maxWidth) {
-      lines.push(line);
+      if (line) lines.push(line);
       line = w;
     } else line = test;
   }
