@@ -1,7 +1,4 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
 
 async function getStreamFromURL(url) {
   const response = await axios.get(url, { responseType: 'stream' });
@@ -10,7 +7,9 @@ async function getStreamFromURL(url) {
 
 async function fetchTikTokVideos(query) {
   try {
-    const response = await axios.get(`https://lyric-search-neon.vercel.app/kshitiz?keyword=${query}`);
+    const response = await axios.get(
+      `https://lyric-search-neon.vercel.app/kshitiz?keyword=${encodeURIComponent(query)}`
+    );
     return response.data;
   } catch (error) {
     console.error(error);
@@ -21,50 +20,87 @@ async function fetchTikTokVideos(query) {
 module.exports = {
   config: {
     name: "twixtor",
-    aliases: [],
-    author: "AYAN☺️✨",
     version: "1.0",
+    author: "AYAN☺️✨",
+    role: 0,
     shortDescription: {
-      en: "",
+      en: "Anime twixtor (VIP only)",
     },
     longDescription: {
-      en: "search for anime twixtors",
+      en: "Search and send anime twixtor videos (VIP only)",
     },
     category: "fun",
     guide: {
-      en: "{p}{n} [query]",
+      en: "{p}twixtor [anime name]",
     },
   },
-  onStart: async function ({ api, event, args }) {
-     api.setMessageReaction("✨", event.messageID, (err) => {}, true);
-    const query = args.join(' ');
-    const modifiedQuery = `${query} anime free twixtor`;
 
+  onStart: async function ({ api, event, args, usersData }) {
+    const userID = event.senderID;
+
+    // ===== VIP CHECK =====
+    const userData = await usersData.get(userID);
+    if (!userData || userData.vip !== true) {
+      return api.sendMessage(
+        {
+          body: "🔒 | **VIP ONLY COMMAND**\n\n🥺 Baby, তুমি VIP না\n✨ আগে VIP নাও তারপর twixtor use করো 💋",
+        },
+        event.threadID,
+        event.messageID
+      );
+    }
+
+    // =====================
+    api.setMessageReaction("✨", event.messageID, () => {}, true);
+
+    const query = args.join(" ");
+    if (!query) {
+      return api.sendMessage(
+        { body: "❌ | Anime name দাও\n\nExample: twixtor naruto" },
+        event.threadID,
+        event.messageID
+      );
+    }
+
+    const modifiedQuery = `${query} anime free twixtor`;
     const videos = await fetchTikTokVideos(modifiedQuery);
 
-    if (!videos || videos.length === 0) {
-      api.sendMessage({ body: `${query} not found.` }, event.threadID, event.messageID);
-      return;
+    if (!videos || !Array.isArray(videos) || videos.length === 0) {
+      return api.sendMessage(
+        { body: `😿 | **${query}** এর কোনো twixtor পাওয়া যায়নি` },
+        event.threadID,
+        event.messageID
+      );
     }
 
     const selectedVideo = videos[Math.floor(Math.random() * videos.length)];
-    const videoUrl = selectedVideo.videoUrl;
-
-    if (!videoUrl) {
-      api.sendMessage({ body: 'Error: Video not found.' }, event.threadID, event.messageID);
-      return;
+    if (!selectedVideo.videoUrl) {
+      return api.sendMessage(
+        { body: "⚠️ | Video load করতে সমস্যা হচ্ছে" },
+        event.threadID,
+        event.messageID
+      );
     }
 
     try {
-      const videoStream = await getStreamFromURL(videoUrl);
-
-      await api.sendMessage({
-        body: ``,
-        attachment: videoStream,
-      }, event.threadID, event.messageID);
-    } catch (error) {
-      console.error(error);
-      api.sendMessage({ body: 'An error occurred while processing the video.\nPlease try again later.' }, event.threadID, event.messageID);
+      const stream = await getStreamFromURL(selectedVideo.videoUrl);
+      await api.sendMessage(
+        {
+          body: `✨ **${query} Twixtor**`,
+          attachment: stream,
+        },
+        event.threadID,
+        event.messageID
+      );
+    } catch (err) {
+      console.error(err);
+      api.sendMessage(
+        {
+          body: "❌ | Video send করতে error হয়েছে\n🔁 পরে আবার try করো",
+        },
+        event.threadID,
+        event.messageID
+      );
     }
   },
 };
