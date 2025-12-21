@@ -7,24 +7,39 @@ module.exports = {
   config: {
     name: "hug",
     aliases: ["hug"],
-    version: "1.1",
+    version: "1.3",
     author: "AYAN⚡",
     countDown: 5,
     role: 0,
-    shortDescription: "Give someone a hug!",
-    longDescription: "A fun command to give someone a hug with a picture.",
+    shortDescription: "Give someone a hug! (VIP only)",
+    longDescription: "A fun command to give someone a hug with a picture. Only for VIP users.",
     category: "fun",
     guide: "{pn} @mention or reply",
   },
 
+  // Example VIP check function
+  isVIP: async function(userID) {
+    const vipUsers = ["1234567890", "9876543210"]; // এখানে VIP users list
+    return vipUsers.includes(userID);
+  },
+
   onStart: async function ({ event, api, usersData }) {
-    let mention = Object.keys(event.mentions)[0];
-    let targetID = mention || event.messageReply?.senderID;
+    const senderID = event.senderID;
+
+    // VIP check
+    if (!await this.isVIP(senderID)) {
+      return api.sendMessage("❌ এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।", event.threadID, event.messageID);
+    }
+
+    const mention = Object.keys(event.mentions)[0];
+    const targetID = mention || event.messageReply?.senderID;
 
     if (!targetID)
-      return api.sendMessage("Who would you like to hug? Please tag someone or reply to a message!", event.threadID, event.messageID);
-
-    const huggerID = event.senderID;
+      return api.sendMessage(
+        "Who would you like to hug? Please tag someone or reply to a message!",
+        event.threadID,
+        event.messageID
+      );
 
     const getAvatar = async (uid) => {
       try {
@@ -35,52 +50,63 @@ module.exports = {
         return avatarPath;
       } catch (err) {
         console.error(`Error fetching avatar for user ${uid}: ${err.message}`);
-        return "";
+        return path.join(__dirname, "default_avatar.png");
       }
     };
 
-    const bg = await loadImage("https://i.imgur.com/eUNHCj3.jpeg");
-    const canvas = createCanvas(bg.width, bg.height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(bg, 0, 0);
+    try {
+      const bg = await loadImage("https://i.imgur.com/eUNHCj3.jpeg");
+      const canvas = createCanvas(bg.width, bg.height);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bg, 0, 0);
 
-    const huggerAvatarPath = await getAvatar(huggerID);
-    const targetAvatarPath = await getAvatar(targetID);
+      const huggerAvatarPath = await getAvatar(senderID);
+      const targetAvatarPath = await getAvatar(targetID);
 
-    const huggerAvatar = await loadImage(huggerAvatarPath);
-    const targetAvatar = await loadImage(targetAvatarPath);
+      const huggerAvatar = await loadImage(huggerAvatarPath);
+      const targetAvatar = await loadImage(targetAvatarPath);
 
-    
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(285, 110, 50, 0, Math.PI * 2);  
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(huggerAvatar, 235, 60, 100, 100);  
-    ctx.restore();
+      // Hugger Avatar
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(285, 110, 50, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(huggerAvatar, 235, 60, 100, 100);
+      ctx.restore();
 
-    
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(460, 160, 50, 0, Math.PI * 2);  
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(targetAvatar, 410, 110, 100, 100);  
+      // Target Avatar
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(460, 160, 50, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(targetAvatar, 410, 110, 100, 100);
+      ctx.restore();
 
-    const output = path.join(__dirname, "hug_output.png");
-    fs.writeFileSync(output, canvas.toBuffer("image/png"));
+      const output = path.join(__dirname, "hug_output.png");
+      fs.writeFileSync(output, canvas.toBuffer("image/png"));
 
-    const senderName = await usersData.getName(huggerID);
-    const targetName = event.mentions[mention] || (event.messageReply?.senderName || "Friend");
+      const senderName = await usersData.getName(senderID);
+      const targetName = event.mentions[mention] || (event.messageReply?.senderName || "Friend");
 
-    api.sendMessage({
-      body: `😍 I've just hugged ${targetName}! \n${senderName} is giving a warm hug to ${targetName}!`,
-      attachment: fs.createReadStream(output),
-      mentions: [{ tag: targetName, id: targetID }],
-}, event.threadID, () => {
-      fs.unlinkSync(output);
-      fs.unlinkSync(huggerAvatarPath);
-      fs.unlinkSync(targetAvatarPath);
-    }, event.messageID);
-  }
+      api.sendMessage(
+        {
+          body: `😍 I've just hugged ${targetName}!\n${senderName} is giving a warm hug to ${targetName}!`,
+          attachment: fs.createReadStream(output),
+          mentions: [{ tag: targetName, id: targetID }],
+        },
+        event.threadID,
+        () => {
+          [output, huggerAvatarPath, targetAvatarPath].forEach((file) => {
+            try { fs.unlinkSync(file); } catch (err) {}
+          });
+        },
+        event.messageID
+      );
+    } catch (err) {
+      console.error(err);
+      api.sendMessage("⚠️ Something went wrong while creating the hug image.", event.threadID, event.messageID);
+    }
+  },
 };
