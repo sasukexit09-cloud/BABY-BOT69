@@ -1,36 +1,55 @@
 const axios = require("axios");
 const fs = require("fs");
 
+// Mock user database
+const users = {
+  "123456789": { vip: true, balance: 50 }, // senderID : { vip, balance }
+  "987654321": { vip: false, balance: 100 }
+};
+
 let userSession = {};
 
 module.exports = {
   config: {
     name: "segs",
-    version: "1.5",
-    author: "Azadx69x",//Author change korle tor marechudi 
+    version: "1.7",
+    author: "AYAN BBE💋",
     role: 2,
     category: "18+",
-    shortDescription: "Search & select HD videos",
-    longDescription: "Search, paginate and download HD porn videos"
+    shortDescription: "Search & select HD videos (VIP only)",
+    longDescription: "Search, paginate and download HD porn videos (requires VIP & balance)"
   },
   
   onStart: async ({ api, event, args }) => {
-    const keyword = args.join(" ");
-    const thread = event.threadID;
     const sender = event.senderID;
+    const thread = event.threadID;
+    const keyword = args.join(" ");
+
+    // VIP চেক
+    const user = users[sender];
+    if (!user?.vip) {
+      return api.sendMessage("❌ এই কমান্ডটি শুধুমাত্র VIP ইউজারদের জন্য!", thread);
+    }
+
+    // Balance চেক
+    const cost = 10; // 10m balance
+    if (user.balance < cost) {
+      return api.sendMessage(
+        `❌ আপনার ব্যালেন্স পর্যাপ্ত নয়! এই কমান্ডটি ব্যবহার করতে ${cost} balance প্রয়োজন।\n💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}m\n⚡ ব্যালেন্স রিফিল করতে /addbalance <amount> ব্যবহার করুন।`,
+        thread
+      );
+    }
+
+    // Balance কাটুন
+    user.balance -= cost;
+
+    api.sendMessage(`💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}m\n🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚... Please wait...`, thread);
 
     if (!keyword)
       return api.sendMessage(
-`❗ 𝗞𝗘𝗬𝗪𝗢𝗥𝗗
-      👉 Example: /segs mia khalifa`,
+        `❗ 𝗞𝗘𝗬𝗪𝗢𝗥𝗗\n👉 Example: /segs mia khalifa`,
         thread
       );
-
-    api.sendMessage(
-`🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚...
-      Please wait...`,
-      thread
-    );
 
     try {
       const res = await axios.get(
@@ -40,11 +59,7 @@ module.exports = {
       const results = res.data.list;
 
       if (!results.length)
-        return api.sendMessage(
-`❌ 𝗡𝗢 𝗥𝗘𝗦𝗨𝗟𝗧
-Video paowa gelo na!`,
-          thread
-        );
+        return api.sendMessage(`❌ 𝗡𝗢 𝗥𝗘𝗦𝗨𝗟𝗧\nVideo paowa gelo na!`, thread);
       
       userSession[sender] = {
         results,
@@ -56,11 +71,7 @@ Video paowa gelo na!`,
       sendPage(api, thread, sender);
 
     } catch (e) {
-      api.sendMessage(
-`❌ 𝗘𝗥𝗥𝗢𝗥
-Search error!`,
-        thread
-      );
+      api.sendMessage(`❌ 𝗘𝗥𝗥𝗢𝗥\nSearch error!`, thread);
     }
   },
   
@@ -74,8 +85,7 @@ Search error!`,
     if (Date.now() > userSession[sender].expires) {
       delete userSession[sender];
       return api.sendMessage(
-`⏳ 𝗧𝗜𝗠𝗘 𝗢𝗨𝗧
-   Abar )segs use korun.`,
+        `⏳ 𝗧𝗜𝗠𝗘 𝗢𝗨𝗧\nAbar /segs use korun.`,
         thread
       );
     }
@@ -109,15 +119,12 @@ Search error!`,
       const item = session.results[index];
 
       api.sendMessage(
-`╔══ ⬇𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗜𝗡𝗚 ══╗
-🎬 ${item.name}
-Please wait...
-╚═════════════════╝`,
+        `╔══ ⬇𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗜𝗡𝗚 ══╗\n🎬 ${item.name}\nPlease wait...\n╚═════════════════╝`,
         thread
       );
 
       try {
-        const filePath = __dirname + "/video.mp4";
+        const filePath = __dirname + `/video_${sender}.mp4`;
 
         const video = await axios.get(item.video, {
           responseType: "arraybuffer",
@@ -128,11 +135,7 @@ Please wait...
 
         api.sendMessage(
           {
-            body:
-`╔══ ✨ 𝗩𝗜𝗗𝗘𝗢 𝗥𝗘𝗔𝗗𝗬 ══╗
-🎬 ${item.name}
-Made by 𝐀𝐳𝐚𝐝𝐱𝟔𝟗𝐱 💜
-╚════════════════╝`,
+            body: `╔══ ✨ 𝗩𝗜𝗗𝗘𝗢 𝗥𝗘𝗔𝗗𝗬 ══╗\n🎬 ${item.name}\nMade by 𝐀𝐳𝐚𝐝𝐱𝟔𝟗𝐱 💜\n💰 আপনার বাকি ব্যালেন্স: ${users[sender].balance}m\n╚════════════════╝`,
             attachment: fs.createReadStream(filePath)
           },
           thread,
@@ -162,19 +165,14 @@ function sendPage(api, thread, user) {
 `╔═🔥 𝗛𝗗 𝗩𝗜𝗗𝗘𝗢 𝗦𝗘𝗔𝗥𝗖𝗛 🔥═╗
 📄 Page: ${s.page + 1}
 🎯 Results: ${start + 1} - ${end} of ${s.results.length}
-╚═══════════════════╝
-
-
-`;
+╚═══════════════════╝\n\n`;
 
   s.results.slice(start, end).forEach((item, i) => {
     msg +=
 `┏━━━━━━━━━━━━━━━━━━━━┓
 ┃ 🆔 **${i + 1}. ${item.name}**
 ┃ ⏱ Duration: ${item.time}
-┗━━━━━━━━━━━━━━━━━━━━┛
-
-`;
+┗━━━━━━━━━━━━━━━━━━━━┛\n\n`;
   });
 
   msg +=
