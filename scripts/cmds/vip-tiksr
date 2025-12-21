@@ -1,0 +1,155 @@
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
+
+const baseApiUrl = async () => {
+  const base = await axios.get(
+    "https://raw.githubusercontent.com/ARYAN-AROHI-STORE/A4YA9-A40H1/refs/heads/main/APIRUL.json",
+    { timeout: 10000 }
+  );
+  return base.data.api;
+};
+
+module.exports.config = {
+  name: "tiksr",
+  version: "1.1",
+  author: "Mesbah Bb'e (optimized by Maya)",
+  countDown: 5,
+  role: 0,
+  description: {
+    en: "Search & download TikTok videos (VIP only)"
+  },
+  category: "MEDIA",
+  guide: {
+    en:
+      "{pn} <search> - <optional: limit>\n" +
+      "Example:\n" +
+      "{pn} caredit - 10"
+  }
+};
+
+module.exports.onStart = async function ({ api, args, event, usersData }) {
+  const { senderID, threadID, messageID } = event;
+
+  // ===== VIP CHECK =====
+  const userData = await usersData.get(senderID);
+  if (!userData || userData.vip !== true) {
+    return api.sendMessage(
+      "🔒 | **VIP ONLY COMMAND**\n\n🥺 Baby, তুমি VIP না\n✨ আগে VIP নাও তারপর tiksr use করো 💋",
+      threadID,
+      messageID
+    );
+  }
+  // =====================
+
+  if (!args.length) {
+    return api.sendMessage(
+      "❌ Please provide a search keyword.\nExample:\n`tiksr caredit - 10`",
+      threadID
+    );
+  }
+
+  let search = args.join(" ");
+  let limit = 10;
+
+  const match = search.match(/^(.+?)\s*-\s*(\d+)$/);
+  if (match) {
+    search = match[1].trim();
+    limit = Math.min(parseInt(match[2], 10), 20);
+  }
+
+  try {
+    const apiUrl = `${await baseApiUrl()}/tiktoksearch?search=${encodeURIComponent(
+      search
+    )}&limit=${limit}`;
+
+    const res = await axios.get(apiUrl, { timeout: 15000 });
+    const data = res?.data?.data;
+
+    if (!Array.isArray(data) || !data.length) {
+      return api.sendMessage(
+        `❌ No results found for "${search}"`,
+        threadID
+      );
+    }
+
+    let msg = "🔍 TikTok Search Results\n\n";
+    data.forEach((v, i) => {
+      msg += `${i + 1}. ${v.title || "No title"}\n\n`;
+    });
+    msg += "Reply with the number to download 📥";
+
+    const sent = await api.sendMessage(msg, threadID);
+
+    global.GoatBot.onReply.set(sent.messageID, {
+      commandName: this.config.name,
+      author: senderID,
+      messageID: sent.messageID,
+      results: data
+    });
+  } catch (err) {
+    console.error(err);
+    api.sendMessage("⚠️ Failed to fetch TikTok videos.", threadID);
+  }
+};
+
+module.exports.onReply = async function ({ event, api, Reply, usersData }) {
+  const { senderID, threadID } = event;
+
+  // ===== VIP CHECK (Reply Time) =====
+  const userData = await usersData.get(senderID);
+  if (!userData || userData.vip !== true) {
+    return api.sendMessage(
+      "🔒 | VIP only\n✨ Download করার জন্য VIP লাগবে 💋",
+      threadID
+    );
+  }
+  // =================================
+
+  if (senderID !== Reply.author) return;
+
+  const index = parseInt(event.body);
+  if (isNaN(index) || index < 1 || index > Reply.results.length) {
+    return api.sendMessage("❌ Invalid selection.", threadID);
+  }
+
+  await api.unsendMessage(Reply.messageID);
+  const video = Reply.results[index - 1];
+
+  const safeName =
+    (video.title || "tiktok_video")
+      .replace(/[^\w\s]/gi, "")
+      .slice(0, 50) + ".mp4";
+
+  const tempDir = path.join(__dirname, "cache");
+  await fs.ensureDir(tempDir);
+
+  const filePath = path.join(tempDir, safeName);
+
+  try {
+    const res = await axios.get(video.video, {
+      responseType: "stream",
+      timeout: 30000
+    });
+
+    const writer = fs.createWriteStream(filePath);
+    res.data.pipe(writer);
+
+    writer.on("finish", async () => {
+      await api.sendMessage(
+        {
+          body: `🎥 ${video.title || "TikTok Video"}`,
+          attachment: fs.createReadStream(filePath)
+        },
+        threadID
+      );
+      fs.unlink(filePath);
+    });
+  } catch (err) {
+    console.error(err);
+    api.sendMessage(
+      "⚠️ Error while downloading the video.",
+      threadID
+    );
+  }
+};
