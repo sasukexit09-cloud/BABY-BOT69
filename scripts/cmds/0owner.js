@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "owner",
     version: "2.0",
-    author: "Tarek",
+    author: "AYAN BBE💋",
     shortDescription: "Display bot and owner information",
     longDescription: "Shows detailed info including bot name, prefix, and owner's personal information.",
     category: "Special",
@@ -23,7 +23,7 @@ module.exports = {
 
     // 🛠 Convert Google Drive view link to direct download link
     const fileId = "1QQ4rcb5mnLytHKuavPxOjx0rF-YuOTaS";
-    const directURL = `https://files.catbox.moe/uykag6.mp4`;
+    const directURL = `https://files.catbox.moe/hxntdd.mp4`;
 
     // ⏬ Download the file temporarily
     const filePath = path.join(__dirname, "owner-video.mp4");
