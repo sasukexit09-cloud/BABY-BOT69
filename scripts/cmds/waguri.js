@@ -1,4 +1,4 @@
-const fs = require("fs/promises");
+const fs = require("fs");
 const axios = require("axios");
 const path = require("path");
 
@@ -6,25 +6,25 @@ module.exports = {
   config: {
     name: "waguri",
     aliases: ["kauroko"],
-    version: "2.1.0",
+    version: "2.0.0",
     author: "Maya",
     countDown: 5,
     role: 0,
-    shortDescription: "VIP only waguri image",
+    shortDescription: "Send a random waguri/kauroko image",
     longDescription: "Random waguri/kauroko image (VIP only)",
     category: "fun",
     guide: {
-      en: "{pn} (VIP only)",
+      en: "{pn} / {pn} kauroko",
     },
   },
 
   onStart: async function ({ message, event }) {
     const uid = event.senderID;
 
-    // 🔐 VIP CHECK (edit according to your system)
+    // 🔐 VIP CHECK
     if (!global.vipUsers || !global.vipUsers.includes(uid)) {
       return message.reply(
-        "🥺💔 Baby, এই কমান্ডটা শুধু VIP user দের জন্য\n✨ আগে VIP নাও, তারপর waguri ব্যবহার করো 💋"
+        "🥺💔 Baby, এই কমান্ডটা শুধু VIP user দের জন্য\n✨ আগে VIP নাও, তারপর ব্যবহার করো 💋"
       );
     }
 
@@ -39,32 +39,60 @@ module.exports = {
       "https://files.catbox.moe/jn39yv.jpg",
       "https://files.catbox.moe/7o5xgz.jpeg",
       "https://files.catbox.moe/z6vg2f.jpeg",
+      "https://files.catbox.moe/tb0nii.jpeg",
+      "https://files.catbox.moe/sv6tuk.jpeg",
+      "https://files.catbox.moe/3ca3m7.jpeg",
+      "https://files.catbox.moe/jsihgg.jpg",
+      "https://files.catbox.moe/zfr556.jpeg",
+      "https://files.catbox.moe/9x1dp3.jpeg",
+      "https://files.catbox.moe/btfq45.jpeg",
+      "https://files.catbox.moe/2ixkpf.jpeg",
+      "https://files.catbox.moe/3v69qk.jpeg",
+      "https://files.catbox.moe/anid36.jpeg",
+      "https://files.catbox.moe/2nv0my.jpeg",
+      "https://files.catbox.moe/xocxsw.jpeg",
+      "https://files.catbox.moe/0a62sr.jpeg",
+      "https://files.catbox.moe/ktvx58.jpeg",
+      "https://files.catbox.moe/ni62p5.jpeg",
+      "https://files.catbox.moe/iw0uua.jpg",
+      "https://files.catbox.moe/pml00k.jpg",
+      "https://files.catbox.moe/0iftlu.jpg",
+      "https://files.catbox.moe/y69dfc.jpeg",
+      "https://files.catbox.moe/wyb387.jpeg",
+      "https://files.catbox.moe/styo4d.jpeg",
+      "https://files.catbox.moe/cw7t8k.jpeg",
+      "https://files.catbox.moe/knks85.jpeg",
+      "https://files.catbox.moe/qmwfjm.jpeg",
+      "https://files.catbox.moe/ff2i0d.jpeg",
+      "https://files.catbox.moe/bfgs4v.jpg",
+      "https://files.catbox.moe/tfgzlp.jpeg",
+      "https://files.catbox.moe/yts0bq.jpeg",
     ];
 
     const fancyTexts = [
       "🌸 𝐖𝐚𝐠𝐮𝐫𝐢 💫",
-      "💖 𝓒𝓾𝓽𝓮 𝓿𝓲𝓫𝓮𝓼 𝓸𝓷𝓵𝔂 💕",
-      "✨ 𝐊𝐚𝐮𝐫𝐨𝐤𝐨 𝐬𝐭𝐲𝐥𝐞 💫",
-      "🌷 Sweet & Soft vibes 💞",
+      "💖 Cute vibes only 💕",
+      "✨ Kauroko style 💫",
+      "🌷 Soft & sweet mood 💞",
     ];
 
-    const imageUrl = IMAGES[Math.floor(Math.random() * IMAGES.length)];
+    const img = IMAGES[Math.floor(Math.random() * IMAGES.length)];
     const caption = fancyTexts[Math.floor(Math.random() * fancyTexts.length)];
     const filePath = path.join(__dirname, `waguri_${Date.now()}.jpg`);
 
     try {
-      const res = await axios.get(imageUrl, { responseType: "arraybuffer" });
-      await fs.writeFile(filePath, res.data);
+      const res = await axios.get(img, { responseType: "arraybuffer" });
+      fs.writeFileSync(filePath, res.data);
 
       await message.reply({
         body: caption,
-        attachment: require("fs").createReadStream(filePath),
+        attachment: fs.createReadStream(filePath),
       });
     } catch (e) {
       console.error(e);
       message.reply("❌ কিছু ভুল হয়েছে, আবার চেষ্টা করো!");
     } finally {
-      fs.unlink(filePath).catch(() => {});
+      fs.existsSync(filePath) && fs.unlinkSync(filePath);
     }
   },
 };
