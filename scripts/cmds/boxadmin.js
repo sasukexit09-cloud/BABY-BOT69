@@ -1,32 +1,38 @@
 module.exports.config = {
   name: "boxadmin",
-  version: "1.0.0",
+  version: "2.0.0",
   hasPermssion: 2,
   credits: "SHAHADAT SAHU",
-  description: "Add/remove admin via me, mention, or reply",
+  description: "Add/remove/list admin via me, mention, reply, or onStart",
   commandCategory: "system",
-  usages: "boxadmin me | boxadmin add/remove @mention | reply",
-  cooldowns: 5
+  usages: "boxadmin me | boxadmin add/remove @mention | boxadmin list | reply",
+  cooldowns: 5,
+  onStart: true // bot চালু হলে স্বয়ংক্রিয় ফাংশন
 };
 
-const cleanName = (name) => {
-  if (!name) return null;
-  return name.replace(/\s+/g, " ").trim();
-};
+const cleanName = (name) => name ? name.replace(/\s+/g, " ").trim() : "User";
 
 module.exports.run = async function({ api, event, args }) {
   const threadID = event.threadID;
   const botID = api.getCurrentUserID();
 
   try {
-    let action = args[0]?.toLowerCase();
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botIsAdmin = threadInfo.adminIDs.some(ad => ad.id == botID);
+    const ownerID = threadInfo.ownerID;
 
-    if (action === "me") action = "add";
-
-    if (!["add", "remove"].includes(action)) {
-      return api.sendMessage("🌸 Usage: boxadmin me | boxadmin add/remove @mention | reply", threadID, event.messageID);
+    // LIST ADMINS
+    if (args[0]?.toLowerCase() === "list") {
+      const admins = threadInfo.adminIDs.map(a => a.id === ownerID ? "👑 Owner" : `👤 ${a.id}`).join("\n");
+      return api.sendMessage(`🌸 Group Admins:\n${admins}`, threadID);
     }
 
+    // ADD/REMOVE LOGIC
+    let action = args[0]?.toLowerCase() === "me" ? "add" : args[0]?.toLowerCase();
+    if (!["add", "remove"].includes(action)) 
+      return api.sendMessage("🌸 Usage: boxadmin me | boxadmin add/remove @mention | reply", threadID, event.messageID);
+
+    // DETERMINE TARGET UID
     let uid;
     if (args[0]?.toLowerCase() === "me" || args[1]?.toLowerCase() === "me") {
       uid = event.senderID;
@@ -38,47 +44,49 @@ module.exports.run = async function({ api, event, args }) {
       return api.sendMessage("🌸 Usage: boxadmin me | boxadmin add/remove @mention | reply", threadID, event.messageID);
     }
 
+    // OWNER PROTECTION
+    if (uid == ownerID && action === "remove") 
+      return api.sendMessage("⚠️ Owner কে remove করা যাবে না!", threadID, event.messageID);
+
     const userInfo = await api.getUserInfo([uid, event.senderID]);
-    const senderName = cleanName(userInfo[event.senderID]?.name) || "আপনি";
-    let targetName = uid === event.senderID ? senderName : cleanName(userInfo[uid]?.name) || "User";
+    const senderName = cleanName(userInfo[event.senderID]?.name || "আপনি");
+    const targetName = cleanName(userInfo[uid]?.name || "User");
 
-    if (event.mentions && Object.keys(event.mentions).length > 0) {
-      targetName = cleanName(Object.values(event.mentions)[0]);
-    } else if (event.type === "message_reply" && event.messageReply) {
-      targetName = cleanName(event.messageReply.senderName) || targetName;
-    }
+    const targetIsAdmin = threadInfo.adminIDs.some(ad => ad.id == uid);
 
-    const threadInfo = await api.getThreadInfo(threadID);
-    const botIsAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
-    const targetIsAdmin = threadInfo.adminIDs.some(admin => admin.id == uid);
+    if (!botIsAdmin && uid !== event.senderID) 
+      return api.sendMessage("🌺 আমাকে আগে গ্রুপে অ্যাডমিন বানাতে হবে এই কমান্ডটি ব্যবহারের জন্য!", threadID, event.messageID);
 
-    if (!botIsAdmin && uid !== event.senderID) {
-      return api.sendMessage("এই কমান্ডটি Usage করার জন্য আগে আমাকে গ্রুপের এডমিন দিতে হবে 🌺", threadID, event.messageID);
-    }
-
+    // ADD ADMIN
     if (action === "add") {
-      if (targetIsAdmin) 
-        return api.sendMessage(`${targetName} আগে থেকেই গ্রুপের এডমিন রয়েছেন ✅`, threadID, event.messageID);
-
+      if (targetIsAdmin) return api.sendMessage(`✅ ${targetName} আগে থেকেই অ্যাডমিন!`, threadID, event.messageID);
       await api.changeAdminStatus(threadID, uid, true);
-      if (uid === event.senderID) 
-        return api.sendMessage(`✅ ${senderName} নিজেকে এডমিন বানিয়েছে! 🌸`, threadID, event.messageID);
-      else 
-        return api.sendMessage(`✅ ${senderName} ${targetName}-কে এডমিন বানিয়েছে! 😘`, threadID, event.messageID);
-
-    } else if (action === "remove") {
-      if (!targetIsAdmin) 
-        return api.sendMessage(`${targetName} এখনো গ্রুপের এডমিন নয়! ❌`, threadID, event.messageID);
-
-      await api.changeAdminStatus(threadID, uid, false);
-      if (uid === event.senderID) 
-        return api.sendMessage(`${senderName} নিজেকে এডমিন থেকে রিমুভ করেছে! 🐸`, threadID, event.messageID);
-      else 
-        return api.sendMessage(`${targetName} কে এডমিন থেকে রিমুভ করেছে! 🤣`, threadID, event.messageID);
+      return api.sendMessage(uid === event.senderID 
+        ? `✅ ${senderName} নিজেকে অ্যাডমিন বানিয়েছে! 🌸` 
+        : `✅ ${senderName} ${targetName}-কে অ্যাডমিন বানিয়েছে! 😘`, threadID);
     }
 
-  } catch (error) {
-    console.error("Boxadmin Error:", error);
-    return api.sendMessage("⚠️ Error: " + error.message, threadID, event.messageID);
+    // REMOVE ADMIN
+    if (action === "remove") {
+      if (!targetIsAdmin) return api.sendMessage(`❌ ${targetName} এখনও অ্যাডমিন নয়!`, threadID, event.messageID);
+      await api.changeAdminStatus(threadID, uid, false);
+      return api.sendMessage(uid === event.senderID 
+        ? `⚠️ ${senderName} নিজেকে অ্যাডমিন থেকে রিমুভ করেছে! 🐸` 
+        : `❌ ${targetName} কে অ্যাডমিন থেকে রিমুভ করেছে! 🤣`, threadID);
+    }
+
+  } catch (err) {
+    console.error("Boxadmin Error:", err);
+    return api.sendMessage(`⚠️ Error: ${err.message}`, threadID, event.messageID);
+  }
+};
+
+// ONSTART FUNCTION
+module.exports.onStart = async function({ api, threadID }) {
+  try {
+    const threadInfo = await api.getThreadInfo(threadID);
+    api.sendMessage(`🌸 BoxAdmin module is active!\nCurrent owner: 👑 ${threadInfo.ownerID}`, threadID);
+  } catch (err) {
+    console.error("Boxadmin OnStart Error:", err);
   }
 };
