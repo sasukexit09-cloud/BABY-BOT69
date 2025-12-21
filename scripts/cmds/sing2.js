@@ -1,19 +1,19 @@
 const axios = require("axios");
-const fs = require('fs');
- 
+const fs = require("fs").promises;
+
 const baseApiUrl = async () => {
   const base = await axios.get("https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json");
   return base.data.api;
 };
- 
+
 module.exports = {
   config: {
-    name: "sing2",
-    version: "1.1.4",
-    credits: "dipto", //fixed by Ullash 
+    name: "sing",
+    version: "1.1.5",
+    credits: "AYAN BBE💋",
     countDown: 5,
     hasPermssion: 0,
-    description: "Download video, audio, and info from YouTube",
+    description: "Download video, audio, and info from YouTube (VIP only, 10k per use)",
     category: "media",
     commandCategory: "media",
     usePrefix: true,
@@ -27,63 +27,89 @@ module.exports = {
       "{pn} -a chipi chipi chapa chapa\n" +
       "{pn} -i chipi chipi chapa chapa"
   },
- 
-  run: async ({ api, args, event }) => {
+
+  run: async ({ api, args, event, usersData }) => {
     const { threadID, messageID, senderID } = event;
- 
+    const VIP_COST = 10000;
+
+    // 🔒 VIP check
+    if (!global.vipUsers || !global.vipUsers.includes(senderID)) {
+      return api.sendMessage(
+        "❌ This command is VIP only.\n✨ Buy VIP first to use this command 🥺💋",
+        threadID,
+        messageID
+      );
+    }
+
+    // 💰 Balance check
+    const userData = await usersData.get(senderID) || { money: 0 };
+    if (userData.money < VIP_COST) {
+      return api.sendMessage(
+        `❌ Insufficient balance.\n💰 Required: ${VIP_COST}\n💳 Your balance: ${userData.money}`,
+        threadID,
+        messageID
+      );
+    }
+
+    // ➖ Deduct balance
+    await usersData.set(senderID, {
+      ...userData,
+      money: userData.money - VIP_COST
+    });
+
+    // Continue command
     let action = args[0] ? args[0].toLowerCase() : '-v';
- 
     if (!['-v', 'video', 'mp4', '-a', 'audio', 'mp3', '-i', 'info'].includes(action)) {
       args.unshift('-v');
       action = '-v';
     }
- 
-    const checkurl = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
+
+    const checkurl = /^(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})(?:\S+)?$/;
     const urlYtb = args[1] ? checkurl.test(args[1]) : false;
- 
+
     if (urlYtb) {
       const format = ['-v', 'video', 'mp4'].includes(action) ? 'mp4'
         : ['-a', 'audio', 'mp3'].includes(action) ? 'mp3' : null;
- 
+
       if (!format) return api.sendMessage('❌ Invalid format. Use -v for video or -a for audio.', threadID, messageID);
- 
+
       try {
         const match = args[1].match(checkurl);
         const videoID = match ? match[1] : null;
         if (!videoID) return api.sendMessage('❌ Invalid YouTube link.', threadID, messageID);
- 
+
         const path = `ytb_${format}_${videoID}.${format}`;
         const { data: { title, downloadLink, quality } } = await axios.get(`${await baseApiUrl()}/ytDl3?link=${videoID}&format=${format}&quality=3`);
- 
+
         await api.sendMessage({
           body: `• Title: ${title}\n• Quality: ${quality}`,
           attachment: await downloadFile(downloadLink, path)
-        }, threadID, () => fs.unlinkSync(path), messageID);
- 
+        }, threadID, () => fs.unlink(path), messageID);
+
         return;
       } catch (e) {
         console.error(e);
         return api.sendMessage('❌ Failed to download. Please try again later.', threadID, messageID);
       }
     }
- 
-    args.shift(); 
+
+    args.shift();
     const keyWord = args.join(" ");
     if (!keyWord) return api.sendMessage('❌ Please provide a search keyword.', threadID, messageID);
- 
+
     try {
       const searchResult = (await axios.get(`${await baseApiUrl()}/ytFullSearch?songName=${encodeURIComponent(keyWord)}`)).data.slice(0, 6);
       if (!searchResult.length) return api.sendMessage(`⭕ No results for keyword: ${keyWord}`, threadID, messageID);
- 
+
       let msg = "";
       const thumbnails = [];
       let i = 1;
- 
+
       for (const info of searchResult) {
         thumbnails.push(streamImage(info.thumbnail, `thumbnail_${i}.jpg`));
         msg += `${i++}. ${info.title}\nTime: ${info.time}\nChannel: ${info.channel.name}\n\n`;
       }
- 
+
       api.sendMessage({
         body: msg + "👉 Reply to this message with a number to select.",
         attachment: await Promise.all(thumbnails)
@@ -102,42 +128,38 @@ module.exports = {
       return api.sendMessage("❌ An error occurred while searching: " + err.message, threadID, messageID);
     }
   },
- 
+
   handleReply: async ({ event, api, handleReply }) => {
     const { threadID, messageID, senderID, body } = event;
- 
+
     if (senderID !== handleReply.author) return;
     const { result, action } = handleReply;
     const choice = parseInt(body);
- 
+
     if (isNaN(choice) || choice <= 0 || choice > result.length)
       return api.sendMessage("❌ Invalid number. Please reply with a valid number.", threadID, messageID);
- 
+
     const selectedVideo = result[choice - 1];
     const videoID = selectedVideo.id;
- 
-    try {
-      await api.unsendMessage(handleReply.messageID);
-    } catch (e) {
-      console.error("Unsend failed:", e);
-    }
- 
-    if (['-v', 'video', 'mp4', '-a', 'audio', 'mp3', 'music'].includes(action)) {
+
+    try { await api.unsendMessage(handleReply.messageID); } catch (e) { console.error("Unsend failed:", e); }
+
+    if (['-v', 'video', 'mp4', '-a', 'audio', 'mp3'].includes(action)) {
       const format = ['-v', 'video', 'mp4'].includes(action) ? 'mp4' : 'mp3';
       try {
         const path = `ytb_${format}_${videoID}.${format}`;
         const { data: { title, downloadLink, quality } } = await axios.get(`${await baseApiUrl()}/ytDl3?link=${videoID}&format=${format}&quality=3`);
- 
+
         await api.sendMessage({
           body: `• Title: ${title}\n• Quality: ${quality}`,
           attachment: await downloadFile(downloadLink, path)
-        }, threadID, () => fs.unlinkSync(path), messageID);
+        }, threadID, () => fs.unlink(path), messageID);
       } catch (e) {
         console.error(e);
         return api.sendMessage('❌ Failed to download. Please try again later.', threadID, messageID);
       }
     }
- 
+
     if (action === '-i' || action === 'info') {
       try {
         const { data } = await axios.get(`${await baseApiUrl()}/ytfullinfo?videoID=${videoID}`);
@@ -152,23 +174,15 @@ module.exports = {
     }
   }
 };
- 
+
 async function downloadFile(url, pathName) {
-  try {
-    const res = await axios.get(url, { responseType: "arraybuffer" });
-    fs.writeFileSync(pathName, Buffer.from(res.data));
-    return fs.createReadStream(pathName);
-  } catch (err) {
-    throw err;
-  }
+  const res = await axios.get(url, { responseType: "arraybuffer" });
+  await fs.writeFile(pathName, res.data);
+  return fs.createReadStream(pathName);
 }
- 
+
 async function streamImage(url, pathName) {
-  try {
-    const response = await axios.get(url, { responseType: "stream" });
-    response.data.path = pathName;
-    return response.data;
-  } catch (err) {
-    throw err;
-  }
+  const res = await axios.get(url, { responseType: "arraybuffer" });
+  await fs.writeFile(pathName, res.data);
+  return fs.createReadStream(pathName);
 }
