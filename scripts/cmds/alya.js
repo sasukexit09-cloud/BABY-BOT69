@@ -1,10 +1,13 @@
 const axios = require("axios");
 
+const OWNER_UID = ["61584308632995"]; // নিজের UID বসাও
+const PRICE = 50; // Non-VIP users per use cost
+
 module.exports = {
   config: {
     name: "alya",
     aliases: ["elisa"],
-    version: "3.0.0",
+    version: "3.1",
     author: "Maya",
     countDown: 5,
     role: 0,
@@ -14,7 +17,26 @@ module.exports = {
     guide: "{p}alya বা {p}elisa"
   },
 
-  onStart: async function ({ api, event }) {
+  isVIP: async function(senderID, usersData) {
+    const data = await usersData.get(senderID);
+    return OWNER_UID.includes(senderID) || data?.isVIP === true;
+  },
+
+  onStart: async function ({ api, event, usersData }) {
+    const senderID = event.senderID;
+    const vip = await this.isVIP(senderID, usersData);
+
+    if (!vip) {
+      const userData = await usersData.get(senderID);
+      const balance = userData?.money || 0;
+
+      if (balance < PRICE) {
+        return api.sendMessage(`❌ এই কমান্ড ব্যবহার করতে ${PRICE} balance লাগবে।\n💰 তোমার balance: ${balance}`, event.threadID);
+      }
+
+      await usersData.set(senderID, { money: balance - PRICE });
+    }
+
     try {
       const images = [
         "https://files.catbox.moe/b6c6na.jpg",
@@ -61,21 +83,15 @@ module.exports = {
       const randomImage = images[Math.floor(Math.random() * images.length)];
       const fancyText = "✨ 𝓐𝓵𝔂𝓪 𝓲𝓼 𝓬𝓾𝓽𝓮 💖 𝓐 𝓹𝓮𝓻𝓯𝓮𝓬𝓽 𝓿𝓲𝓼𝓾𝓪𝓵 ✨";
 
-      // Send fancy text first
       api.sendMessage(fancyText, event.threadID, async (err, info) => {
         if (err) return api.sendMessage("❌ কিছু ভুল হয়েছে, আবার চেষ্টা করো।", event.threadID);
 
-        // Wait a moment before sending image
         setTimeout(async () => {
           const img = await axios.get(randomImage, { responseType: "stream" });
-
           api.sendMessage(
             { attachment: img.data },
             event.threadID,
-            () => {
-              // Delete fancy text message after image is sent
-              api.unsendMessage(info.messageID);
-            }
+            () => api.unsendMessage(info.messageID)
           );
         }, 1200);
       });
