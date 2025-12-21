@@ -4,57 +4,50 @@ module.exports = {
 	config: {
 		name: "waifu",
 		aliases: ["wife"],
-		version: "1.0",
-		author: "tas3n",
+		version: "1.2",
+		author: "AYAN BBE💋",
 		countDown: 6,
 		role: 0,
-		shortDescription: "get random waifu",
-		longDescription: "Get waifu neko: waifu, neko, shinobu, megumin, bully, cuddle, cry, kiss, lick, hug, awoo, pat, smug, bonk, yeet, blush, smile, wave, highfive, handhold, nom, bite, glomp, slap, kill, kick, happy, wink, poke, dance, cringe",
+		shortDescription: "Get a random waifu image (VIP only)",
+		longDescription: "Get waifu images like: waifu, neko, shinobu, megumin, bully, cuddle, cry, kiss, lick, hug, awoo, pat, smug, bonk, yeet, blush, smile, wave, highfive, handhold, nom, bite, glomp, slap, kill, kick, happy, wink, poke, dance, cringe",
 		category: "anime",
-		guide: "{pn} {{<name>}}"
+		guide: "{pn} <category>"
 	},
 
-	onStart: async function ({ message, args }) {
-		const name = args.join(" ");
-		if (!name)
+	onStart: async function ({ message, args, userID }) {
+		const user = global.Users[userID];
 
-			try {
-				let res = await axios.get(`https://api.waifu.pics/sfw/waifu`)
+		// VIP চেক
+		if (!user || !user.vip) {
+			// Cute short message for non-VIP users
+			return message.reply("🍼 ʙᴀʙʏ, ʙᴜʏ ᴠɪᴘ ғɪʀsᴛ ᴛʜᴇɴ ᴜsᴇ ᴄᴏᴍᴍᴀɴᴅ 🥺💋");
+		}
 
+		// Balance চেক
+		if (user.balance < 1000) {
+			return message.reply("⚠️ তোমার balance পর্যাপ্ত নয়। এই কমান্ড ব্যবহার করতে 1000 balance লাগবে।");
+		}
 
-				let res2 = res.data
-				let img = res2.url
+		// 1000 balance কেটে দেওয়া
+		user.balance -= 1000;
 
-				const form = {
-					body: `   「 𝔀𝓪𝓲𝓯𝓾  」   `
+		const category = args.join(" ") || "waifu";
+		const apiURL = `https://api.waifu.pics/sfw/${category}`;
 
-				};
-				if (img)
-					form.attachment = await global.utils.getStreamFromURL(img);
-				message.reply(form);
-			} catch (e) {
-				message.reply(` Not Found`)
-			}
+		try {
+			const res = await axios.get(apiURL);
+			const imgURL = res.data.url;
 
+			if (!imgURL) throw new Error("No image found");
 
-		else {
+			const form = {
+				body: `「 𝔀𝓪𝓲𝓯𝓾 」\n💸 1000 balance কেটে দেওয়া হয়েছে। বর্তমান balance: ${user.balance}`,
+				attachment: await global.utils.getStreamFromURL(imgURL)
+			};
 
-			try {
-				let res = await axios.get(`https://api.waifu.pics/sfw/${name}`)
-
-
-				let res2 = res.data
-				let img1 = res2.url
-
-				const form = {
-					body: `   「 𝔀𝓪𝓲𝓯𝓾  」   `
-
-				};
-				if (img1)
-					form.attachment = await global.utils.getStreamFromURL(img1);
-				message.reply(form);
-			} catch (e) { message.reply(` No waifu  \category: waifu, neko, shinobu, megumin, bully, cuddle, cry, kiss, lick, hug, awoo, pat, smug, bonk, yeet, blush, smile, wave, highfive, handhold, nom, bite, glomp, slap, kill, kick, happy, wink, poke, dance, cringe `) }
-
+			message.reply(form);
+		} catch (err) {
+			message.reply(`No waifu found for category: "${category}".\nAvailable categories: waifu, neko, shinobu, megumin, bully, cuddle, cry, kiss, lick, hug, awoo, pat, smug, bonk, yeet, blush, smile, wave, highfive, handhold, nom, bite, glomp, slap, kill, kick, happy, wink, poke, dance, cringe`);
 		}
 	}
 };
