@@ -1,7 +1,7 @@
 module.exports = {
   config: {
     name: "love",
-    version: "1.0",
+    version: "1.1",
     description: "Calculate love percentage between two people",
     guide: {
       en: "{pn} [name1] [name2]\nExample: love Tanjil Suayba"
@@ -12,18 +12,26 @@ module.exports = {
     author: "〲T A N J I L ツ"
   },
 
-  onStart: async function ({ message, args }) {
+  onStart: async function ({ message, args, usersData }) {
+    // Optional: VIP check (uncomment if you want only VIPs)
+    /*
+    const senderData = await usersData.get(message.senderID);
+    if (!senderData.vip) {
+      return message.reply("❌ This command is only available for VIP users.");
+    }
+    */
+
     if (args.length < 2) {
-      return message.reply("দয়া করে দুইটি নাম লিখুন!\nযেমন: love Tanjil suayba ");
+      return message.reply("দয়া করে দুইটি নাম লিখুন!\nযেমন: love Tanjil Suayba");
     }
 
     const name1 = args[0];
     const name2 = args[1];
 
-    // Generate a random love percentage
+    // Random love percentage
     const lovePercent = Math.floor(Math.random() * 101);
 
-    // Custom messages based on percentage
+    // Custom comment based on percentage
     let comment = "";
     if (lovePercent > 90) {
       comment = "ভালোবাসার রাজা-রানী! একদম পারফেক্ট কপল!";
@@ -37,9 +45,8 @@ module.exports = {
       comment = "ভাই-বোন মনে হচ্ছে! ভালোবাসা খুঁজে নাও অন্য কোথাও!";
     }
 
-    // Final message
     const result = `❤️ Love Calculator ❤️
-    
+
 ${name1} + ${name2}
 ম্যাচ পার্সেন্টেজ: ${lovePercent}%
 
