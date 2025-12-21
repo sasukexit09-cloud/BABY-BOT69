@@ -1,23 +1,32 @@
 module.exports = {
   config: {
     name: "AYAN",
-    version: "1.0",
+    version: "1.3",
     author: "aYan",
     countDown: 5,
     role: 0,
-    shortDescription: "no prefix",
-    longDescription: "no prefix trigger",
+    shortDescription: "mention owner trigger",
+    longDescription: "trigger only when owner is mentioned",
     category: "no prefix",
   },
 
   onStart: async function () {},
 
   onChat: async function ({ event, message }) {
-    if (!event.body) return;
+    // কোনো মেনশন না থাকলে কিছু করবে না
+    if (!event.mentions || Object.keys(event.mentions).length === 0) return;
 
-    const text = event.body.toLowerCase();
+    // এখানে owner এর Facebook ID দিন
+    const ownerID = "61584308632995"; // <-- এখানে owner এর ID বসাতে হবে
 
-    if (text === "ayan") {
+    // মেনশনগুলো চেক করা হচ্ছে
+    if (!event.mentions[ownerID]) return;
+
+    try {
+      const videoStream = await global.utils.getStreamFromURL(
+        "https://files.catbox.moe/qh4864.mp4"
+      );
+
       return message.reply({
         body:
 `═════════════◊
@@ -27,11 +36,10 @@ module.exports = {
 🤖 𝐁𝐨𝐭 𝐍𝐚𝐦𝐞:- ◦•●♡ʏᴏᴜʀ ʙʙʏ♡●•◦
 📩 𝐂𝐨𝐧𝐭𝐚𝐜𝐭:- [Click Here](https://m.me/Ayanokujo.6969)
 ═════════════◊`,
-
-        attachment: await global.utils.getStreamFromURL(
-          "https://files.catbox.moe/qh4864.mp4"
-        )
+        attachment: videoStream
       });
+    } catch (err) {
+      return message.reply("ভিডিও লোড করতে সমস্যা হচ্ছে। আবার চেষ্টা করুন।");
     }
   }
 };
