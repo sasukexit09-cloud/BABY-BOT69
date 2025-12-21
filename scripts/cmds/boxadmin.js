@@ -2,7 +2,7 @@ module.exports.config = {
   name: "boxadmin",
   version: "2.0.0",
   hasPermssion: 2,
-  credits: "SHAHADAT SAHU",
+  credits: "AYAN BBE💋",
   description: "Add/remove/list admin via me, mention, reply, or onStart",
   commandCategory: "system",
   usages: "boxadmin me | boxadmin add/remove @mention | boxadmin list | reply",
