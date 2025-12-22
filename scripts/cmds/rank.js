@@ -38,14 +38,15 @@ const crowns = {
 const vipBadgeUrl = "https://files.catbox.moe/46spgx.jpeg";
 const ownerBadgeUrl = "https://files.catbox.moe/2fts8y.jpg"; // set your owner badge
 
+// ===== RANK CARD MODULE =====
 module.exports = {
   config: {
     name: "rankchat",
-    version: "3.0",
+    version: "4.0",
     author: "Chitron Bhattacharjee + Maya",
     role: 0,
     category: "ranking",
-    shortDescription: { en: "Rank card with VIP, Owner & crowns" }
+    shortDescription: { en: "Rank card with VIP, Owner, crowns & fixed background" }
   },
 
   onChat: async function ({ message, event, usersData }) {
@@ -76,9 +77,19 @@ module.exports = {
       avatar = await Canvas.loadImage("https://i.imgur.com/6VBx3io.png");
     }
 
+    // ===== FIXED BACKGROUND =====
+    let background;
+    try {
+      background = await Canvas.loadImage("https://files.catbox.moe/mrcepc.jpg"); // fixed background
+    } catch {
+      background = await Canvas.loadImage("https://i.imgur.com/3fJ1P48.png"); // fallback
+    }
+
     const canvas = Canvas.createCanvas(600, 180);
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw background
+    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
     // ===== AVATAR CIRCLE =====
     const cx = 90, cy = 90, radius = 55;
