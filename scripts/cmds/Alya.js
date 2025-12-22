@@ -7,14 +7,14 @@ const OWNER_ID = "61584308632995";
 
 module.exports = {
   config: {
-    name: "alya",
+    name: "Alya",
     version: "1.2",
     author: "Maya",
     role: 0,
     shortDescription: "Chat with ChatGPT (VIP auto detect)",
-    longDescription: "alya on/off করে ChatGPT এর সাথে কথা বলা (VIP & Owner only)",
+    longDescription: "Alya on/off করে ChatGPT এর সাথে কথা বলা (VIP & Owner only)",
     category: "ai",
-    guide: "{p}alya on | off"
+    guide: "{p}Alya on | off"
   },
 
   onStart: async function ({ api, event, args, usersData }) {
