@@ -2,21 +2,27 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
-const mahmud = async () => {
-  const response = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
-  return response.data.mahmud;
+// Fetch base API URL
+const getBaseApiUrl = async () => {
+  try {
+    const response = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
+    return response.data.mahmud;
+  } catch (err) {
+    console.error("Failed to fetch base API URL:", err.message);
+    throw new Error("Base API URL fetch failed");
+  }
 };
 
 module.exports = {
   config: {
     name: "anime",
     aliases: ["anivid", "animevideo"],
-    version: "1.8",
+    version: "2.0",
     role: 0,
     author: "MahMUD",
     category: "anime",
     guide: {
-      en: "Use {pn} to get a random anime video or {pn} list to see total anime count."
+      en: "Use {pn} to get a random anime video or {pn} list to see total anime categories."
     }
   },
 
@@ -28,7 +34,7 @@ module.exports = {
   onStart: async function ({ api, event, message, args, usersData }) {
     try {
       const senderID = event.senderID;
-      const OWNER_UID = ["61584308632995"]; // নিজের UID বসাও
+      const OWNER_UID = ["61584308632995"]; // নিজের UID
       const vip = OWNER_UID.includes(senderID) || await this.isVIP(senderID, usersData);
 
       // Non-VIP balance check
@@ -43,55 +49,59 @@ module.exports = {
         await usersData.set(senderID, { money: balance - 1000 });
       }
 
-      if (args[0] === "list") {
-        const apiUrl = await mahmud();
-        const response = await axios.get(`${apiUrl}/api/album/list`);
-        const lines = response.data.message.split("\n");
+      const apiUrl = await getBaseApiUrl();
+
+      // List mode
+      if (args[0]?.toLowerCase() === "list") {
+        const res = await axios.get(`${apiUrl}/api/album/list`);
+        const lines = res.data.message.split("\n");
         const animeCategories = lines.filter(line =>
           /anime/i.test(line) && !/hanime/i.test(line) && !/Total\s*anime/i.test(line)
         );
-        if (!animeCategories.length) {
-          return api.sendMessage("❌ | No anime categories found.", event.threadID, event.messageID);
-        }
+        if (!animeCategories.length) return api.sendMessage("❌ | No anime categories found.", event.threadID, event.messageID);
         return api.sendMessage(animeCategories.join("\n"), event.threadID, event.messageID);
       }
 
-      const loadingMessage = await message.reply("🐤 | 𝗟𝗼𝗮𝗱𝗶𝗻𝗴 𝗿𝗮𝗻𝗱𝗼𝗺 𝗮𝗻𝗶𝗺𝗲 𝘃𝗶𝗱𝗲𝗼... 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁..!!");
+      // Loading message
+      const loadingMsg = await message.reply("🐤 | 𝗟𝗼𝗮𝗱𝗶𝗻𝗴 random anime video... Please wait!");
 
       setTimeout(() => {
-        api.unsendMessage(loadingMessage.messageID);
+        try { api.unsendMessage(loadingMsg.messageID); } catch {}
       }, 5000);
 
-      const apiUrl = await mahmud();
-      const res = await axios.get(`${apiUrl}/api/album/videos/anime?userID=${event.senderID}`);
+      // Fetch random video
+      const res = await axios.get(`${apiUrl}/api/album/videos/anime?userID=${senderID}`);
       if (!res.data.success || !res.data.videos.length)
         return api.sendMessage("❌ | No videos found.", event.threadID, event.messageID);
 
-      const url = res.data.videos[Math.floor(Math.random() * res.data.videos.length)];
+      const videoUrl = res.data.videos[Math.floor(Math.random() * res.data.videos.length)];
       const filePath = path.join(__dirname, "temp_video.mp4");
 
-      const video = await axios({
-        url,
+      const videoStream = await axios({
+        url: videoUrl,
         method: "GET",
         responseType: "stream",
         headers: { 'User-Agent': 'Mozilla/5.0' }
       });
 
       const writer = fs.createWriteStream(filePath);
-      video.data.pipe(writer);
+      videoStream.data.pipe(writer);
 
       writer.on("finish", () => {
         api.sendMessage({
-          body: "✨ | 𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝐚𝐧𝐢𝐦𝐞 𝐯𝐢𝐝𝐞𝐨",
+          body: "✨ | Here's your anime video",
           attachment: fs.createReadStream(filePath)
-        }, event.threadID, () => fs.unlinkSync(filePath), event.messageID);
+        }, event.threadID, () => {
+          try { fs.unlinkSync(filePath); } catch {}
+        }, event.messageID);
       });
 
       writer.on("error", () => {
         api.sendMessage("❌ | Download error.", event.threadID, event.messageID);
       });
-    } catch (e) {
-      console.error("ERROR:", e);
+
+    } catch (err) {
+      console.error("ERROR:", err);
       api.sendMessage("❌ | Failed to fetch or send video.", event.threadID, event.messageID);
     }
   }
