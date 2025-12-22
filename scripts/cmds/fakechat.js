@@ -4,165 +4,147 @@ const path = require("path");
 const axios = require("axios");
 
 /* ===== SETTINGS ===== */
-const PRICE = 200000; // 200k balance
-const OWNER_UID = ["61584308632995"]; // 👉 নিজের FB UID বসাও
+const PRICE = 200000;
+const OWNER_UID = ["61584308632995"]; // 👈 নিজের UID
 
 module.exports = {
   config: {
     name: "fakechat",
     aliases: ["fc"],
-    version: "VIP-PAID",
+    version: "2.0",
     author: "🥵AYAN BBE🥵💋",
     category: "fun",
     guide: "Reply → {p}fc Hi | How are you?"
   },
 
-  isVIP: async function (userID, usersData) {
-    const data = await usersData.get(userID);
+  isVIP: async function (uid, usersData) {
+    const data = await usersData.get(uid);
     return data?.isVIP === true;
   },
 
-  onStart: async function ({ event, message, api, args, usersData }) {
-    if (event.type !== "message_reply")
-      return message.reply("❌ Reply করে fc command দাও");
+  onStart: async function ({ api, event, message, args, usersData }) {
+    if (!event.messageReply)
+      return message.reply("❌ Reply করে fakechat command দাও");
 
     const senderID = event.senderID;
     const isOwner = OWNER_UID.includes(senderID);
-    const vip = await this.isVIP(senderID, usersData);
+    const isVip = await this.isVIP(senderID, usersData);
 
-    /* ===== BALANCE CHECK ===== */
-    if (!isOwner && !vip) {
+    /* ===== BALANCE ===== */
+    if (!isOwner && !isVip) {
       const userData = await usersData.get(senderID);
-      const balance = userData?.money || 0;
+      const money = userData?.money || 0;
 
-      if (balance < PRICE)
-        return message.reply(
-          `❌ এই command ব্যবহার করতে 200,000 balance লাগবে\n💰 তোমার balance: ${balance}`
-        );
+      if (money < PRICE)
+        return message.reply(`❌ 200,000 balance লাগবে\n💰 তোমার balance: ${money}`);
 
-      await usersData.set(senderID, { money: balance - PRICE });
+      await usersData.set(senderID, { money: money - PRICE });
     }
 
-    /* ===== MAIN CODE ===== */
-    const uid = event.messageReply.senderID;
-    const texts = args.join(" ").split("|").map(t => t.trim());
-
     try {
+      const uid = event.messageReply.senderID;
+      const texts = args.join(" ").split("|").map(t => t.trim()).filter(Boolean);
+      if (!texts.length) return message.reply("❌ Message দাও");
+
       const userInfo = await getUserInfo(api, uid);
 
-      /* ===== AVATAR ===== */
-      let avatarImg;
-      try {
-        avatarImg = await loadImage(
-          `https://graph.facebook.com/${uid}/picture?width=512&height=512`
-        );
-      } catch {
-        avatarImg = await loadImage(
-          "https://cdn-icons-png.flaticon.com/512/149/149071.png"
-        );
-      }
+      /* ===== AVATAR (REAL FB PROFILE PIC) ===== */
+      const avatarImg = await getAvatar(uid);
 
       /* ===== FONT ===== */
-      const fontPath = path.join(__dirname, "MessengerFont.ttf");
+      const fontPath = path.join(__dirname, "Messenger.ttf");
       if (!fs.existsSync(fontPath)) {
         await downloadFile(
-          "https://drive.google.com/uc?export=download&id=1MYZkDHgHtGgyVEf2bFrOc0A-tlFvzYqL",
+          "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans-Regular.ttf",
           fontPath
         );
       }
 
-      if (!global.__messengerFontLoaded) {
+      if (!global.__fcFontLoaded) {
         registerFont(fontPath, { family: "Messenger" });
-        global.__messengerFontLoaded = true;
+        global.__fcFontLoaded = true;
       }
 
-      /* ===== CANVAS PREP ===== */
-      const canvasWidth = 820;
-      const lineHeight = 28;
-      const bubblePadX = 18;
-      const bubblePadY = 14;
-      const gapY = 22;
+      /* ===== CANVAS CALC ===== */
+      const W = 820;
+      const padX = 18;
+      const padY = 14;
+      const lineH = 28;
+      const gap = 22;
       let y = 90;
 
-      const tempCtx = createCanvas(1, 1).getContext("2d");
-      tempCtx.font = "24px Messenger";
-      const maxBubbleWidth = canvasWidth - 240;
+      const temp = createCanvas(1, 1).getContext("2d");
+      temp.font = "24px Messenger";
+      const maxW = W - 240;
 
-      const bubbles = [];
-      for (const text of texts) {
-        const lines = wrapText(tempCtx, text, maxBubbleWidth - bubblePadX * 2);
-        const textWidth = Math.max(...lines.map(l => tempCtx.measureText(l).width));
-        bubbles.push({
+      const bubbles = texts.map(text => {
+        const lines = wrap(temp, text, maxW - padX * 2);
+        const w = Math.max(...lines.map(l => temp.measureText(l).width));
+        return {
           lines,
-          width: textWidth + bubblePadX * 2,
-          height: lines.length * lineHeight + bubblePadY * 2
-        });
-      }
+          w: w + padX * 2,
+          h: lines.length * lineH + padY * 2
+        };
+      });
 
-      const canvasHeight =
-        bubbles.reduce((s, b) => s + b.height + gapY, 0) + 140;
-
-      const canvas = createCanvas(canvasWidth, canvasHeight);
+      const H = bubbles.reduce((s, b) => s + b.h + gap, 0) + 140;
+      const canvas = createCanvas(W, H);
       const ctx = canvas.getContext("2d");
 
       /* ===== BG ===== */
       ctx.fillStyle = "#0f1115";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, W, H);
 
-      const displayName =
+      const name =
         userInfo.name.length > 18
           ? userInfo.name.slice(0, 18) + "…"
           : userInfo.name;
 
-      for (const bubble of bubbles) {
+      for (const b of bubbles) {
         ctx.fillStyle = "#b0b3b8";
         ctx.font = "16px Messenger";
-        ctx.fillText(displayName, 92, y - 8);
+        ctx.fillText(name, 92, y - 8);
 
         ctx.fillStyle = "#2a2d31";
-        roundRect(ctx, 92, y, bubble.width, bubble.height, 22);
+        round(ctx, 92, y, b.w, b.h, 22);
 
         ctx.fillStyle = "#e4e6eb";
         ctx.font = "24px Messenger";
         ctx.textBaseline = "middle";
 
-        const totalTextHeight = bubble.lines.length * lineHeight;
-        let ty = y + bubble.height / 2 - totalTextHeight / 2 + lineHeight / 2;
-
-        for (const line of bubble.lines) {
-          ctx.fillText(line, 92 + bubblePadX, ty);
-          ty += lineHeight;
+        let ty = y + b.h / 2 - (b.lines.length * lineH) / 2 + lineH / 2;
+        for (const l of b.lines) {
+          ctx.fillText(l, 92 + padX, ty);
+          ty += lineH;
         }
 
-        const avatarCenterY = y + bubble.height / 2;
-
+        const ay = y + b.h / 2;
         ctx.save();
         ctx.beginPath();
-        ctx.arc(55, avatarCenterY, 22, 0, Math.PI * 2);
+        ctx.arc(55, ay, 22, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(avatarImg, 33, avatarCenterY - 22, 44, 44);
+        ctx.drawImage(avatarImg, 33, ay - 22, 44, 44);
         ctx.restore();
 
         ctx.beginPath();
-        ctx.arc(68, avatarCenterY + 14, 6, 0, Math.PI * 2);
+        ctx.arc(68, ay + 14, 6, 0, Math.PI * 2);
         ctx.fillStyle = "#31a24c";
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(68, avatarCenterY + 14, 7.5, 0, Math.PI * 2);
+        ctx.arc(68, ay + 14, 7.5, 0, Math.PI * 2);
         ctx.strokeStyle = "#0f1115";
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        y += bubble.height + gapY;
+        y += b.h + gap;
       }
 
-      const file = path.join(__dirname, `fc_${Date.now()}.png`);
-      fs.writeFileSync(file, canvas.toBuffer());
+      const out = path.join(__dirname, `fakechat_${Date.now()}.png`);
+      fs.writeFileSync(out, canvas.toBuffer());
 
-      message.reply({ attachment: fs.createReadStream(file) }, () =>
-        fs.unlinkSync(file)
-      );
+      await message.reply({ attachment: fs.createReadStream(out) });
+      fs.unlinkSync(out);
 
     } catch (e) {
       console.error(e);
@@ -172,23 +154,35 @@ module.exports = {
 };
 
 /* ===== HELPERS ===== */
-function wrapText(ctx, text, maxWidth) {
+
+async function getAvatar(uid) {
+  try {
+    const res = await axios.get(
+      `https://graph.facebook.com/${uid}/picture?width=512&height=512&redirect=true`,
+      { responseType: "arraybuffer" }
+    );
+    return await loadImage(res.data);
+  } catch {
+    return await loadImage("https://cdn-icons-png.flaticon.com/512/149/149071.png");
+  }
+}
+
+function wrap(ctx, text, max) {
   const words = text.split(" ");
   const lines = [];
   let line = "";
-
   for (const w of words) {
-    const test = line ? line + " " + w : w;
-    if (ctx.measureText(test).width > maxWidth) {
+    const t = line ? line + " " + w : w;
+    if (ctx.measureText(t).width > max) {
       if (line) lines.push(line);
       line = w;
-    } else line = test;
+    } else line = t;
   }
   if (line) lines.push(line);
   return lines;
 }
 
-function roundRect(ctx, x, y, w, h, r) {
+function round(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -200,8 +194,8 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 async function downloadFile(url, p) {
-  const res = await axios.get(url, { responseType: "arraybuffer" });
-  fs.writeFileSync(p, res.data);
+  const r = await axios.get(url, { responseType: "arraybuffer" });
+  fs.writeFileSync(p, r.data);
 }
 
 function getUserInfo(api, uid) {
