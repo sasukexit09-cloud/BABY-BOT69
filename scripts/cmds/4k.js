@@ -4,46 +4,75 @@ module.exports = {
   config: {
     name: "4k",
     aliases: ["upscale"],
-    version: "1.1",
+    version: "1.3",
     role: 0,
-    author: "ArYAN",
+    author: "ArYAN • VIP by Maya",
     countDown: 5,
-    longDescription: "Upscale images to 4K resolution.",
+    longDescription: "Upscale images to 4K resolution (VIP only)",
     category: "image",
     guide: {
-      en: "${pn} reply to an image to upscale it to 4K resolution."
+      en: "{pn} reply to an image to upscale it (VIP only)"
     }
   },
 
-  onStart: async function ({ message, event }) {
-    if (
-      !event.messageReply ||
-      !event.messageReply.attachments ||
-      !event.messageReply.attachments[0] ||
-      event.messageReply.attachments[0].type !== "photo"
-    ) {
-      return message.reply("📸 𝙿𝚕𝚎𝚊𝚜𝚎 𝚛𝚎𝚙𝚕𝚢 𝚝𝚘 𝚊𝚗 𝚒𝚖𝚊𝚐𝚎 𝚝𝚘 𝚞𝚙𝚜𝚌𝚊𝚕𝚎 𝚒𝚝");
-    }
+  onStart: async function ({ message, event, usersData }) {
+    try {
+      /* ===== VIP CHECK ===== */
+      const userData = await usersData.get(event.senderID);
 
-    const imgurl = encodeURIComponent(event.messageReply.attachments[0].url);
-    const upscaleUrl = `https://aryan-xyz-upscale-api-phi.vercel.app/api/upscale-image?imageUrl=${imgurl}&apikey=ArYANAHMEDRUDRO`;
-
-    message.reply("⚠️ Wait a moment. Your picture is 4k", async (err, info) => {
-      try {
-        const response = await axios.get(upscaleUrl);
-        const imageUrl = response.data.resultImageUrl;
-        const attachment = await global.utils.getStreamFromURL(imageUrl, "upscaled.png");
-
-        message.reply({
-          body: "✅ Create your photo ☘️",
-          attachment
-        });
-
-        message.unsend(info.messageID);
-      } catch (error) {
-        console.error("Upscale Error:", error.message);
-        message.reply("❌ 𝙴𝚛𝚛𝚘𝚛 𝚘𝚌𝚌𝚞𝚛𝚛𝚎𝚍 𝚝𝚑𝚎 𝚒𝚖𝚊𝚐𝚎.");
+      if (!userData || userData.vip !== true) {
+        return message.reply(
+          "🔒 এই কমান্ডটি শুধু VIP user দের জন্য\n💎 VIP নিতে Admin এর সাথে যোগাযোগ করো বা —!vip buy কমান্ড দিয়ে vip কিনুন"
+        );
       }
-    });
+      /* ===================== */
+
+      const reply = event.messageReply;
+
+      if (
+        !reply ||
+        !reply.attachments ||
+        !reply.attachments[0] ||
+        reply.attachments[0].type !== "photo"
+      ) {
+        return message.reply("📸 অনুগ্রহ করে একটি ছবিতে reply দিয়ে কমান্ড ব্যবহার করো");
+      }
+
+      const imageUrl = reply.attachments[0].url;
+      const apiUrl =
+        "https://aryan-xyz-upscale-api-phi.vercel.app/api/upscale-image";
+
+      const waitMsg = await message.reply("⚙️ 4K তে convert হচ্ছে... অপেক্ষা করো");
+
+      const { data } = await axios.get(apiUrl, {
+        params: {
+          imageUrl,
+          apikey: "ArYANAHMEDRUDRO"
+        },
+        timeout: 30000
+      });
+
+      if (!data || !data.resultImageUrl) {
+        throw new Error("Invalid API response");
+      }
+
+      const stream = await global.utils.getStreamFromURL(
+        data.resultImageUrl,
+        "4k-upscaled.png"
+      );
+
+      await message.reply({
+        body: "✅ 4K Upscale Complete ☘️",
+        attachment: stream
+      });
+
+      if (waitMsg?.messageID) {
+        message.unsend(waitMsg.messageID);
+      }
+
+    } catch (err) {
+      console.error("4K VIP Upscale Error:", err);
+      message.reply("❌ ছবি upscale করতে সমস্যা হয়েছে। পরে আবার চেষ্টা করো।");
+    }
   }
 };
