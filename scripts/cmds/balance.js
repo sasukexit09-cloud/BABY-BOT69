@@ -125,10 +125,10 @@ module.exports = {
     let cardBg = null;
     try {
       if (uid === OWNER_ID) {
-        const ownerRes = await axios.get("https://files.catbox.moe/hyxrio.jpg", { responseType: "arraybuffer" });
+        const ownerRes = await axios.get("https://files.catbox.moe/a421v8.jpg", { responseType: "arraybuffer" });
         cardBg = await loadImage(ownerRes.data);
       } else if (user.vip) {
-        const vipRes = await axios.get("https://files.catbox.moe/gank8i.jpg", { responseType: "arraybuffer" });
+        const vipRes = await axios.get("https://files.catbox.moe/mbl729.jpg", { responseType: "arraybuffer" });
         cardBg = await loadImage(vipRes.data);
       }
     } catch {
