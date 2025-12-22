@@ -1,53 +1,33 @@
 module.exports = {
   config: {
     name: "profile",
-    aliases: ["pp"],
-    version: "1.4",
-    author: "Tarek Shikdar (fixed UID input support)",
+    aliases: ["pfp", "pp"],
+    version: "1.1",
+    author: "dipto",
     countDown: 5,
     role: 0,
-    shortDescription: "Show profile picture",
-    longDescription: "Get profile picture, UID, and profile link of yourself or any user",
+    description: "PROFILE image",
     category: "image",
-    guide: {
-      en: "{pn} [@tag | reply | UID]\n- No input: shows your own profile picture\n- @mention: shows mentioned user's profile pic\n- Reply: shows replied user's pic\n- UID: show profile picture of specific UID"
-    }
+    guide: { en: "{pn} @tag or userID or reply to a message or provide a Facebook URL" }
   },
-
-  langs: {
-    en: {
-      noTag: "You must tag or reply to someone to get their profile picture"
-    }
-  },
-
   onStart: async function ({ event, message, usersData, args }) {
-    let uid;
-
-    if (args[0] && /^\d{8,20}$/.test(args[0])) {
-      // UID directly provided
-      uid = args[0];
-    } else if (event.type === "message_reply") {
-      uid = event.messageReply.senderID;
-    } else if (Object.keys(event.mentions).length > 0) {
-      uid = Object.keys(event.mentions)[0];
-    } else {
-      uid = event.senderID;
-    }
+    const getAvatarUrl = async (uid) => await usersData.getAvatarUrl(uid);
+    const uid = Object.keys(event.mentions)[0] || args[0] || event.senderID;
+    let avt;
 
     try {
-      const avatarUrl = await usersData.getAvatarUrl(uid);
-      const userInfo = await usersData.get(uid);
-      const name = userInfo?.name || "Unknown";
-
-      const stream = await global.utils.getStreamFromURL(avatarUrl);
-
-      message.reply({
-        body: `👤 Name: ${name}\n🔎 UID: ${uid}\n🔗 Link: https://facebook.com/${uid}`,
-        attachment: stream
-      });
-    } catch (err) {
-      message.reply("❌ Couldn't fetch profile info or picture.");
-      console.error(err);
+      if (event.type === "message_reply") {
+        avt = await getAvatarUrl(event.messageReply.senderID);
+      } else if (args.join(" ").includes("facebook.com")) {
+        const match = args.join(" ").match(/(\d+)/);
+        if (match) avt = await getAvatarUrl(match[0]);
+        else throw new Error("Invalid Facebook URL.");
+      } else {
+        avt = await getAvatarUrl(uid);
+      }
+      message.reply({ body: "", attachment: await global.utils.getStreamFromURL(avt) });
+    } catch (error) {
+      message.reply(`⚠️ Error: ${error.message}`);
     }
   }
 };
