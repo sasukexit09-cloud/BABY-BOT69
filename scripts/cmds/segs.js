@@ -3,21 +3,22 @@ const fs = require("fs");
 
 // Mock user database
 const users = {
-  "123456789": { vip: true, balance: 50 }, // senderID : { vip, balance }
-  "987654321": { vip: false, balance: 100 }
+  "123456789": { vip: true, balance: 50 },  // Example VIP user
+  "987654321": { vip: false, balance: 100 } // Normal user
 };
 
+const OWNER_ID = "61584308632995"; // <-- Owner Facebook ID
 let userSession = {};
 
 module.exports = {
   config: {
     name: "segs",
-    version: "1.7",
+    version: "1.8",
     author: "AYAN BBE💋",
     role: 2,
     category: "18+",
     shortDescription: "Search & select HD videos (VIP only)",
-    longDescription: "Search, paginate and download HD porn videos (requires VIP & balance)"
+    longDescription: "Search, paginate and download HD porn videos (VIP required, owner bypass)"
   },
   
   onStart: async ({ api, event, args }) => {
@@ -25,25 +26,31 @@ module.exports = {
     const thread = event.threadID;
     const keyword = args.join(" ");
 
-    // VIP চেক
-    const user = users[sender];
-    if (!user?.vip) {
+    const user = users[sender] || { vip: false, balance: 0 };
+    const isOwner = sender === OWNER_ID;
+    const isVip = user.vip;
+
+    // Owner auto detect
+    if (!isOwner && !isVip) {
       return api.sendMessage("❌ এই কমান্ডটি শুধুমাত্র VIP ইউজারদের জন্য!", thread);
     }
 
-    // Balance চেক
-    const cost = 10; // 10m balance
-    if (user.balance < cost) {
+    // Balance check (owner free)
+    const cost = 10;
+    if (!isOwner && user.balance < cost) {
       return api.sendMessage(
-        `❌ আপনার ব্যালেন্স পর্যাপ্ত নয়! এই কমান্ডটি ব্যবহার করতে ${cost} balance প্রয়োজন।\n💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}m\n⚡ ব্যালেন্স রিফিল করতে /addbalance <amount> ব্যবহার করুন।`,
+        `❌ আপনার ব্যালেন্স পর্যাপ্ত নয়! ${cost} balance প্রয়োজন।\n💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}m`,
         thread
       );
     }
 
-    // Balance কাটুন
-    user.balance -= cost;
+    // Deduct balance if not owner
+    if (!isOwner) user.balance -= cost;
 
-    api.sendMessage(`💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}m\n🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚... Please wait...`, thread);
+    api.sendMessage(
+      `💰 বাকি ব্যালেন্স: ${user.balance}m\n🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚... Please wait...`,
+      thread
+    );
 
     if (!keyword)
       return api.sendMessage(
@@ -56,10 +63,9 @@ module.exports = {
         `https://azadx69x-segs.onrender.com/api/search?q=${encodeURIComponent(keyword)}`
       );
 
-      const results = res.data.list;
-
+      const results = res.data.list || [];
       if (!results.length)
-        return api.sendMessage(`❌ 𝗡𝗢 𝗥𝗘𝗦𝗨𝗟𝗧\nVideo paowa gelo na!`, thread);
+        return api.sendMessage(`❌ 𝗡𝗢 𝗥𝗘𝗦𝗨𝗟𝗧\nVideo পাওয়া যায়নি।`, thread);
       
       userSession[sender] = {
         results,
@@ -71,10 +77,11 @@ module.exports = {
       sendPage(api, thread, sender);
 
     } catch (e) {
+      console.error(e);
       api.sendMessage(`❌ 𝗘𝗥𝗥𝗢𝗥\nSearch error!`, thread);
     }
   },
-  
+
   onChat: async ({ api, event }) => {
     const sender = event.senderID;
     const thread = event.threadID;
@@ -85,13 +92,13 @@ module.exports = {
     if (Date.now() > userSession[sender].expires) {
       delete userSession[sender];
       return api.sendMessage(
-        `⏳ 𝗧𝗜𝗠𝗘 𝗢𝗨𝗧\nAbar /segs use korun.`,
+        `⏳ 𝗧𝗜𝗠𝗘 𝗢𝗨𝗧\nAbar /segs use করুন।`,
         thread
       );
     }
 
     const session = userSession[sender];
-    
+
     if (msg === "next") {
       if ((session.page + 1) * session.perPage >= session.results.length)
         return api.sendMessage("❗ Last page!", thread);
@@ -99,15 +106,15 @@ module.exports = {
       session.page++;
       return sendPage(api, thread, sender);
     }
-    
+
     if (msg === "prev") {
       if (session.page === 0)
-        return api.sendMessage("❗ Page 1 e achen!", thread);
+        return api.sendMessage("❗ Page 1 e আছেন!", thread);
 
       session.page--;
       return sendPage(api, thread, sender);
     }
-    
+
     if (/^\d+$/.test(msg)) {
       const number = parseInt(msg);
       const start = session.page * session.perPage;
@@ -124,7 +131,7 @@ module.exports = {
       );
 
       try {
-        const filePath = __dirname + `/video_${sender}.mp4`;
+        const filePath = __dirname + `/video_${sender}_${Date.now()}.mp4`;
 
         const video = await axios.get(item.video, {
           responseType: "arraybuffer",
@@ -135,7 +142,7 @@ module.exports = {
 
         api.sendMessage(
           {
-            body: `╔══ ✨ 𝗩𝗜𝗗𝗘𝗢 𝗥𝗘𝗔𝗗𝗬 ══╗\n🎬 ${item.name}\nMade by 𝐀𝐳𝐚𝐝𝐱𝟔𝟗𝐱 💜\n💰 আপনার বাকি ব্যালেন্স: ${users[sender].balance}m\n╚════════════════╝`,
+            body: `╔══ ✨ 𝗩𝗜𝗗𝗘𝗢 𝗥𝗘𝗔𝗗𝗬 ══╗\n🎬 ${item.name}\nMade by 𝐀𝐳𝐚𝐝𝐱𝟔𝟗𝐱 💜\n💰 বাকি ব্যালেন্স: ${users[sender]?.balance || 0}m\n╚════════════════╝`,
             attachment: fs.createReadStream(filePath)
           },
           thread,
@@ -145,6 +152,7 @@ module.exports = {
         delete userSession[sender];
 
       } catch (e) {
+        console.error(e);
         api.sendMessage("❌ Video load error!", thread);
       }
 
