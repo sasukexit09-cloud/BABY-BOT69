@@ -1,219 +1,173 @@
+const header = `👑 𝗛𝗜𝗠𝗔 𝗩𝗜𝗣 𝗨𝗦𝗘𝗥𝗦 👑`;
+
 const fs = require("fs");
 
-const header = `👑 𝗩𝗜𝗣 𝗨𝗦𝗘𝗥𝗦 👑`;
-
 const vipFilePath = "vip.json";
-const pendingFilePath = "pendingVip.json";
-const vipCmdFilePath = "vipCmd.json";
-const changelogFilePath = "changelog.json";
+const changelogFilePath = "changelog.json"; // Path to your changelog file
 
-const ADMIN_UIDS = ["61584308632995"];
-
-const VIP_OPTIONS = {
-  1: { price: 100_000, days: 1 },
-  2: { price: 250_000, days: 2 },
-  3: { price: 420_000, days: 3 },
-  4: { price: 540_000, days: 4 },
-  5: { price: 650_000, days: 5 },
-  6: { price: 700_000, days: 6 },
-  7: { price: 890_000, days: 7 },
-  15: { price: 500_000_000, days: 15 },
-  30: { price: 1_000_000_000, days: 30 }
-};
-
-function loadJSON(path) {
-  if (!fs.existsSync(path)) fs.writeFileSync(path, "{}");
-  try {
-    return JSON.parse(fs.readFileSync(path));
-  } catch {
-    return {};
-  }
+function loadVIPData() {
+	try {
+		const data = fs.readFileSync(vipFilePath);
+		return JSON.parse(data);
+	} catch (err) {
+		console.error("Error loading VIP data:", err);
+		return {};
+	}
 }
 
-function saveJSON(path, data) {
-  fs.writeFileSync(path, JSON.stringify(data, null, 2));
+function saveVIPData(data) {
+	try {
+		fs.writeFileSync(vipFilePath, JSON.stringify(data, null, 2));
+	} catch (err) {
+		console.error("Error saving VIP data:", err);
+	}
 }
 
-function cleanExpiredVIP(vipData) {
-  let changed = false;
-  for (const uid in vipData) {
-    const v = vipData[uid];
-    if (v.expiry && Date.now() > v.expiry) {
-      delete vipData[uid];
-      changed = true;
-    }
-  }
-  if (changed) saveJSON(vipFilePath, vipData);
-}
-
-function isVIP(uid, vipData) {
-  const vip = vipData[uid];
-  if (!vip) return false;
-  if (vip.type === "admin") return true;
-  if (vip.expiry && Date.now() > vip.expiry) return false;
-  return true;
+function loadChangelog() {
+	try {
+		const data = fs.readFileSync(changelogFilePath);
+		return JSON.parse(data);
+	} catch (err) {
+		console.error("Error loading changelog data:", err);
+		return {};
+	}
 }
 
 module.exports = {
-  config: {
-    name: "vip",
-    version: "8.0",
-    author: "AYAN BBE💋 (Fixed by Maya)",
-    role: 0,
-    category: "Config"
-  },
+	config: {
+		name: "vip",
+		version: "1.0", // Updated version to 1.0
+		author: "Aryan Chauhan",
+		role: 2,
+		category: "Config",
+		guide: {
+			en: "!vip add <uid> - Add a user to the VIP list\n!vip rm <uid> - Remove a user from the VIP list\n!vip list - List VIP users\n!vip changelog - View the changelog",
+		},
+	},
 
-  onStart: async function ({ api, event, args, message, usersData }) {
-    const senderID = event.senderID;
-    const sub = args[0];
+	onStart: async function ({ api, event, args, message, usersData }) {
+		const subcommand = args[0];
 
-    let vipData = loadJSON(vipFilePath);
-    let pendingData = loadJSON(pendingFilePath);
-    let vipCmds = loadJSON(vipCmdFilePath);
+		if (!subcommand) {
+			return;
+		}
 
-    cleanExpiredVIP(vipData);
+		// Load VIP data from the JSON file
+		let vipData = loadVIPData();
 
-    // ================= ADD VIP =================
-    if (sub === "add" && ADMIN_UIDS.includes(senderID)) {
-      let targets = [];
+		if (subcommand === "add") {
+			const uidToAdd = args[1];
+			if (uidToAdd) {
+				const userData = await usersData.get(uidToAdd);
+				if (userData) {
+					const userName = userData.name || "Unknown User";
+					// Send a message to the added VIP user
+					message.reply(`${header}
+${userName} (${uidToAdd}) has been successfully added to the VIP list.`);
+					api.sendMessage(`${header}
+Congratulations ${userName}! (${uidToAdd}), you have been added to the VIP list. Enjoy the VIP Features!!!`, uidToAdd);
+					// Send a message to all VIP users
+					Object.keys(vipData).forEach(async (uid) => {
+						if (uid !== uidToAdd) {
+							const vipUserData = await usersData.get(uid);
+							if (vipUserData) {
+								const vipUserName = vipUserData.name || "Unknown User";
+								api.sendMessage(`${header}
+Hello VIP Users! Let's welcome our new VIP user!
+Name: ${userName} (${uidToAdd})
+You can use vipnoti command if you want to send something to them!`, uid);
+							}
+						}
+					});
+					// Update the VIP data and save it
+					vipData[uidToAdd] = true;
+					saveVIPData(vipData);
+				} else {
+					message.reply(`${header}
+User with UID ${uidToAdd} not found.`);
+				}
+			} else {
+				message.reply(`${header}
+Please provide a UID to add to the VIP list.`);
+			}
+		} else if (subcommand === "rm") {
+			const uidToRemove = args[1];
+			if (uidToRemove && vipData[uidToRemove]) {
+				delete vipData[uidToRemove];
+				saveVIPData(vipData);
+				const userData = await usersData.get(uidToRemove);
+				if (userData) {
+					const userName = userData.name || "Unknown User";
+					message.reply(`${header}
+${userName} (${uidToRemove}) has been successfully removed from the VIP list.`);
+					// Send a message to the removed VIP user
+					api.sendMessage(`${header}
+Sorry ${userName} (${uidToRemove}), you have been removed from the VIP list.`, uidToRemove);
+					// Send a message to all VIP users
+					Object.keys(vipData).forEach(async (uid) => {
+						if (uid !== uidToRemove) {
+							const vipUserData = await usersData.get(uid);
+							if (vipUserData) {
+								const vipUserName = vipUserData.name || "Unknown User";
+								api.sendMessage(`${header}
+Hello VIP Users, our user ${userName} (${uidToRemove}) has been removed from VIP.`, uid);
+							}
+						}
+					});
+				} else {
+					message.reply(`${header}
+User with UID ${uidToRemove} not found.`);
+				}
+			} else {
+				message.reply(`${header}
+Please provide a valid UID to remove from the VIP list.`);
+			}
+		} else if (subcommand === "list") {
+			const vipList = await Promise.all(Object.keys(vipData).map(async (uid) => {
+				const userData = await usersData.get(uid);
+				if (userData) {
+					const userName = userData.name || "Unknown User";
+					return `• ${userName} (${uid})`;
+				} else {
+					return `• Unknown User (${uid})`;
+				}
+			}));
 
-      if (event.type === "message_reply")
-        targets.push(event.messageReply.senderID);
-      else if (Object.keys(event.mentions || {}).length)
-        targets = Object.keys(event.mentions);
-      else if (args[1])
-        targets.push(args[1]);
+			if (vipList.length > 0) {
+				message.reply(`${header}
 
-      if (!targets.length)
-        return message.reply(`${header}\nUID / Reply / Mention দাও`);
+» Our respected VIP Users:
 
-      for (const uid of targets) {
-        const user = await usersData.get(uid);
-        vipData[uid] = {
-          type: "admin",
-          name: user?.name || "Unknown"
-        };
-        api.sendMessage(`${header}\n🎉 তুমি এখন VIP`, uid);
-      }
+${vipList.join(`
+`) } 
 
-      saveJSON(vipFilePath, vipData);
-      return message.reply(`${header}\n✅ VIP Added`);
-    }
+Use !vip add/del <uid> to add or remove participants.`);
+			} else {
+				message.reply(`${header}
+The VIP list is currently empty.`);
+			}
+		} else if (subcommand === "changelog") {
+			// Display the changelog data
+			const changelogData = loadChangelog();
 
-    // ================= REMOVE VIP =================
-    if (sub === "rm" && ADMIN_UIDS.includes(senderID)) {
-      const uid = args[1];
-      if (!uid || !vipData[uid])
-        return message.reply(`${header}\nInvalid UID`);
+			if (changelogData) {
+				const changelogEntries = Object.keys(changelogData).filter((version) => parseFloat(version) >= 1.0);
 
-      delete vipData[uid];
-      saveJSON(vipFilePath, vipData);
-      api.sendMessage(`${header}\n❌ VIP Removed`, uid);
-      return message.reply(`${header}\nRemoved successfully`);
-    }
-
-    // ================= VIP LIST =================
-    if (sub === "list") {
-      const list = Object.entries(vipData)
-        .map(([uid, v]) => {
-          if (v.type === "admin") return `🛡 ${v.name} (${uid})`;
-          return `💰 ${v.name} (${uid}) → ${new Date(v.expiry).toLocaleString()}`;
-        })
-        .join("\n");
-
-      return message.reply(`${header}\n\n${list || "No VIP Found"}`);
-    }
-
-    // ================= VIP BUY =================
-    if (sub === "buy") {
-      if (isVIP(senderID, vipData))
-        return message.reply(`${header}\nতুমি আগেই VIP`);
-
-      const contact = args[1];
-      const days = parseInt(args[2]);
-      const review = args.slice(3).join(" ");
-
-      if (!contact || !days || !review)
-        return message.reply(
-          `${header}\nFormat:\n!vip buy Name-Contact <days> <review>`
-        );
-
-      if (!VIP_OPTIONS[days])
-        return message.reply(`${header}\nInvalid days`);
-
-      const key = Date.now().toString();
-
-      pendingData[key] = {
-        uid: senderID,
-        contact,
-        days,
-        price: VIP_OPTIONS[days].price,
-        review,
-        time: Date.now()
-      };
-
-      saveJSON(pendingFilePath, pendingData);
-
-      ADMIN_UIDS.forEach(a =>
-        api.sendMessage(
-          `${header}\n📩 New VIP Request\nUID: ${senderID}\nDays: ${days}\nPrice: ${VIP_OPTIONS[days].price}\nReview: ${review}`,
-          a
-        )
-      );
-
-      return message.reply(`${header}\n✅ Request sent for approval`);
-    }
-
-    // ================= VIP APPROVE =================
-    if (sub === "approve" && ADMIN_UIDS.includes(senderID)) {
-      const index = parseInt(args[1]) - 1;
-      const keys = Object.keys(pendingData).sort();
-
-      if (!keys[index])
-        return message.reply(`${header}\nInvalid number`);
-
-      const req = pendingData[keys[index]];
-      const userData = await usersData.get(req.uid);
-
-      if (userData.money < req.price)
-        return message.reply(`${header}\nUser has insufficient balance`);
-
-      await usersData.set(req.uid, {
-        money: userData.money - req.price
-      });
-
-      vipData[req.uid] = {
-        type: "purchase",
-        name: req.contact,
-        expiry: Date.now() + req.days * 86400000
-      };
-
-      delete pendingData[keys[index]];
-
-      saveJSON(vipFilePath, vipData);
-      saveJSON(pendingFilePath, pendingData);
-
-      api.sendMessage(`${header}\n🎉 VIP Approved`, req.uid);
-      return message.reply(`${header}\nVIP Activated`);
-    }
-
-    // ================= VIP CMD MANAGE =================
-    if (sub === "cmd" && ADMIN_UIDS.includes(senderID)) {
-      const action = args[1];
-      const cmd = args[2];
-
-      if (action === "add") vipCmds[cmd] = true;
-      if (action === "remove") delete vipCmds[cmd];
-
-      saveJSON(vipCmdFilePath, vipCmds);
-      return message.reply(`${header}\nUpdated`);
-    }
-
-    // ================= VIP FUTURES =================
-    if (sub === "futures") {
-      return message.reply(
-        `${header}\n${Object.keys(vipCmds).join("\n") || "None"}`
-      );
-    }
-  }
+				if (changelogEntries.length > 0) {
+					const changelogText = changelogEntries.map((version) => `Version ${version}: ${changelogData[version]}`).join('\n');
+					message.reply(`${header}
+Current Version: ${module.exports.config.version}
+Changelog:
+${changelogText}`);
+				} else {
+					message.reply(`${header}
+Current Version: ${module.exports.config.version}
+Changelog:
+No changelog entries found starting from version 1.0.`);
+				}
+			} else {
+				message.reply("Changelog data not available.");
+			}
+		}
+	}
 };
