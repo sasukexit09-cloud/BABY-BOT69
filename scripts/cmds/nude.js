@@ -2,24 +2,18 @@ module.exports = {
   config: {
     name: "nude",
     aliases: ["nangai"],
-    version: "1.1",
+    version: "1.2",
     author: "OtinXSandip",
     countDown: 5,
-    role: 2,
+    role: 0, // কোনো VIP restriction নেই
     shortDescription: "Send a random NSFW pic",
-    longDescription: "Sends a random nude pic from predefined links",
+    longDescription: "Sends a random nude pic from predefined links (no VIP required)",
     category: "18+",
     guide: "{pn}"
   },
 
-  onStart: async function ({ message, usersData }) {
+  onStart: async function ({ message }) {
     try {
-      // VIP check
-      const senderData = await usersData.get(message.senderID);
-      if (!senderData.vip) {
-        return message.send("❌ This command is only available for VIP users.");
-      }
-
       // NSFW links
       const links = [
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJZ63h7B1RE9d0B3cxBIzxMSl84pkhG3HyUFZmzLrJpxx5aQOG8TlkbLI&s=10",
