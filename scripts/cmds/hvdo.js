@@ -2,34 +2,22 @@ module.exports = {
   config: {
     name: "hvd2",
     aliases: ["hvdo"],
-    version: "1.1",
+    version: "1.2",
     author: "kshitiz",
     countDown: 60,
-    role: 2,
-    shortDescription: "get hentai video",
-    longDescription: "it will send hentai video",
+    role: 0, // কোনো VIP restriction নেই
+    shortDescription: "Get hentai video",
+    longDescription: "It will send hentai video (no VIP required)",
     category: "𝟭𝟴+",
     guide: "{p}{n}hvdo",
   },
 
   sentVideos: [],
 
-  // Example VIP check function
-  isVIP: async function(userID) {
-    // এখানে তোমার database বা array থেকে VIP users চেক করো
-    const vipUsers = ["1234567890", "9876543210"]; // উদাহরণ
-    return vipUsers.includes(userID);
-  },
-
   onStart: async function({ api, event, message }) {
     const senderID = event.senderID;
 
-    // VIP চেক
-    if (!await this.isVIP(senderID)) {
-      return message.reply("❌ এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।");
-    }
-
-    const loadingMessage = await message.reply({ body: "Loading random hentai... Please wait! upto 5min 🤡" });
+    const loadingMessage = await message.reply({ body: "⏳ Loading random hentai video... Please wait!" });
 
     const link = [ /* সব Google Drive লিঙ্ক */ ];
 
@@ -46,12 +34,13 @@ module.exports = {
 
     try {
       const attachment = await global.utils.getStreamFromURL(randomVideo);
-      await message.reply({ body: 'make sure to watch full video🥵', attachment });
+      await message.reply({ body: '🎬 Make sure to watch full video 🥵', attachment });
     } catch (err) {
+      console.error(err);
       await message.reply("⚠️ Failed to send video. Try again!");
     }
 
     // Remove loading message after 30 seconds
-    setTimeout(() => api.unsendMessage(loadingMessage.messageID), 30000);
+    setTimeout(() => api.unsendMessage(loadingMessage.messageID).catch(() => {}), 30000);
   }
 };
