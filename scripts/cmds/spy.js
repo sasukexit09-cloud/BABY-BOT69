@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "spy",
     version: "5.4",
-    author: "TAREK x ASIF",
+    author: "AYAN",
     countDown: 5,
     role: 0,
     shortDescription: "See detailed user info",
