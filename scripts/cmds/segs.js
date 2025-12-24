@@ -1,24 +1,23 @@
 const axios = require("axios");
 const fs = require("fs");
 
-// Mock user database
+// Mock user database (balance optional)
 const users = {
-  "123456789": { vip: true, balance: 50 },  // Example VIP user
-  "987654321": { vip: false, balance: 100 } // Normal user
+  "123456789": { balance: 50 },
+  "987654321": { balance: 100 }
 };
 
-const OWNER_ID = "61584308632995"; // <-- Owner Facebook ID
 let userSession = {};
 
 module.exports = {
   config: {
     name: "segs",
-    version: "1.8",
+    version: "1.9",
     author: "AYAN BBE💋",
-    role: 2,
+    role: 0, // কেউই restriction নেই
     category: "18+",
-    shortDescription: "Search & select HD videos (VIP only)",
-    longDescription: "Search, paginate and download HD porn videos (VIP required, owner bypass)"
+    shortDescription: "Search & select HD videos",
+    longDescription: "Search, paginate and download HD porn videos (no VIP required)"
   },
   
   onStart: async ({ api, event, args }) => {
@@ -26,29 +25,19 @@ module.exports = {
     const thread = event.threadID;
     const keyword = args.join(" ");
 
-    const user = users[sender] || { vip: false, balance: 0 };
-    const isOwner = sender === OWNER_ID;
-    const isVip = user.vip;
-
-    // Owner auto detect
-    if (!isOwner && !isVip) {
-      return api.sendMessage("❌ এই কমান্ডটি শুধুমাত্র VIP ইউজারদের জন্য!", thread);
-    }
-
-    // Balance check (owner free)
+    // Balance check (optional, you can remove if you want free usage)
     const cost = 10;
-    if (!isOwner && user.balance < cost) {
+    const user = users[sender] || { balance: 0 };
+    if (user.balance < cost) {
       return api.sendMessage(
-        `❌ আপনার ব্যালেন্স পর্যাপ্ত নয়! ${cost} balance প্রয়োজন।\n💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}m`,
+        `❌ আপনার ব্যালেন্স পর্যাপ্ত নয়! ${cost} balance প্রয়োজন।\n💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}`,
         thread
       );
     }
-
-    // Deduct balance if not owner
-    if (!isOwner) user.balance -= cost;
+    user.balance -= cost;
 
     api.sendMessage(
-      `💰 বাকি ব্যালেন্স: ${user.balance}m\n🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚... Please wait...`,
+      `💰 বাকি ব্যালেন্স: ${user.balance}\n🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚... Please wait...`,
       thread
     );
 
@@ -142,7 +131,7 @@ module.exports = {
 
         api.sendMessage(
           {
-            body: `╔══ ✨ 𝗩𝗜𝗗𝗘𝗢 𝗥𝗘𝗔𝗗𝗬 ══╗\n🎬 ${item.name}\nMade by 𝐀𝐳𝐚𝐝𝐱𝟔𝟗𝐱 💜\n💰 বাকি ব্যালেন্স: ${users[sender]?.balance || 0}m\n╚════════════════╝`,
+            body: `╔══ ✨ 𝗩𝗜𝗗𝗘𝗢 𝗥𝗘𝗔𝗗𝗬 ══╗\n🎬 ${item.name}\nMade by 𝐀𝐳𝐚𝐝𝐱𝟔𝟗𝐱 💜\n╚════════════════╝`,
             attachment: fs.createReadStream(filePath)
           },
           thread,
