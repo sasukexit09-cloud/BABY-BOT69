@@ -2,7 +2,7 @@ module.exports.config = {
   name: "gf",
   version: "7.3.2-fixed",
   hasPermssion: 0,
-  credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️ (fixed by Maya)",
+  credits: "AYAN (fixed by Maya)",
   description: "Get Pair From Mention",
   commandCategory: "img",
   usages: "[@mention]",
