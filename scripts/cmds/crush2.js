@@ -2,7 +2,7 @@ module.exports.config = {
   name: "crush2",
   version: "7.3.2",
   hasPermssion: 0,
-  credits: "𝐂𝐘𝐁𝐄𝐑 ☢️ - Modified by Maya",
+  credits: "AYAN - Modified by Maya",
   description: "Get Pair From Mention with romantic template",
   commandCategory: "love",
   usages: "[@mention]",
