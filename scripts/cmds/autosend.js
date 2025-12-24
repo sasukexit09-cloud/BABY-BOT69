@@ -1,86 +1,136 @@
 const axios = require("axios");
 const moment = require("moment-timezone");
+const fs = require("fs");
+const path = require("path");
 
 module.exports.config = {
     name: "autosend",
-    version: "2.0",
+    version: "3.0",
     role: 0,
-    author: "MAHABUB RAHMAN", // ⚠️ Do not change
-    description: "Automatically sends videos from API at specified times",
+    author: "MAHABUB RAHMAN",
+    description: "Automatically sends videos to group chats at fixed times",
     category: "Media",
-    usages: "No manual trigger needed",
+    usages: "Auto system",
     cooldowns: 5
 };
 
-const lastSent = {}; // Track last sent time per thread
+// ================== STORAGE ==================
+const DATA_FILE = path.join(__dirname, "autosend_data.json");
+let lastSent = {};
 
-/**
- * Send video to a thread
- * @param {object} api - FB Messenger API
- * @param {string} threadID - Thread ID
- * @param {string} timeSlot - Current time slot
- */
-async function sendVideo(api, threadID, timeSlot) {
+if (fs.existsSync(DATA_FILE)) {
+    lastSent = JSON.parse(fs.readFileSync(DATA_FILE));
+}
+
+function saveData() {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(lastSent, null, 2));
+}
+
+// ================== TIME SLOTS ==================
+const timeSlots = [
+    "00:00","01:00","02:00","03:00","04:00","05:00",
+    "06:00","07:00","08:00","09:00","10:00","11:00",
+    "12:00","13:00","14:00","15:00","16:00","17:00",
+    "18:00","19:00","20:00","21:00","22:00","23:00"
+];
+
+// ================== SEND VIDEO ==================
+async function sendVideo(api, threadID, time) {
+    const tempFile = path.join(__dirname, `autosend_${Date.now()}.mp4`);
+
     try {
-        const response = await axios.get("https://mahabub-apis.vercel.app/mahabub");
-        const videoUrl = response.data?.data;
-        const title = response.data?.title || "🔹 No Title Found";
+        const apiRes = await axios.get(
+            "https://mahabub-apis.vercel.app/mahabub",
+            { timeout: 20000 }
+        );
+
+        const videoUrl =
+            apiRes.data?.data ||
+            apiRes.data?.url ||
+            apiRes.data?.video;
+
+        const title = apiRes.data?.title || "Auto Video";
 
         if (!videoUrl) {
-            return api.sendMessage("❌ No videos found! (Invalid API Response)", threadID);
+            console.log("❌ No video URL from API");
+            return;
         }
 
-        const res = await axios.get(videoUrl, { responseType: "stream" });
+        // Download video
+        const videoStream = await axios({
+            url: videoUrl,
+            method: "GET",
+            responseType: "stream",
+            timeout: 30000
+        });
 
+        const writer = fs.createWriteStream(tempFile);
+        videoStream.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+            writer.on("finish", resolve);
+            writer.on("error", reject);
+        });
+
+        // Send video
         await api.sendMessage({
-            body: `\n━━━━━━━━━━━━━━━━\n➝ 𝗡𝗼𝘄 𝗜𝘀: ${timeSlot}\n\n💬: ${title}\n━━━━━━━━━━━━━━━━\n➝ 𝐄𝐧𝐣𝐨𝐲 𝐲𝐨𝐮𝐫 𝐥𝐢𝐟𝐞 !!`,
-            attachment: res.data
+            body:
+`━━━━━━━━━━━━━━━━
+🕒 Time: ${time}
+🎬 ${title}
+━━━━━━━━━━━━━━━━
+Enjoy 💙`,
+            attachment: fs.createReadStream(tempFile)
         }, threadID);
 
-        lastSent[threadID] = timeSlot;
+        lastSent[threadID] = time;
+        saveData();
+
+        // Delay to avoid spam
+        await new Promise(r => setTimeout(r, 3000));
 
     } catch (err) {
-        console.error("🚨 API Error:", err.message);
-        api.sendMessage("❌ Failed to fetch or send video.", threadID);
+        console.log("🚨 AUTOSEND ERROR:", err.response?.data || err.message);
+    } finally {
+        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
     }
 }
 
-/**
- * Schedule videos at specific time slots
- * @param {object} api - FB Messenger API
- */
-function scheduleVideo(api) {
-    const timeSlots = [
-        "1:00AM", "2:00AM", "3:00AM", "4:00AM", "5:00AM", "6:00AM",
-        "7:00AM", "8:00AM", "9:00AM", "10:00AM", "11:00AM", "12:00PM",
-        "1:00PM", "2:00PM", "3:00PM", "4:00PM", "5:00PM", "6:00PM",
-        "7:00PM", "8:00PM", "9:00PM", "10:00PM", "11:00PM", "12:00AM"
-    ];
-
+// ================== SCHEDULER ==================
+async function scheduleVideo(api) {
     setInterval(async () => {
-        const currentTime = moment().tz("Asia/Dhaka").format("h:mmA");
+        const now = moment().tz("Asia/Dhaka").format("HH:mm");
 
-        const threads = await api.getThreadList(100, null, ["INBOX"]);
-        for (const thread of threads) {
-            if (!thread.isGroup) continue; // Only send to groups
-            const threadID = thread.threadID;
+        if (!timeSlots.includes(now)) return;
 
-            if (timeSlots.includes(currentTime) && lastSent[threadID] !== currentTime) {
-                await sendVideo(api, threadID, currentTime);
-            }
+        let threads = [];
+        let cursor = null;
+
+        do {
+            const list = await api.getThreadList(50, cursor, ["INBOX"]);
+            threads.push(...list);
+            cursor = list.length === 50 ? list[list.length - 1].threadID : null;
+        } while (cursor);
+
+        for (const t of threads) {
+            if (!t.isGroup) continue;
+            if (lastSent[t.threadID] === now) continue;
+
+            await sendVideo(api, t.threadID, now);
         }
-    }, 60000); // Check every 1 min
+
+    }, 60 * 1000);
 }
 
-module.exports.onLoad = function({ api }) {
-    if (global.autosendInitialized) return;
-    global.autosendInitialized = true;
+// ================== LOAD ==================
+module.exports.onLoad = ({ api }) => {
+    if (global.autosendLoaded) return;
+    global.autosendLoaded = true;
 
     scheduleVideo(api);
-    console.log("✅ Autosend module initialized (MAHABUB RAHMAN)");
+    console.log("✅ Autosend system loaded successfully");
 };
 
-module.exports.onStart = async function({ api }) {
-    // Optional: Trigger immediately when bot starts
+module.exports.onStart = () => {
     console.log("🚀 Autosend is running...");
 };
