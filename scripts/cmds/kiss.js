@@ -7,7 +7,7 @@ module.exports = {
   config: {
     name: "kiss",
     aliases: ["kiss"],
-    version: "2.2",
+    version: "2.3",
     author: "AYAN💋",
     countDown: 5,
     role: 0,
@@ -17,34 +17,26 @@ module.exports = {
     guide: "{pn} @mention"
   },
 
-  onStart: async function ({ api, message, event, usersData }) {
+  onStart: async function ({ api, message, event }) {
     try {
-      // VIP check (optional, enable if needed)
-      /*
-      const senderData = await usersData.get(event.senderID);
-      if (!senderData.vip) {
-        return message.reply("❌ This command is only available for VIP users.");
-      }
-      */
-
       const mentionIDs = Object.keys(event.mentions);
-      if (mentionIDs.length === 0) return message.reply("Please mention someone to kiss.");
+      if (mentionIDs.length === 0) return message.reply("⚠️ Please mention someone to kiss.");
 
       const senderID = event.senderID;
       const mentionedID = mentionIDs[0];
 
-      // Fetch avatar URLs
-      const avatarURLs = await Promise.all([
-        usersData.getAvatarUrl(mentionedID), // mentioned user
-        usersData.getAvatarUrl(senderID)     // sender
-      ]);
+      // Facebook avatar URLs (high-res)
+      const avatarURLs = [
+        `https://graph.facebook.com/${mentionedID}/picture?height=1500&width=1500&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`,
+        `https://graph.facebook.com/${senderID}/picture?height=1500&width=1500&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`
+      ];
 
       const [avatarImg1, avatarImg2] = await Promise.all([
         Canvas.loadImage(avatarURLs[0]),
         Canvas.loadImage(avatarURLs[1])
       ]);
 
-      // Load background
+      // Background
       const bgUrl = "https://bit.ly/44bRRQG";
       const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
       const bg = await Canvas.loadImage(bgRes.data);
@@ -78,7 +70,7 @@ module.exports = {
       ctx.drawImage(avatarImg2, canvasWidth - 150 - avatarSize, y, avatarSize, avatarSize);
       ctx.restore();
 
-      // Save image with unique filename
+      // Save image
       const imgPath = path.join(__dirname, "tmp", `kiss_${Date.now()}_${senderID}_${mentionedID}.png`);
       await fs.ensureDir(path.dirname(imgPath));
       fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
@@ -90,7 +82,7 @@ module.exports = {
       }, () => fs.unlinkSync(imgPath));
 
     } catch (err) {
-      console.error("Error in kiss command:", err);
+      console.error("❌ Error in kiss command:", err);
       message.reply("❌ There was an error creating the kiss image.");
     }
   }
