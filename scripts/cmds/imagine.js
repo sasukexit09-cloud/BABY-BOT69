@@ -50,7 +50,7 @@ const models = [
 ];
 
 module.exports.config = {
-  name: "imagine",
+  name: "imgine",
   version: "3.2",
   hasPermission: 0,
   credits: "Aliester Crowley",
