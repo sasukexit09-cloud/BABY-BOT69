@@ -2,26 +2,20 @@ module.exports = {
   config: {
     name: "hvd",
     aliases: ["hvdo"],
-    version: "1.2",
+    version: "1.3",
     author: "kshitiz",
     countDown: 60,
-    role: 2, // VIP-only
-    shortDescription: "Get a random hentai video (VIP only)",
-    longDescription: "Sends a random 18+ hentai video. VIP users only.",
+    role: 0, // কেউই restriction নেই
+    shortDescription: "Get a random hentai video",
+    longDescription: "Sends a random 18+ hentai video. No VIP required.",
     category: "18+",
     guide: "{p}{n}hvdo",
   },
 
   sentVideos: [],
 
-  onStart: async function ({ api, event, message, usersData }) {
+  onStart: async function ({ api, event, message }) {
     const senderID = event.senderID;
-
-    // Check VIP status
-    const senderData = await usersData.get(senderID);
-    if (!senderData || !senderData.isVIP) {
-      return message.reply("❌ This command is VIP-only. Upgrade to VIP to use it.");
-    }
 
     const loadingMessage = await message.reply({
       body: "⏳ Loading random hentai video... Please wait!"
@@ -29,7 +23,7 @@ module.exports = {
 
     try {
       const link = [
-        // your Google Drive video links here...
+        // এখানে তোমার Google Drive ভিডিও লিঙ্কগুলো রাখো
       ];
 
       // Filter out already sent videos
