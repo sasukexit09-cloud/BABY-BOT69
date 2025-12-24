@@ -3,28 +3,18 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "overflow",
-    version: "3.5",
+    version: "3.6",
     author: "Eren",
     countDown: 5,
-    role: 2,
-    shortDescription: "Watch overflow 🌚 (VIP only)",
-    longDescription: "List all episodes and play selected one",
+    role: 0, // কেউই restriction নেই
+    shortDescription: "Watch overflow 🌚",
+    longDescription: "List all episodes and play selected one (no VIP required)",
     category: "hentai",
     guide: "{pn} => Show all episodes and select and watch"
   },
 
-  onStart: async function ({ api, event, usersData }) {
+  onStart: async function ({ api, event }) {
     try {
-      // VIP check
-      const senderData = await usersData.get(event.senderID);
-      if (!senderData.vip) {
-        return api.sendMessage(
-          "❌ This command is only available for VIP users.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
       // Fetch episode list
       const res = await axios.get("https://high-school-dxd.onrender.com/dxd");
       const episodes = res.data;
