@@ -7,40 +7,48 @@ module.exports = {
   config: {
     name: "fk",
     aliases: ["fk", "fuck"],
-    version: "1.2",
-    author: "Tarek",
+    version: "1.3",
+    author: "Tarek + Maya Fix",
     countDown: 5,
     role: 0,
     shortDescription: "FK with custom image (VIP only, auto-detect)",
-    longDescription: "Generate a fk image with the mentioned user using a custom background. Male on right, female on left. Only VIP users can use.",
+    longDescription: "Generate a FK image with the mentioned user using a custom background. Male on right, female on left. Only VIP users can use.",
     category: "funny",
     guide: "{pn} @mention"
   },
 
-  // 🔐 VIP auto-detect
   isVIP: async function(userID, usersData) {
-    // Example: usersData এ VIP flag থাকলে detect করা
     try {
       const data = await usersData.get(userID);
-      // ধরো data.isVIP true হলে VIP
       return data.isVIP === true;
-    } catch (e) {
+    } catch {
       return false;
+    }
+  },
+
+  fetchAvatar: async function(uid) {
+    try {
+      const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`;
+      const res = await axios.get(url, { responseType: "arraybuffer" });
+      return await Canvas.loadImage(res.data);
+    } catch {
+      const img = new Canvas.Canvas(512, 512);
+      const ctx = img.getContext("2d");
+      ctx.fillStyle = "#cccccc";
+      ctx.fillRect(0, 0, 512, 512);
+      return img;
     }
   },
 
   onStart: async function ({ api, message, event, usersData }) {
     const senderID = event.senderID;
-
-    // ❌ VIP না হলে block
     if (!(await this.isVIP(senderID, usersData))) {
       return message.reply("❌ এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।");
     }
 
     const mention = Object.keys(event.mentions);
-    if (mention.length === 0) return message.reply("Please mention someone to FK.");
-
-    let mentionedID = mention[0];
+    if (!mention[0]) return message.reply("Please mention someone to FK.");
+    const mentionedID = mention[0];
 
     try {
       const senderData = await usersData.get(senderID);
@@ -49,25 +57,16 @@ module.exports = {
       const senderGender = senderData.gender || "male";
       const mentionedGender = mentionedData.gender || "female";
 
-      let maleID, femaleID;
+      let maleID = senderGender === "male" ? senderID : mentionedID;
+      let femaleID = senderGender === "female" ? senderID : mentionedID;
 
-      if (senderGender === "male") {
-        maleID = senderID;
-        femaleID = mentionedID;
-      } else {
-        maleID = mentionedID;
-        femaleID = senderID;
-      }
-
-      const avatarMale = await usersData.getAvatarUrl(maleID);
-      const avatarFemale = await usersData.getAvatarUrl(femaleID);
-
-      const [avatarImgMale, avatarImgFemale] = await Promise.all([
-        Canvas.loadImage(avatarMale),
-        Canvas.loadImage(avatarFemale)
+      const [avatarMale, avatarFemale] = await Promise.all([
+        this.fetchAvatar(maleID),
+        this.fetchAvatar(femaleID)
       ]);
 
-      const bgUrl = "https://drive.google.com/uc?export=download&id=1QnmVdwJgqNcOIN1QTsxwB0dbWzTpD2BJ";
+      // Background
+      const bgUrl = "https://i.imgur.com/PlVBaM1.jpg"; // direct link, safe
       const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
       const bg = await Canvas.loadImage(bgRes.data);
 
@@ -78,29 +77,27 @@ module.exports = {
 
       ctx.drawImage(bg, 0, 0, canvasWidth, canvasHeight);
 
-      const avatarSize = 170;
-      const y = canvasHeight / 2 - avatarSize - 90;
-
-      // 👩 Female avatar
+      // Female avatar
       ctx.save();
+      const avatarSize = 170;
       const femaleX = 300;
-      const yFemale = y - 30;
+      const yFemale = canvasHeight/2 - avatarSize - 90;
       ctx.beginPath();
-      ctx.arc(femaleX + avatarSize / 2, yFemale + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+      ctx.arc(femaleX + avatarSize/2, yFemale + avatarSize/2, avatarSize/2, 0, Math.PI*2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(avatarImgFemale, femaleX, yFemale, avatarSize, avatarSize);
+      ctx.drawImage(avatarFemale, femaleX, yFemale, avatarSize, avatarSize);
       ctx.restore();
 
-      // 👨 Male avatar
+      // Male avatar
       ctx.save();
       const maleX = 130;
-      const yMale = y + 290;
+      const yMale = canvasHeight/2 + 50;
       ctx.beginPath();
-      ctx.arc(maleX + avatarSize / 2, yMale + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+      ctx.arc(maleX + avatarSize/2, yMale + avatarSize/2, avatarSize/2, 0, Math.PI*2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(avatarImgMale, maleX, yMale, avatarSize, avatarSize);
+      ctx.drawImage(avatarMale, maleX, yMale, avatarSize, avatarSize);
       ctx.restore();
 
       const imgPath = path.join(__dirname, "tmp", `${maleID}_${femaleID}_fk.png`);
@@ -108,7 +105,7 @@ module.exports = {
       fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
 
       message.reply({
-        body: "Fkkkk!",
+        body: "Fkkkk! 😏",
         attachment: fs.createReadStream(imgPath)
       }, () => fs.unlinkSync(imgPath));
 
