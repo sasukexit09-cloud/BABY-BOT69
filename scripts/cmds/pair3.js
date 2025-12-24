@@ -3,23 +3,28 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
+const FB_TOKEN = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+
 module.exports = {
   config: {
     name: "pair3",
-    author: "xemon",
+    author: "xemon (fixed by Maya)",
     role: 0,
     shortDescription: "VIP-only love match command",
-    longDescription: "",
     category: "love",
     guide: "{pn}"
   },
 
-  onStart: async function ({ api, event, usersData, threadsData }) {
-    try {
-      const senderData = await usersData.get(event.senderID);
+  onStart: async function ({ api, event, usersData }) {
+    const tmpDir = path.join(__dirname, "tmp");
+    fs.ensureDirSync(tmpDir);
 
-      // VIP check
-      if (!senderData.vip) {
+    let bgPath, avt1Path, avt2Path;
+
+    try {
+      // ===== VIP CHECK =====
+      const senderData = await usersData.get(event.senderID);
+      if (!senderData?.vip) {
         return api.sendMessage(
           "❌ This command is only available for VIP users.",
           event.threadID,
@@ -28,27 +33,26 @@ module.exports = {
       }
 
       const id1 = event.senderID;
-      const name1 = await usersData.getName(id1);
+      const name1 = await usersData.getName(id1) || "Unknown";
 
+      // ===== THREAD USERS =====
       const threadInfo = await api.getThreadInfo(event.threadID);
-      const allUsers = threadInfo.userInfo;
       const botID = api.getCurrentUserID();
+      const users = threadInfo.userInfo || [];
 
-      // Get sender gender
-      const me = allUsers.find(u => u.id === id1);
+      const me = users.find(u => u.id === id1);
       const gender1 = me?.gender || "UNKNOWN";
 
-      // Find matching users
-      let candidates = [];
-      if (gender1 === "FEMALE") {
-        candidates = allUsers.filter(u => u.gender === "MALE" && u.id !== id1 && u.id !== botID);
-      } else if (gender1 === "MALE") {
-        candidates = allUsers.filter(u => u.gender === "FEMALE" && u.id !== id1 && u.id !== botID);
+      let candidates;
+      if (gender1 === "MALE") {
+        candidates = users.filter(u => u.gender === "FEMALE" && u.id !== id1 && u.id !== botID);
+      } else if (gender1 === "FEMALE") {
+        candidates = users.filter(u => u.gender === "MALE" && u.id !== id1 && u.id !== botID);
       } else {
-        candidates = allUsers.filter(u => u.id !== id1 && u.id !== botID);
+        candidates = users.filter(u => u.id !== id1 && u.id !== botID);
       }
 
-      if (candidates.length === 0) {
+      if (!candidates.length) {
         return api.sendMessage(
           "❌ No suitable match found in this group.",
           event.threadID,
@@ -56,79 +60,90 @@ module.exports = {
         );
       }
 
-      const selected = candidates[Math.floor(Math.random() * candidates.length)];
-      const id2 = selected.id;
-      const name2 = await usersData.getName(id2);
+      const match = candidates[Math.floor(Math.random() * candidates.length)];
+      const id2 = match.id;
+      const name2 = await usersData.getName(id2) || "Mystery Love";
 
-      // Love percentage
-      const rd1 = Math.floor(Math.random() * 100) + 1;
-      const cc = ["0", "-1", "99,99", "-99", "-100", "101", "0,01"];
-      const rd2 = cc[Math.floor(Math.random() * cc.length)];
-      const tileArr = [rd1, rd1, rd1, rd1, rd1, rd2, rd1, rd1, rd1, rd1];
-      const tile = tileArr[Math.floor(Math.random() * tileArr.length)];
+      // ===== LOVE PERCENT =====
+      const base = Math.floor(Math.random() * 100) + 1;
+      const weird = ["0", "-1", "99.99", "-99", "-100", "101", "0.01"];
+      const tile = Math.random() < 0.15 ? weird[Math.floor(Math.random() * weird.length)] : base;
 
-      // Paths
-      const tmpDir = path.join(__dirname, "tmp");
-      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
-      const pathImg = path.join(tmpDir, `background_${Date.now()}.png`);
-      const pathAvt1 = path.join(tmpDir, `Avt1_${Date.now()}.png`);
-      const pathAvt2 = path.join(tmpDir, `Avt2_${Date.now()}.png`);
+      // ===== FILE PATHS =====
+      const stamp = Date.now();
+      bgPath = path.join(tmpDir, `bg_${stamp}.png`);
+      avt1Path = path.join(tmpDir, `avt1_${stamp}.jpg`);
+      avt2Path = path.join(tmpDir, `avt2_${stamp}.jpg`);
 
-      // Download images
       const backgroundURL = "https://i.postimg.cc/5tXRQ46D/background3.png";
+      const avatar = uid =>
+        `https://graph.facebook.com/${uid}/picture?width=720&height=720&access_token=${FB_TOKEN}`;
 
-      const getBuffer = async (url) => {
-        const res = await axios.get(url, { responseType: "arraybuffer" });
-        return Buffer.from(res.data, "utf-8");
+      // ===== DOWNLOAD IMAGES SAFELY =====
+      const download = async (url, file) => {
+        const res = await axios.get(url, {
+          responseType: "arraybuffer",
+          headers: { "User-Agent": "Mozilla/5.0" }
+        });
+        fs.writeFileSync(file, res.data);
       };
 
-      fs.writeFileSync(pathAvt1, await getBuffer(`https://graph.facebook.com/${id1}/picture?width=720&height=720&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`));
-      fs.writeFileSync(pathAvt2, await getBuffer(`https://graph.facebook.com/${id2}/picture?width=720&height=720&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`));
-      fs.writeFileSync(pathImg, await getBuffer(backgroundURL));
+      await Promise.all([
+        download(backgroundURL, bgPath),
+        download(avatar(id1), avt1Path),
+        download(avatar(id2), avt2Path)
+      ]);
 
-      // Canvas
-      const baseImage = await loadImage(pathImg);
-      const baseAvt1 = await loadImage(pathAvt1);
-      const baseAvt2 = await loadImage(pathAvt2);
-      const canvas = createCanvas(baseImage.width, baseImage.height);
+      // ===== CANVAS =====
+      const bg = await loadImage(bgPath);
+      const img1 = await loadImage(avt1Path);
+      const img2 = await loadImage(avt2Path);
+
+      const canvas = createCanvas(bg.width, bg.height);
       const ctx = canvas.getContext("2d");
 
-      // Draw background
-      ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
-      // Circular avatars
-      function drawCircleImage(ctx, img, x, y, size) {
+      const drawCircle = (img, x, y, size) => {
         ctx.save();
         ctx.beginPath();
         ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-        ctx.closePath();
         ctx.clip();
         ctx.drawImage(img, x, y, size, size);
         ctx.restore();
-      }
+      };
 
-      drawCircleImage(ctx, baseAvt1, 100, 150, 300);
-      drawCircleImage(ctx, baseAvt2, 900, 150, 300);
+      drawCircle(img1, 100, 150, 300);
+      drawCircle(img2, 900, 150, 300);
 
-      fs.writeFileSync(pathImg, canvas.toBuffer());
-      fs.removeSync(pathAvt1);
-      fs.removeSync(pathAvt2);
+      fs.writeFileSync(bgPath, canvas.toBuffer("image/png"));
 
-      // Send message
-      return api.sendMessage(
+      // ===== SEND MESSAGE =====
+      api.sendMessage(
         {
-          body: `『💗』Congratulations ${name1}『💗』\n『❤️』Looks like your destiny brought you together with ${name2}『❤️』\n『🔗』Your link percentage is ${tile}%『🔗』`,
+          body:
+`『💗』 Congratulations ${name1}
+『❤️』 Destiny paired you with ${name2}
+『🔗』 Love Percentage: ${tile}%`,
           mentions: [{ tag: name2, id: id2 }],
-          attachment: fs.createReadStream(pathImg),
+          attachment: fs.createReadStream(bgPath)
         },
         event.threadID,
-        () => fs.unlinkSync(pathImg),
+        () => {
+          fs.removeSync(bgPath);
+          fs.removeSync(avt1Path);
+          fs.removeSync(avt2Path);
+        },
         event.messageID
       );
 
-    } catch (error) {
-      console.error(error);
-      return api.sendMessage(
+    } catch (err) {
+      console.error("PAIR3 ERROR:", err);
+      if (bgPath) fs.removeSync(bgPath);
+      if (avt1Path) fs.removeSync(avt1Path);
+      if (avt2Path) fs.removeSync(avt2Path);
+
+      api.sendMessage(
         "❌ Something went wrong. Please try again later.",
         event.threadID,
         event.messageID
