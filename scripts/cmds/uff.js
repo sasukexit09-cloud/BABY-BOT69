@@ -1,18 +1,17 @@
-const axios = require("axios");
+ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
-// Mock database for demonstration
-// Replace this with your actual DB or JSON storage
+// Mock database for demonstration (balance optional)
 let usersDB = {
-  // userId: { isVIP: boolean, balance: number }
+  // userId: { balance: number } // যদি চাইলে ব্যালেন্সও রাখতে পারো
 };
 
 // Function to check if the author matches
 async function checkAuthor(authorName) {
   try {
     const response = await axios.get('https://author-check.vercel.app/name');
-    const apiAuthor = response.data.name;
+    const apiAuthor = response.data?.name || "";
     return apiAuthor === authorName;
   } catch (error) {
     console.error("Error checking author:", error.message);
@@ -25,11 +24,11 @@ module.exports = {
     name: "uff",
     aliases: [],
     author: "AYAN BBE💋", 
-    version: "1.1",
+    version: "1.3",
     cooldowns: 5,
-    role: 2,
-    shortDescription: "18+ TikTok video (VIP)",
-    longDescription: "Fetches a random 18+ TikTok video (VIP required, 300 balance per use)",
+    role: 0, // সবাই ব্যবহার করতে পারবে
+    shortDescription: "18+ TikTok video",
+    longDescription: "Fetches a random 18+ TikTok video",
     category: "18+",
     guide: "{p}onlytik"
   },
@@ -43,23 +42,6 @@ module.exports = {
       await message.reply("⚠️ Author changed! This command belongs to AYAN BBE💋.");
       return;
     }
-
-    // Check VIP & balance
-    const user = usersDB[userId] || { isVIP: false, balance: 0 };
-
-    if (!user.isVIP) {
-      await message.reply("💔 You must be VIP to use this command!");
-      return;
-    }
-
-    if (user.balance < 300) {
-      await message.reply("💸 Not enough balance! Each use costs 300 balance.");
-      return;
-    }
-
-    // Deduct balance
-    user.balance -= 300;
-    usersDB[userId] = user; // save back to DB
 
     const apiUrl = "https://only-tik.vercel.app/kshitiz";
 
@@ -83,7 +65,7 @@ module.exports = {
       });
 
       await message.reply({
-        body: `🎬 Here’s your video! Likes: ${likes}\n💰 300 balance deducted. Remaining: ${user.balance}`,
+        body: `🎬 Here’s your video! Likes: ${likes}`,
         attachment: fs.createReadStream(tempVideoPath)
       });
 
