@@ -1,4 +1,4 @@
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
 const { loadImage, createCanvas } = require("canvas");
@@ -7,46 +7,35 @@ module.exports = {
   config: {
     name: "hug",
     aliases: ["hug"],
-    version: "1.3",
+    version: "1.4",
     author: "AYAN⚡",
     countDown: 5,
     role: 0,
-    shortDescription: "Give someone a hug! (VIP only)",
-    longDescription: "A fun command to give someone a hug with a picture. Only for VIP users.",
+    shortDescription: "Give someone a hug!",
+    longDescription: "A fun command to give someone a hug with a picture.",
     category: "fun",
     guide: "{pn} @mention or reply",
   },
 
-  // Example VIP check function
-  isVIP: async function(userID) {
-    const vipUsers = ["1234567890", "9876543210"]; // এখানে VIP users list
-    return vipUsers.includes(userID);
-  },
-
   onStart: async function ({ event, api, usersData }) {
     const senderID = event.senderID;
-
-    // VIP check
-    if (!await this.isVIP(senderID)) {
-      return api.sendMessage("❌ এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।", event.threadID, event.messageID);
-    }
 
     const mention = Object.keys(event.mentions)[0];
     const targetID = mention || event.messageReply?.senderID;
 
     if (!targetID)
       return api.sendMessage(
-        "Who would you like to hug? Please tag someone or reply to a message!",
+        "⚠️ Who would you like to hug? Please tag someone or reply to a message!",
         event.threadID,
         event.messageID
       );
 
     const getAvatar = async (uid) => {
       try {
-        const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
+        const url = `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
         const avatarPath = path.join(__dirname, `${uid}_avatar.png`);
         const res = await axios.get(url, { responseType: "arraybuffer" });
-        fs.writeFileSync(avatarPath, res.data);
+        await fs.writeFile(avatarPath, res.data);
         return avatarPath;
       } catch (err) {
         console.error(`Error fetching avatar for user ${uid}: ${err.message}`);
@@ -84,7 +73,8 @@ module.exports = {
       ctx.drawImage(targetAvatar, 410, 110, 100, 100);
       ctx.restore();
 
-      const output = path.join(__dirname, "hug_output.png");
+      const output = path.join(__dirname, `hug_${Date.now()}.png`);
+      await fs.ensureDir(path.dirname(output));
       fs.writeFileSync(output, canvas.toBuffer("image/png"));
 
       const senderName = await usersData.getName(senderID);
@@ -92,7 +82,7 @@ module.exports = {
 
       api.sendMessage(
         {
-          body: `😍 I've just hugged ${targetName}!\n${senderName} is giving a warm hug to ${targetName}!`,
+          body: `😍 ${senderName} just hugged ${targetName}!`,
           attachment: fs.createReadStream(output),
           mentions: [{ tag: targetName, id: targetID }],
         },
