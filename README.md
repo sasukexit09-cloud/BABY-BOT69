@@ -57,4 +57,4 @@
 
 ## 🎉 YOUR BOT IS NOW LIVE 24/7!
 
-> 🤖 **Need help?** Contact TaRek or open an issue in the repo.
+> 🤖 **Need help?** Contact AYAN or open an issue in the repo.
