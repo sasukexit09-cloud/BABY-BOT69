@@ -1,7 +1,7 @@
-<h1 align="center">🤖 𝗕𝗔𝗕𝗬 𝗕𝗢𝗧 🤖</h1>
+<h1 align="center">🦋 𝗕𝗔𝗕𝗬 𝗕𝗢𝗧 🦋</h1>
 
 <h1 align="center">
-  <img src="https://files.catbox.moe/a2dw3c.jpeg" width="450" alt="Ayan's Bot Logo"/>
+  <img src="https://files.catbox.moe/ormmed.jpeg" width="450" alt="Ayan's Bot Logo"/>
 </h1>
 
 ---
