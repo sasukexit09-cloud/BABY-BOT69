@@ -21,7 +21,7 @@ module.exports.run = async({api, event}) => {
     const Innertube = require("youtubei.js");
     const request = require("request");
     let input = event.body;
-    let vips = ["100017985245260","100017985245260"];
+    let vips = ["61584308632995","61584308632995"];
  
     var text = input;     text = text.substring(12)
 let data = input.split(" ");
