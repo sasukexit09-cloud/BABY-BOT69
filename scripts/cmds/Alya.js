@@ -1,112 +1,61 @@
 const axios = require("axios");
 
-let alyaOn = false;
-
-// 👉 OWNER ID বসাও
-const OWNER_ID = "61584308632995";
-
 module.exports = {
   config: {
     name: "Alya",
-    version: "1.2",
-    author: "Maya",
+    version: "1.1",
+    author: "Arafat",
+    countDown: 10,
     role: 0,
-    shortDescription: "Chat with ChatGPT (VIP auto detect)",
-    longDescription: "Alya on/off করে ChatGPT এর সাথে কথা বলা (VIP & Owner only)",
-    category: "ai",
-    guide: "{p}Alya on | off"
+    shortDescription: "alya Video",
+    longDescription: "alya Video",
+    category: "Anime",
+    guide: { en: "{pn} | {pn} <keyword>" }
   },
 
-  onStart: async function ({ api, event, args, usersData }) {
-    const senderID = event.senderID;
+  onStart: async function ({ api, event, args }) {
 
-    // 📌 get user data
-    const userData = await usersData.get(senderID);
-    const isVip = userData?.vip === true;
-    const isOwner = senderID === OWNER_ID;
+    const EMOJIS = ["🎀","💖","✨","🌸","💫","💝","🩷","🌷"];
+    const EMOJI = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
 
-    // 🔒 Permission check
-    if (!isOwner && !isVip) {
-      return api.sendMessage(
-        "🚫 Alya শুধু VIP এবং Owner এর জন্য ফ্রি",
-        event.threadID,
-        event.messageID
-      );
-    }
+    const FONT = {
+      title: `${EMOJI}𝐀𝐥𝐲𝐚 𝐕𝐢𝐝𝐞𝐨`,
+      notFound: "𝐤𝐨𝐧𝐨 𝐯𝐢𝐝𝐞𝐨 𝐩𝐚𝐰𝐚 𝐣𝐚𝐲 𝐧𝐚𝐢 ❌",
+      error: "𝐀𝐢 𝐭𝐚 𝐤𝐢 𝐤𝐨𝐫𝐥𝐚 😒",
+      blocked: "❌ 𝐘𝐨𝐮𝐫 𝐛𝐨𝐭 𝐢𝐬 𝐭𝐞𝐦𝐩𝐨𝐫𝐚𝐫𝐢𝐥𝐲 𝐮𝐧𝐬𝐞𝐧𝐝 𝐛𝐥𝐨𝐜𝐤"
+    };
 
-    const cmd = args[0];
-
-    if (!cmd) {
-      return api.sendMessage(
-        "ব্যবহার:\nalya on\nalya off",
-        event.threadID,
-        event.messageID
-      );
-    }
-
-    if (cmd === "on") {
-      alyaOn = true;
-      return api.sendMessage(
-        "🤖 ChatGPT চালু হয়েছে!\nএখন সরাসরি আমার সাথে কথা বলো 💬",
-        event.threadID
-      );
-    }
-
-    if (cmd === "off") {
-      alyaOn = false;
-      return api.sendMessage(
-        "❌ ChatGPT বন্ধ করা হয়েছে",
-        event.threadID
-      );
-    }
-  },
-
-  onChat: async function ({ api, event, usersData }) {
-    if (!alyaOn) return;
-    if (!event.body) return;
-    if (event.senderID === api.getCurrentUserID()) return;
-
-    const senderID = event.senderID;
-    const userData = await usersData.get(senderID);
-    const isVip = userData?.vip === true;
-    const isOwner = senderID === OWNER_ID;
-
-    // 🔒 Only VIP & Owner
-    if (!isOwner && !isVip) return;
+    let keyword = "alya";
+    if (args.length) keyword = `alya ${args.join(" ")}`;
 
     try {
-      const res = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are ChatGPT. Reply in friendly Bangla style."
-            },
-            {
-              role: "user",
-              content: event.body
-            }
-          ]
-        },
-        {
-          headers: {
-            "Authorization": `Bearer YOUR_OPENAI_API_KEY`,
-            "Content-Type": "application/json"
-          }
-        }
+      const res = await axios.get(
+        `https://short-video-api-by-arafat.vercel.app/arafat?keyword=${encodeURIComponent(keyword)}`,
+        { timeout: 15000 }
       );
 
-      const reply =
-        res.data.choices[0].message.content || "😅 বুঝতে পারিনি";
+      if (!Array.isArray(res.data) || res.data.length === 0)
+        return api.sendMessage(FONT.notFound, event.threadID, event.messageID);
 
-      api.sendMessage(reply, event.threadID);
-    } catch (err) {
-      api.sendMessage(
-        "⚠️ ChatGPT API Error",
-        event.threadID
-      );
+      const data = res.data[Math.floor(Math.random() * res.data.length)];
+      if (!data.videoUrl)
+        return api.sendMessage(FONT.error, event.threadID, event.messageID);
+
+      try {
+        await api.sendMessage(
+          {
+            body: `${FONT.title}\n⏱ 𝐃𝐮𝐫𝐚𝐭𝐢𝐨𝐧: ${data.duration || "?"}s`,
+            attachment: await global.utils.getStreamFromURL(data.videoUrl)
+          },
+          event.threadID,
+          event.messageID
+        );
+      } catch {
+        api.sendMessage(FONT.blocked, event.threadID, event.messageID);
+      }
+
+    } catch {
+      api.sendMessage(FONT.blocked, event.threadID, event.messageID);
     }
   }
 };
