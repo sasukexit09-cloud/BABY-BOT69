@@ -14,23 +14,16 @@ module.exports = {
 
   onStart: async function ({ api, event, usersData }) {
     try {
-      // ===== VIP CHECK =====
+      // ===== GET SENDER NAME =====
       const senderData = await usersData.get(event.senderID);
-      if (!senderData?.vip) {
-        return api.sendMessage(
-          "❌ This command is only available for VIP users.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      const senderName = senderData.name || "Unknown";
+      const senderName = senderData?.name || "Unknown";
 
       // ===== THREAD INFO =====
       const threadInfo = await api.getThreadInfo(event.threadID);
       const users = threadInfo.userInfo || [];
 
       const me = users.find(u => u.id === event.senderID);
+
       if (!me?.gender) {
         return api.sendMessage(
           "⚠ Your gender could not be detected.",
@@ -63,20 +56,19 @@ module.exports = {
       const myImgPath = path.join(tmpDir, `me_${event.senderID}.jpg`);
       const pairImgPath = path.join(tmpDir, `pair_${match.id}.jpg`);
 
+      // ===== AVATAR URL 1500x1500 =====
       const avatar = uid =>
-        `https://graph.facebook.com/${uid}/picture?width=720&height=720&access_token=${FB_TOKEN}`;
+        `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=${FB_TOKEN}`;
 
-      // ===== DOWNLOAD DP FIRST =====
+      // ===== DOWNLOAD DP =====
       await Promise.all([
-        axios.get(avatar(event.senderID), {
-          responseType: "arraybuffer",
-          headers: { "User-Agent": "Mozilla/5.0" }
-        }).then(res => fs.writeFileSync(myImgPath, res.data)),
+        axios.get(avatar(event.senderID), { responseType: "arraybuffer" })
+          .then(res => fs.writeFileSync(myImgPath, res.data))
+          .catch(() => console.warn(`Failed to download avatar for ${event.senderID}`)),
 
-        axios.get(avatar(match.id), {
-          responseType: "arraybuffer",
-          headers: { "User-Agent": "Mozilla/5.0" }
-        }).then(res => fs.writeFileSync(pairImgPath, res.data))
+        axios.get(avatar(match.id), { responseType: "arraybuffer" })
+          .then(res => fs.writeFileSync(pairImgPath, res.data))
+          .catch(() => console.warn(`Failed to download avatar for ${match.id}`))
       ]);
 
       // ===== CANVAS =====
@@ -126,9 +118,9 @@ module.exports = {
         },
         event.threadID,
         () => {
-          fs.unlinkSync(outPath);
-          fs.unlinkSync(myImgPath);
-          fs.unlinkSync(pairImgPath);
+          [outPath, myImgPath, pairImgPath].forEach(f => {
+            if (fs.existsSync(f)) fs.unlinkSync(f);
+          });
         },
         event.messageID
       );
