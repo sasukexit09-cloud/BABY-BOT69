@@ -6,29 +6,23 @@ const deltaNext = 5;
 
 // ===== EXP SYSTEM =====
 function expToLevel(exp) {
-  return Math.floor((1 + Math.sqrt(1 + 8 * exp / deltaNext)) / 2);
+  return Math.floor((1 + Math.sqrt(1 + (8 * exp) / deltaNext)) / 2);
 }
-
 function levelToExp(level) {
-  return Math.floor(((level ** 2 - level) * deltaNext) / 2);
+  return Math.floor(((level * level - level) * deltaNext) / 2);
 }
 
 // ===== COLORS =====
 function getRandomColor() {
-  const colors = ["#FF6F61", "#6B5B95", "#88B04B", "#F7CAC9", "#92A8D1", "#955251"];
-  return colors[Math.floor(Math.random() * colors.length)];
+  const c = ["#ff004c", "#00ffff", "#9d00ff", "#ffae00"];
+  return c[Math.floor(Math.random() * c.length)];
 }
 
-// ===== CHECK FUNCTIONS =====
-function isVIP(userID, vipList) {
-  return vipList.includes(userID);
-}
+// ===== CHECKS =====
+const isVIP = (id, list) => list.includes(id);
+const isOwner = (id, list) => list.includes(id);
 
-function isOwner(userID, ownerList) {
-  return ownerList.includes(userID);
-}
-
-// ===== IMAGES =====
+// ===== ASSETS =====
 const crowns = {
   1: "https://files.catbox.moe/52kvd0.jpg",
   2: "https://files.catbox.moe/sshlh8.jpg",
@@ -36,117 +30,147 @@ const crowns = {
 };
 
 const vipBadgeUrl = "https://files.catbox.moe/46spgx.jpeg";
-const ownerBadgeUrl = "https://files.catbox.moe/2fts8y.jpg"; // set your owner badge
+const ownerBadgeUrl = "https://files.catbox.moe/2fts8y.jpg";
+const fallbackAvatar = "https://i.imgur.com/6VBx3io.png";
 
-// ===== RANK CARD MODULE =====
+const FB_TOKEN = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+
+// ===== HELPER =====
+async function getAvatar(uid) {
+  try {
+    const url = `https://graph.facebook.com/${uid}/picture?width=1500&height=1500&access_token=${FB_TOKEN}`;
+    return await Canvas.loadImage(url);
+  } catch {
+    return await Canvas.loadImage(fallbackAvatar);
+  }
+}
+
+// ===== RANK COMMAND =====
 module.exports = {
   config: {
-    name: "rankchat",
-    version: "4.0",
+    name: "rank",
+    aliases: ["rank", "level"],
+    version: "5.1",
     author: "Chitron Bhattacharjee + Maya",
     role: 0,
     category: "ranking",
-    shortDescription: { en: "Rank card with VIP, Owner, crowns & fixed background" }
+    shortDescription: { en: "Neon Dark Rank Card" }
   },
 
   onChat: async function ({ message, event, usersData }) {
-    const text = event.body?.toLowerCase() || "";
-    if (!text.includes("rank") && !text.includes("level")) return;
+    const body = (event.body || "").toLowerCase().trim();
+    if (!["rank", "level"].includes(body)) return;
 
     const userID = event.senderID;
-    const userData = await usersData.get(userID) || {};
-    const exp = userData.exp || 0;
+    const userData = (await usersData.get(userID)) || {};
+    const exp = Number(userData.exp || 0);
     const name = userData.name || "User";
 
-    const allUsers = await usersData.getAll();
-    const sorted = allUsers.sort((a, b) => (b.exp || 0) - (a.exp || 0));
-    const rank = sorted.findIndex(u => u.userID === userID) + 1;
+    // ===== ALL USERS =====
+    const all = await usersData.getAll();
+    const list = Array.isArray(all)
+      ? all
+      : Object.keys(all).map(id => ({ userID: id, ...all[id] }));
+
+    list.sort((a, b) => (b.exp || 0) - (a.exp || 0));
+    const rank = list.findIndex(u => u.userID == userID) + 1 || list.length;
 
     const level = expToLevel(exp);
     const minExp = levelToExp(level);
-    const nextExp = levelToExp(level + 1);
+    const maxExp = levelToExp(level + 1);
     const currentExp = exp - minExp;
-    const neededExp = nextExp - minExp;
+    const neededExp = Math.max(1, maxExp - minExp);
 
     // ===== AVATAR =====
-    let avatar;
-    try {
-      const avatarUrl = await usersData.getAvatarUrl(userID);
-      avatar = await Canvas.loadImage(avatarUrl);
-    } catch {
-      avatar = await Canvas.loadImage("https://i.imgur.com/6VBx3io.png");
-    }
+    const avatar = await getAvatar(userID);
 
-    // ===== FIXED BACKGROUND =====
-    let background;
-    try {
-      background = await Canvas.loadImage("https://files.catbox.moe/mrcepc.jpg"); // fixed background
-    } catch {
-      background = await Canvas.loadImage("https://i.imgur.com/3fJ1P48.png"); // fallback
-    }
-
+    // ===== CANVAS =====
     const canvas = Canvas.createCanvas(600, 180);
     const ctx = canvas.getContext("2d");
 
-    // Draw background
-    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+    // ===== NEON DARK BACKGROUND =====
+    const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    bg.addColorStop(0, "#050014");
+    bg.addColorStop(0.5, "#0a0028");
+    bg.addColorStop(1, "#000000");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // ===== NEON BORDER =====
+    ctx.save();
+    ctx.shadowColor = "#ff004c";
+    ctx.shadowBlur = 25;
+    ctx.strokeStyle = "#9d00ff";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+    ctx.restore();
 
     // ===== AVATAR CIRCLE =====
-    const cx = 90, cy = 90, radius = 55;
-    const strokeColor = getRandomColor();
-
+    const cx = 90, cy = 90, r = 55;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2);
-    ctx.strokeStyle = strokeColor;
+    ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = getRandomColor();
     ctx.lineWidth = 6;
     ctx.stroke();
 
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
-    ctx.drawImage(avatar, cx - radius, cy - radius, radius * 2, radius * 2);
+    ctx.drawImage(avatar, cx - r, cy - r, r * 2, r * 2);
     ctx.restore();
 
-    // ===== CROWN FOR TOP 3 =====
-    if (rank <= 3) {
+    // ===== CROWN =====
+    if (rank <= 3 && crowns[rank]) {
       try {
         const crown = await Canvas.loadImage(crowns[rank]);
-        ctx.drawImage(crown, cx - 30, cy - radius - 30, 60, 60);
+        ctx.drawImage(crown, cx - 30, cy - r - 32, 60, 60);
       } catch {}
     }
 
-    // ===== BADGES (OWNER > VIP) =====
-    const vipList = await usersData.getVIPList?.() || [];
-    const ownerList = await usersData.getOwnerList?.() || [];
+    // ===== BADGE =====
+    const vipList = (await usersData.getVIPList?.()) || [];
+    const ownerList = (await usersData.getOwnerList?.()) || [];
 
-    let badgeUrl = null;
-    if (isOwner(userID, ownerList)) badgeUrl = ownerBadgeUrl;
-    else if (isVIP(userID, vipList)) badgeUrl = vipBadgeUrl;
+    const badgeUrl = isOwner(userID, ownerList)
+      ? ownerBadgeUrl
+      : isVIP(userID, vipList)
+      ? vipBadgeUrl
+      : null;
 
     if (badgeUrl) {
       try {
         const badge = await Canvas.loadImage(badgeUrl);
-        ctx.drawImage(badge, canvas.width - 70, 10, 60, 60);
+        ctx.drawImage(badge, 520, 10, 60, 60);
       } catch {}
     }
 
     // ===== TEXT =====
-    ctx.fillStyle = "#fff";
+    ctx.save();
+    ctx.shadowColor = "#ff00ff";
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = "#ffffff";
     ctx.font = "bold 22px Arial";
-    ctx.fillText(name, 170, 50);
+    ctx.fillText(name, 170, 45);
+    ctx.restore();
+
     ctx.font = "18px Arial";
-    ctx.fillText(`Level: ${level}`, 170, 80);
-    ctx.fillText(`Rank: #${rank}/${sorted.length}`, 170, 110);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Level: ${level}`, 170, 78);
+    ctx.fillText(`Rank: #${rank}/${list.length}`, 170, 105);
 
     // ===== EXP BAR =====
-    const barX = 170, barY = 130, barWidth = 330, barHeight = 18;
-    ctx.fillStyle = "#333";
-    ctx.fillRect(barX, barY, barWidth, barHeight);
+    const barX = 170, barY = 125, barW = 330, barH = 18;
+    ctx.fillStyle = "#222";
+    ctx.fillRect(barX, barY, barW, barH);
 
-    const filled = Math.min(barWidth, (currentExp / neededExp) * barWidth);
+    const filled = Math.min(barW, (currentExp / neededExp) * barW);
+    ctx.save();
+    ctx.shadowColor = "#00ffff";
+    ctx.shadowBlur = 15;
     ctx.fillStyle = "#00ffff";
-    ctx.fillRect(barX, barY, filled, barHeight);
+    ctx.fillRect(barX, barY, filled, barH);
+    ctx.restore();
 
     ctx.font = "14px Arial";
     ctx.fillStyle = "#fff";
@@ -158,10 +182,8 @@ module.exports = {
     await fs.writeFile(imgPath, canvas.toBuffer("image/png"));
 
     return message.reply({
-      body: "📊 Here's your Rank Card",
+      body: "🔥 Neon Rank Card",
       attachment: fs.createReadStream(imgPath)
     });
-  },
-
-  onStart: async () => {}
+  }
 };
