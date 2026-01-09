@@ -2,16 +2,17 @@ const { createCanvas, loadImage } = require("canvas");
 const fs = require("fs-extra");
 const path = require("path");
 
+const FB_TOKEN = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+
 module.exports = {
   config: {
     name: "spy",
-    version: "5.4",
-    author: "AYAN",
+    version: "5.5",
+    author: "AYAN • Maya Fix",
     countDown: 5,
     role: 0,
     shortDescription: "See detailed user info",
-    longDescription:
-      "Fetch full profile info with galaxy background, smooth glow, avatar hexagon, and stats.",
+    longDescription: "Fetch full profile info with galaxy background, neon hex avatar, and stats.",
     category: "image",
   },
 
@@ -28,27 +29,24 @@ module.exports = {
         if (match) uid = match[1];
       }
     }
-    if (!uid) {
-      uid = event.type === "message_reply" ? event.messageReply.senderID : uid2 || uid1;
-    }
+    if (!uid) uid = event.type === "message_reply" ? event.messageReply.senderID : uid2 || uid1;
 
     try {
       const userInfo = await new Promise((resolve, reject) => {
         api.getUserInfo(uid, (err, result) => (err ? reject(err) : resolve(result)));
       });
-      const avatarUrl = await usersData.getAvatarUrl(uid);
+
       const data = await usersData.get(uid);
+      const allUsers = await usersData.getAll();
 
       const name = userInfo[uid].name || "Unknown";
       const gender = userInfo[uid].gender === 1 ? "Female" : userInfo[uid].gender === 2 ? "Male" : "Unknown";
       const isFriend = userInfo[uid].isFriend ? "Yes" : "No";
       const isBirthday = userInfo[uid].isBirthday ? "Yes" : "Private";
-      const balance = data.money || 0;
-      const exp = data.exp || 0;
+      const balance = data?.money || 0;
+      const exp = data?.exp || 0;
+      const nickname = data?.nickname || (await getThreadNickname(event, api, uid)) || "N/A";
 
-      let nickname = data.nickname || (await getThreadNickname(event, api, uid)) || "N/A";
-
-      const allUsers = await usersData.getAll();
       const moneyRank = getRank(allUsers, uid, "money");
       const expRank = getRank(allUsers, uid, "exp");
       const infinityMoney = `$${shortenNumber(balance)}`;
@@ -59,7 +57,7 @@ module.exports = {
       const canvas = createCanvas(WIDTH, HEIGHT);
       const ctx = canvas.getContext("2d");
 
-      // Pre-rendered galaxy background with stars
+      // Galaxy background
       const bgPath = path.join(__dirname, "tmp", "galaxy_bg.png");
       if (!fs.existsSync(bgPath)) await createGalaxyBackground(WIDTH, HEIGHT, bgPath);
       const bg = await loadImage(bgPath);
@@ -71,11 +69,10 @@ module.exports = {
       drawRoundRect(ctx, 4, 4, WIDTH - 8, HEIGHT - 8, 10, false, true);
 
       // Avatar
-      const avatarSize = 90;
+      const avatarSize = 120;
       const avatarCenterX = WIDTH / 2;
       const avatarCenterY = 130;
-      const avatar = await safeLoadAvatar(avatarUrl);
-
+      const avatar = await safeLoadAvatar(uid);
       drawHexAvatar(ctx, avatar, avatarCenterX, avatarCenterY, avatarSize);
 
       // Name
@@ -119,6 +116,7 @@ module.exports = {
           try { fs.unlinkSync(outputPath); } catch {}
         });
       });
+
     } catch (e) {
       console.error(e);
       message.reply("⚠️ ইউজার ডাটা ফেচ করতে সমস্যা হয়েছে!");
@@ -128,13 +126,21 @@ module.exports = {
 
 // --- Helper Functions ---
 
-async function safeLoadAvatar(url) {
-  try { return await loadImage(url); }
-  catch {
+// Load avatar using FB Graph API with Access Token
+async function safeLoadAvatar(uid) {
+  const avatarUrl = `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=${FB_TOKEN}`;
+  try {
+    return await loadImage(avatarUrl);
+  } catch {
     const c = createCanvas(512, 512);
     const ctx = c.getContext("2d");
     ctx.fillStyle = "#444";
     ctx.fillRect(0, 0, 512, 512);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 60px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("N/A", 256, 256);
     return c;
   }
 }
@@ -190,7 +196,6 @@ function drawHexAvatar(ctx, avatar, x, y, size) {
 
 // Rounded rect helper
 function drawRoundRect(ctx,x,y,w,h,r,fill=false,stroke=false){
-  if(typeof ctx.roundRect==="function"){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); if(fill)ctx.fill(); if(stroke)ctx.stroke(); return;}
   const R=r; ctx.beginPath();
   ctx.moveTo(x+R,y); ctx.lineTo(x+w-R,y); ctx.quadraticCurveTo(x+w,y,x+w,y+R);
   ctx.lineTo(x+w,y+h-R); ctx.quadraticCurveTo(x+w,y+h,x+w-R,y+h);
