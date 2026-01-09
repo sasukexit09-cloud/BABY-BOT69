@@ -1,42 +1,55 @@
-const moment = require("moment-timezone");
+const axios = require("axios");
 
-module.exports.config = {
-  name: "caption",
-  version: "1.0.2",
-  hasPermssion: 0,
-  credits: "SHAHADAT SAHU",
-  description: "random caption",
-  commandCategory: "caption",
-  usages: "caption",
-  cooldowns: 5
+const baseApiUrl = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
+  return base.data.mahmud;
 };
 
-const tl = [
-  "অনেকের নতুন মানুষ হয়েছে তারা ভালো থাকুক আর আমার হঠাৎ মৃত্যু হোক তারা না জানুক🥹😭",
-  "ভালো থাকা এখন শুধুমাত্র মিথ্যা হাসির সংজ্ঞা 🙂💔",
-  "যত কম বলবে, তত কম কষ্ট পাবে 🙂",
-  "একদিন চুপ করে চলে যাবো, কেউ খেয়ালও করবে না 🙂🥀",
-  "অতিরিক্ত ভালোবাসা একদিন কষ্ট হয়ে ফিরে আসে 🙂🥀",
-  "যাকে ভুলতে চাই, তাকেই বারবার মনে পড়ে 🙂💔",
-  "প্রত্যাশা যত কম, দুঃখ তত কম 🙂",
-  "মায়া যত বেশি দাও, কষ্ট তত বেশি পাও 🖤",
-  "মানুষ শুধু কথা দেয়, সাথে থাকার নয় 🙂💔",
-  "কষ্ট পেতে পেতে একদিন শক্ত হয়ে যাবো 🙂🥀"
-];
+module.exports = {
+  config: {
+    name: "caption",
+    version: "1.7",
+    author: "MahMUD",
+    countDown: 5,
+    category: "love"
+  },
 
-function getRandomCaption() {
-  return tl[Math.floor(Math.random() * tl.length)];
-}
+  onStart: async ({ message, args }) => {
+    const baseUrl = await baseApiUrl();
 
-module.exports.onChat = async function ({ api, event }) {
-  const { threadID, messageID, body } = event;
-  if (!body) return;
-  if (body.trim().toLowerCase() === module.exports.config.name) {
-    return api.sendMessage(`🖤 Random Sad Caption 🖤\n\n${getRandomCaption()}`, threadID, messageID);
+    if (args[0] === "list") {
+      try {
+        const res = await axios.get(`${baseUrl}/api/caption/list`);
+        const categories = res.data.categories.map(cat => `• ${cat}`).join("\n");
+        return message.reply(`>🎀 𝐀𝐯𝐚𝐢𝐥𝐚𝐛𝐥𝐞 𝐜𝐚𝐭𝐞𝐠𝐨𝐫𝐢𝐞𝐬:\n\n${categories}`);
+      } catch {
+        return message.reply("❌ Failed to fetch category list.");
+      }
+    }
+
+    if (args[0] === "add") {
+      if (args.length < 4) return message.reply("⚠ Please specify a category, language (bn/en), and caption text.");
+      const category = args[1];
+      const language = args[2];
+      const caption = args.slice(3).join(" ");
+      try {
+        const res = await axios.post(`${baseUrl}/api/caption/add`, { category, language, caption });
+        return message.reply(res.data.message);
+      } catch {
+        return message.reply("❌ Failed to add caption. Make sure category and language are valid.");
+      }
+    }
+
+    if (!args[0]) return message.reply("⚠ Please specify a category. Example: !caption love");
+
+    const category = args[0];
+    const language = args[1] || "bn";
+
+    try {
+      const res = await axios.get(`${baseUrl}/api/caption`, { params: { category, language } });
+      return message.reply(`✅| Here’s your ${category} caption:\n\n${res.data.caption}`);
+    } catch {
+      return message.reply("❌ Failed to fetch caption. Please check the category and language.");
+    }
   }
-};
-
-module.exports.onStart = async function ({ api, event }) {
-  const { threadID, messageID } = event;
-  return api.sendMessage(`🖤 Random Sad Caption 🖤\n\n${getRandomCaption()}`, threadID, messageID);
 };
