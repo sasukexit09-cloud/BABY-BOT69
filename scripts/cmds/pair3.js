@@ -10,7 +10,7 @@ module.exports = {
     name: "pair3",
     author: "xemon (fixed by Maya)",
     role: 0,
-    shortDescription: "VIP-only love match command",
+    shortDescription: "Love match command",
     category: "love",
     guide: "{pn}"
   },
@@ -22,16 +22,6 @@ module.exports = {
     let bgPath, avt1Path, avt2Path;
 
     try {
-      // ===== VIP CHECK =====
-      const senderData = await usersData.get(event.senderID);
-      if (!senderData?.vip) {
-        return api.sendMessage(
-          "❌ This command is only available for VIP users.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
       const id1 = event.senderID;
       const name1 = await usersData.getName(id1) || "Unknown";
 
@@ -77,7 +67,7 @@ module.exports = {
 
       const backgroundURL = "https://i.postimg.cc/5tXRQ46D/background3.png";
       const avatar = uid =>
-        `https://graph.facebook.com/${uid}/picture?width=720&height=720&access_token=${FB_TOKEN}`;
+        `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=${FB_TOKEN}`;
 
       // ===== DOWNLOAD IMAGES SAFELY =====
       const download = async (url, file) => {
@@ -130,18 +120,18 @@ module.exports = {
         },
         event.threadID,
         () => {
-          fs.removeSync(bgPath);
-          fs.removeSync(avt1Path);
-          fs.removeSync(avt2Path);
+          [bgPath, avt1Path, avt2Path].forEach(f => {
+            if (fs.existsSync(f)) fs.removeSync(f);
+          });
         },
         event.messageID
       );
 
     } catch (err) {
       console.error("PAIR3 ERROR:", err);
-      if (bgPath) fs.removeSync(bgPath);
-      if (avt1Path) fs.removeSync(avt1Path);
-      if (avt2Path) fs.removeSync(avt2Path);
+      [bgPath, avt1Path, avt2Path].forEach(f => {
+        if (f && fs.existsSync(f)) fs.removeSync(f);
+      });
 
       api.sendMessage(
         "❌ Something went wrong. Please try again later.",
