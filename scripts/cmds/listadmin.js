@@ -1,36 +1,47 @@
 module.exports.config = {
     name: "listadmin",
-    version: '1.0.0',
-    hasPermssion: 0,
-    credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-    description: "List of group administrators",
-    commandCategory: "Box Chat",
-    usages: "dsqtv",
-    cooldowns: 5,
-    dependencies: []
+    version: '1.2.0',
+    role: 0,
+    author: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 & Gemini",
+    description: "গ্রুপের সকল এডমিনের তালিকা দেখুন",
+    category: "group",
+    guide: {
+        en: "{pn}"
+    },
+    countDown: 5
 };
 
-module.exports.run = async function({ api, event, args, Users }) {
-    /*try {
-        var threadInfo = await api.getThreadInfo(args[0]);
-    } catch (e) {
-        var threadInfo = await api.getThreadInfo(event.threadID);
-    }*/
-    var threadInfo = await api.getThreadInfo(event.threadID);
-    let qtv = threadInfo.adminIDs.length;
-    var listad = '';
-    var qtv2 = threadInfo.adminIDs;
-    var fs = global.nodemodule["fs-extra"];
-    dem = 1;
-    for (let i = 0; i < qtv2.length; i++) {
-        const info = (await api.getUserInfo(qtv2[i].id));
-        const name = info[qtv2[i].id].name;
-        listad += '' + `${dem++}` + '. ' + name + '\n';
-    }
+module.exports.onStart = async function({ api, event }) {
+    const { threadID, messageID } = event;
 
-    api.sendMessage(
-        `The list of ${qtv} administrators includes:\n${listad}`,
-        event.threadID,
-        event.messageID
-    );
+    try {
+        // ১. গ্রুপের তথ্য সংগ্রহ
+        const threadInfo = await api.getThreadInfo(threadID);
+        const adminIDs = threadInfo.adminIDs.map(item => item.id);
+        const adminCount = adminIDs.length;
+
+        if (adminCount === 0) {
+            return api.sendMessage("এই গ্রুপে কোনো এডমিন পাওয়া যায়নি।", threadID, messageID);
+        }
+
+        // ২. সকল এডমিনের প্রোফাইল তথ্য সংগ্রহ (একবারে)
+        const allUsersInfo = await api.getUserInfo(adminIDs);
+        
+        let msg = `✨ এই গ্রুপে মোট ${adminCount} জন এডমিন আছেন:\n━━━━━━━━━━━━━━━━━━\n`;
+        let count = 1;
+
+        for (const id of adminIDs) {
+            const name = allUsersInfo[id].name;
+            msg += `${count++}. ${name}\n`;
+        }
+
+        msg += `━━━━━━━━━━━━━━━━━━`;
+
+        // ৩. মেসেজ পাঠানো
+        return api.sendMessage(msg, threadID, messageID);
+
+    } catch (error) {
+        console.error("Listadmin Error:", error);
+        return api.sendMessage("❌ এডমিন লিস্ট লোড করতে সমস্যা হয়েছে। সম্ভবত আপনার বট গ্রুপ এডমিন নয়।", threadID, messageID);
+    }
 };
