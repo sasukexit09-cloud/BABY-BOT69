@@ -1,103 +1,97 @@
 const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
-const jimp = require("jimp");
+const { Jimp } = require("jimp"); // Fix for Jimp.read error
 
 module.exports.config = {
- name: "hug3",
- version: "3.1.2",
- hasPermssion: 0,
- credits: "𝐀𝐘𝐀𝐍 𝐀𝐇𝐌𝐄𝐃𝐙",
- description: "hug frame generat",
- commandCategory: "img",
- usages: "[@mention]",
- cooldowns: 5
+  name: "hug3",
+  version: "4.2.0",
+  role: 0,
+  author: "𝐀𝐘𝐀𝐍 𝐀𝐇𝐌𝐄𝐃𝐙",
+  description: "Original position hug frame generator",
+  category: "img",
+  guide: { en: "{pn} @mention or reply" },
+  countDown: 5
 };
 
-module.exports.onLoad = async () => {
- const dir = path.join(__dirname, "cache", "canvas");
- const filePath = path.join(dir, "hugv2.png");
- if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
- if (!fs.existsSync(filePath)) {
- const imgURL = "https://i.ibb.co/zRdZJzG/1626342271-28-kartinkin-com-p-anime-obnimashki-v-posteli-anime-krasivo-30.jpg";
- const imgData = (await axios.get(imgURL, { responseType: "arraybuffer" })).data;
- fs.writeFileSync(filePath, Buffer.from(imgData));
- }
-};
+module.exports.onStart = async function ({ event, api }) {
+  const { threadID, messageID, senderID, mentions, type, messageReply } = event;
 
-async function circle(imagePath) {
- const img = await jimp.read(imagePath);
- img.circle();
- return await img.getBufferAsync("image/png");
-}
+  let targetID;
+  if (type === "message_reply") {
+    targetID = messageReply.senderID;
+  } else {
+    const mention = Object.keys(mentions);
+    targetID = mention[0];
+  }
 
-async function makeImage({ one, two }) {
- const dir = path.join(__dirname, "cache", "canvas");
- const bg = await jimp.read(path.join(dir, "hugv2.png"));
- const pathImg = path.join(dir, `hug2_${one}_${two}.png`);
- const avatarOnePath = path.join(dir, `avt_${one}.png`);
- const avatarTwoPath = path.join(dir, `avt_${two}.png`);
+  if (!targetID) {
+    return api.sendMessage("Please mention 1 person or reply to their message! 🤧", threadID, messageID);
+  }
 
- const getAvatar = async (uid, filePath) => {
- const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`;
- const avatarData = (await axios.get(url, { responseType: 'arraybuffer' })).data;
- fs.writeFileSync(filePath, Buffer.from(avatarData));
- };
+  const cacheDir = path.join(process.cwd(), "cache", "canvas");
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
- await getAvatar(one, avatarOnePath);
- await getAvatar(two, avatarTwoPath);
+  const bgPath = path.join(cacheDir, "hugv2.png");
+  const outPath = path.join(cacheDir, `hug_${senderID}_${targetID}.png`);
 
- const circleOne = await jimp.read(await circle(avatarOnePath));
- const circleTwo = await jimp.read(await circle(avatarTwoPath));
+  try {
+    api.setMessageReaction("⌛", messageID, () => {}, true);
 
- bg.composite(circleOne.resize(100, 100), 370, 40)
- .composite(circleTwo.resize(100, 100), 330, 150);
+    // ১. ব্যাকগ্রাউন্ড ইমেজ ডাউনলোড
+    if (!fs.existsSync(bgPath)) {
+      const imgURL = "https://i.ibb.co/zRdZJzG/1626342271-28-kartinkin-com-p-anime-obnimashki-v-posteli-anime-krasivo-30.jpg";
+      const res = await axios.get(imgURL, { responseType: "arraybuffer" });
+      fs.writeFileSync(bgPath, Buffer.from(res.data));
+    }
 
- const finalBuffer = await bg.getBufferAsync("image/png");
- fs.writeFileSync(pathImg, finalBuffer);
- fs.unlinkSync(avatarOnePath);
- fs.unlinkSync(avatarTwoPath);
+    // ২. প্রোফাইল পিকচার ডাউনলোড ও গোল করার ফাংশন
+    const getAvt = async (uid) => {
+      const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`;
+      const res = await axios.get(url, { responseType: "arraybuffer" });
+      const img = await Jimp.read(Buffer.from(res.data));
+      img.circle();
+      return img;
+    };
 
- return pathImg;
-}
+    // ৩. সব ইমেজ রিড করা
+    const [bg, avtOne, avtTwo] = await Promise.all([
+      Jimp.read(bgPath),
+      getAvt(senderID),
+      getAvt(targetID)
+    ]);
 
-module.exports.run = async function ({ event, api }) {
- const { threadID, messageID, senderID, mentions } = event;
- const mention = Object.keys(mentions);
- if (!mention[0]) {
- return api.sendMessage("please mention 1 paeson!", threadID, messageID);
- }
+    // ৪. আপনার অরিজিনাল পজিশন অনুযায়ী বসানো
+    // বাম পাশের পিকচার (One) - (X: 370, Y: 40)
+    avtOne.resize({ w: 100, h: 100 });
+    bg.composite(avtOne, 370, 40); 
 
- const one = senderID, two = mention[0];
+    // ডান পাশের পিকচার (Two) - (X: 330, Y: 150)
+    avtTwo.resize({ w: 100, h: 100 });
+    bg.composite(avtTwo, 330, 150);
 
- const captions = [
- "ভালোবাসা যদি কোনো অনুভূতি হয়, তাহলে তোমার প্রতি আমার অনুভূতি পৃথিবীর সেরা অনুভূতি!🌺",
- "তুমি আমার জীবনের সেরা অধ্যায়, যেই অধ্যায় বারবার পড়তে ইচ্ছে করে!😘",
- "তোমার ভালোবাসার মূল্য আমি কিভাবে দেবো, তা আমার জানা নেই, শুধু জানি প্রথম থেকে যে ভাবে ভালোবেসেছিলাম💜 সেভাবেই ভালোবেসে যাবো!🫶",
- "আমি প্রেমে পড়ার আগে তোমার মায়ায় জড়িয়ে গেছি, যে মায়া নেশার মতো, আমি চাইলে তোমার নেশা কাটিয়ে উঠতে পারি না!💞",
- "তোমাকে চেয়েছিলাম, আর তোমাকেই চাই, তুমি আমার ভালোবাসা🖤 তুমি আমার বেঁচে থাকার কারণ!🥰",
- "আমার কাছে তোমাকে ভালোবাসার কোনো সংজ্ঞা নেই, তোমাকে ভালোবেসে যাওয়া হচ্ছে আমার নিশ্চুপ অনুভূতি!😍",
- "তুমি আমার জীবনের সেই গল্প, যা পড়তে গিয়ে প্রতিবারই নতুন কিছু আবিষ্কার করি!🌻",
- "আমার মনের গহীনে বাস করা রাজকন্যা তোমাকে অনেক ভালোবাসি।❤️‍🩹",
- "I feel complete in my life, যখন ভাবি তোমার মতো একটা লক্ষ্মী মানুষ আমার জীবন সঙ্গী!🌺",
- "যে তোমার ভাবনার সাথে মিলে যায়, তাকে কখনো ছেড়ে দিও না 🤗 এমন মানুষ সবার জীবনে আসে না!😘",
- "তোমার একটুকরো ভালোবাসায় আমি পুরোটা জীবন কেটে দিতে পারি!💜",
- "তোমার হাসিতে যেন আমার পৃথিবী থেমে যায়!😊",
- "তুমি শুধু একজন মানুষ নও, তুমি আমার অনুভব, আমার মন!🖤",
- "তুমি আমার সবকিছু, আমার আজ, আমার আগামী!❤️‍🔥",
- "তোমার চোখে চোখ রাখলেই সব ব্যথা ভুলে যাই!😘"
- ];
+    // ৫. সেভ করা
+    await bg.write(outPath);
 
- const caption = captions[Math.floor(Math.random() * captions.length)];
+    const captions = [
+      "ভালোবাসা যদি কোনো অনুভূতি হয়, তাহলে তোমার প্রতি আমার অনুভূতি পৃথিবীর সেরা অনুভূতি!🌺",
+      "তুমি আমার জীবনের সেরা অধ্যায়, যেই অধ্যায় বারবার পড়তে ইচ্ছে করে!😘",
+      "তোমাকে চেয়েছিলাম, আর তোমাকেই চাই!🖤",
+      "আমার কাছে তোমাকে ভালোবাসার কোনো সংজ্ঞা নেই!😍"
+    ];
+    const caption = captions[Math.floor(Math.random() * captions.length)];
 
- try {
- const imagePath = await makeImage({ one, two });
- return api.sendMessage({
- body: caption,
- attachment: fs.createReadStream(imagePath)
- }, threadID, () => fs.unlinkSync(imagePath), messageID);
- } catch (e) {
- console.error(e);
- return api.sendMessage("❌ ছবিটি তৈরি করতে সমস্যা হয়েছে!", threadID, messageID);
- }
+    api.setMessageReaction("✅", messageID, () => {}, true);
+    return api.sendMessage({
+      body: caption,
+      attachment: fs.createReadStream(outPath)
+    }, threadID, () => {
+      if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+    }, messageID);
+
+  } catch (error) {
+    console.error(error);
+    api.setMessageReaction("❌", messageID, () => {}, true);
+    return api.sendMessage(`❌ এরর: ${error.message}`, threadID, messageID);
+  }
 };
