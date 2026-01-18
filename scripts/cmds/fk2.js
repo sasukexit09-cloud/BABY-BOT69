@@ -1,77 +1,81 @@
-module.exports.config = {
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
+const jimp = require("jimp");
+
+module.exports = {
+  config: {
     name: "fk2",
-    version: "4.1.1",
-    hasPermssion: 2,
-    credits: "AYAN",
-    description: "Get fuck",
-    commandCategory: "😈যুদ্ধ_করার_কমান্ড😈",
-    usages: "[@mention]",
-    cooldowns: 5,
-    dependencies: {
-        "axios": "",
-        "fs-extra": "",
-        "path": "",
-        "jimp": ""
+    version: "4.1.3",
+    author: "AYAN & Gemini",
+    countDown: 5,
+    role: 2, 
+    shortDescription: { en: "😈 যুদ্ধ করার কমান্ড (Reply/Mention) 😈" },
+    category: "funny",
+    guide: { en: "{pn} @mention or reply to a message" }
+  },
+
+  onStart: async function ({ api, event }) {
+    const { threadID, messageID, senderID, mentions, messageReply } = event;
+
+    // ১. আইডি ডিটেকশন লজিক (Reply > Mention)
+    let two;
+    if (messageReply) {
+      two = messageReply.senderID; // রিপ্লাই দিলে তার আইডি
+    } else if (Object.keys(mentions).length > 0) {
+      two = Object.keys(mentions)[0]; // মেনশন করলে তার আইডি
+    } else {
+      return api.sendMessage("❌ দয়া করে একজনকে মেনশন করুন অথবা তার মেসেজে রিপ্লাই দিন!", threadID, messageID);
     }
-};
 
-module.exports.onLoad = async () => {
-    const { resolve } = global.nodemodule["path"];
-    const { existsSync, mkdirSync } = global.nodemodule["fs-extra"];
-    const { downloadFile } = global.utils;
-    const dirMaterial = __dirname + `/cache/canvas/`;
-    const path = resolve(__dirname, 'cache/canvas', 'fucksv5.png');
-    if (!existsSync(dirMaterial + "canvas")) mkdirSync(dirMaterial, { recursive: true });
-    if (!existsSync(path)) await downloadFile("https://i.ibb.co/VJHCjCb/images-2022-08-14-T183802-542.jpg", path);
-};
+    const one = senderID;
+    const cacheDir = path.join(process.cwd(), "cache", "canvas");
+    const bgPath = path.join(cacheDir, "fucksv5.png");
+    const outPath = path.join(cacheDir, `fk_${one}_${two}.png`);
 
-async function makeImage({ one, two }) {
-    const fs = global.nodemodule["fs-extra"];
-    const path = global.nodemodule["path"];
-    const axios = global.nodemodule["axios"]; 
-    const jimp = global.nodemodule["jimp"];
-    const __root = path.resolve(__dirname, "cache", "canvas");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    let batgiam_img = await jimp.read(__root + "/fucksv5.png");
-    let pathImg = __root + `/batman${one}_${two}.png`;
-    let avatarOne = __root + `/avt_${one}.png`;
-    let avatarTwo = __root + `/avt_${two}.png`;
-    
-    let getAvatarOne = (await axios.get(`https://graph.facebook.com/${one}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`, { responseType: 'arraybuffer' })).data;
-    fs.writeFileSync(avatarOne, Buffer.from(getAvatarOne, 'utf-8'));
-    
-    let getAvatarTwo = (await axios.get(`https://graph.facebook.com/${two}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`, { responseType: 'arraybuffer' })).data;
-    fs.writeFileSync(avatarTwo, Buffer.from(getAvatarTwo, 'utf-8'));
-    
-    let circleOne = await jimp.read(await circle(avatarOne));
-    let circleTwo = await jimp.read(await circle(avatarTwo));
-    batgiam_img.composite(circleOne.resize(1, 1), 1, 1).composite(circleTwo.resize(150, 150), 460, 20);
-    
-    let raw = await batgiam_img.getBufferAsync("image/png");
-    
-    fs.writeFileSync(pathImg, raw);
-    fs.unlinkSync(avatarOne);
-    fs.unlinkSync(avatarTwo);
-    
-    return pathImg;
-}
+    try {
+      // ২. ব্যাকগ্রাউন্ড চেক
+      if (!fs.existsSync(bgPath)) {
+        const getBG = await axios.get("https://i.ibb.co/VJHCjCb/images-2022-08-14-T183802-542.jpg", { responseType: "arraybuffer" });
+        fs.writeFileSync(bgPath, Buffer.from(getBG.data));
+      }
 
-async function circle(image) {
-    const jimp = require("jimp");
-    image = await jimp.read(image);
-    image.circle();
-    return await image.getBufferAsync("image/png");
-}
+      api.sendMessage("⌛ একটু দাঁড়াও, সাইজ করছি...", threadID, (err, info) => {
+         setTimeout(() => api.unsendMessage(info.messageID), 3000);
+      }, messageID);
 
-module.exports.run = async function ({ event, api, args }) {    
-    const fs = global.nodemodule["fs-extra"];
-    const { threadID, messageID, senderID } = event;
-    const mention = Object.keys(event.mentions);
-    if (!mention[0]) return api.sendMessage("Please mention 1 person.", threadID, messageID);
-    else {
-        const one = senderID, two = mention[0];
-        return makeImage({ one, two }).then(path => 
-            api.sendMessage({ body: "", attachment: fs.createReadStream(path) }, threadID, () => fs.unlinkSync(path), messageID)
-        );
+      // ৩. HD Avatars using your Token
+      const token = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+      const getAvt = (id) => `https://graph.facebook.com/${id}/picture?height=1500&width=1500&access_token=${token}`;
+
+      const [baseImg, avtOne, avtTwo] = await Promise.all([
+        jimp.read(bgPath),
+        jimp.read(getAvt(one)),
+        jimp.read(getAvt(two))
+      ]);
+
+      // ৪. ইমেজ এডিটিং
+      avtOne.circle().resize(150, 150);
+      avtTwo.circle().resize(150, 150);
+
+      baseImg.composite(avtOne, 50, 20) 
+             .composite(avtTwo, 460, 20);
+
+      await baseImg.writeAsync(outPath);
+
+      // ৫. আউটপুট
+      return api.sendMessage({
+        body: "😈 খেলা শুরু!",
+        attachment: fs.createReadStream(outPath)
+      }, threadID, () => {
+        if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+      }, messageID);
+
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage("❌ ছবি তৈরি করতে সমস্যা হয়েছে।", threadID, messageID);
     }
+  }
 };
