@@ -1,93 +1,72 @@
-module.exports.config = {
- name: "fixspam",
- version: "1.0.0",
- hasPermssion: 0,
- credits: "AYAN",
- description: "gile dile ban<3",
- commandCategory: "noprefix",
- usages: '',
- cooldowns: 0,
- dependencies: {}
-};
+const moment = require("moment-timezone");
 
-module.exports.handleEvent = async ({ event, api, Users }) => {
- const { threadID, messageID, body, senderID } = event;
- 
- 
- if (senderID === api.getCurrentUserID()) return;
- 
- const bannedWords = [
- "chudi", "Madarchud bot", "chudna bot", "bot bokachuda", "bot tor boss re chudi",
- "মাদারচোদ বট", "ভোদার বট", "ধোনের বট", "তোর বস রে চুদি", "আয়ান রে চুদি",
- "sahadat mc", "mc Sahu", "bokachoda sahu", "fuck you", "sex", "sexy",
- "hedar bot", "বট চুদি", "crazy bot", "bc bot", "khankir polar bot",
- "bot tor heda", "হেড়ার বট", "bot paylac rồi", "con bot lòn", "cmm bot",
- "clap bot", "bot ncc", "bot oc", "bot óc", "bot óc chó", "cc bot",
- "bot tiki", "lozz bottt", "lol bot", "loz bot", "xxx", "boder bot",
- "bot lon", "x video", "xx", "x", "bot sudi", "bot sida",
- "bot fake", "decode file de", "mc bot", "bad bot", "bot cau"
- ];
+module.exports = {
+  config: {
+    name: "fixspam",
+    version: "1.2.0",
+    author: "AYAN & Gemini",
+    countDown: 0,
+    role: 0,
+    shortDescription: { en: "Auto-ban users for using banned words" },
+    category: "system"
+  },
 
- const currentTime = require("moment-timezone").tz("Asia/Manila").format("HH:MM:ss L");
- const userName = await Users.getNameUser(senderID);
- 
- const warningMessage = {
- body: `» Notice from Owner AYAN «\n\n${userName}, You are stupid for cursing bots so bots automatically banned you from the system`
- };
+  handleEvent: async function ({ api, event, usersData }) {
+    const { threadID, messageID, body, senderID } = event;
 
- 
- const foundWord = bannedWords.find(word => {
- const capitalized = word[0].toUpperCase() + word.slice(1);
- return body.toLowerCase() === word.toLowerCase() || 
- body === capitalized;
- });
+    // যদি কোনো টেক্সট না থাকে বা বট নিজে মেসেজ দেয় তবে ইগনোর করবে
+    if (!body || senderID === api.getCurrentUserID()) return;
 
- if (foundWord) {
- console.log(`${userName} - 𝗕𝗔𝗕𝗬 𝗕𝗢𝗧 : ${foundWord}`);
- 
- 
- const userData = Users.getData(senderID).data || {};
- Users.setData(senderID, {
- data: {
- ...userData,
- banned: 1,
- reason: foundWord,
- dateAdded: currentTime
- }
- });
- 
- global.data.userBanned.set(senderID, {
- reason: foundWord,
- dateAdded: currentTime
- });
+    const bannedWords = [
+      "chudi", "Madarchud bot", "chudna bot", "bot bokachuda", "bot tor boss re chudi",
+      "মাদারচোদ বট", "ভোদার বট", "ধোনের বট", "তোর বস রে চুদি", "আয়ান রে চুদি",
+      "sahadat mc", "mc Sahu", "bokachoda sahu", "fuck you", "sex", "sexy",
+      "hedar bot", "বট চুদি", "crazy bot", "bc bot", "khankir polar bot",
+      "bot tor heda", "হেড়ার বট", "bot lon", "x video", "xx", "bot sudi", "bot sida"
+    ];
 
- 
- api.sendMessage(warningMessage, threadID);
- 
- 
- const admins = global.config.ADMINBOT || [61582355550594];
- for (const adminID of admins) {
- api.sendMessage(
- `=== Bot Notification ===\n\n` +
- `🆘 Sinner: ${userName}\n` +
- `🔰 Uid: ${senderID}\n` +
- `😥 Sent: ${foundWord}\n\n` +
- `Banned from the system`,
- adminID
- );
- }
- }
-};
+    // চেক করা হচ্ছে মেসেজে নিষিদ্ধ শব্দ আছে কি না
+    const lowerBody = body.toLowerCase();
+    const foundWord = bannedWords.find(word => lowerBody.includes(word.toLowerCase()));
 
-module.exports.run = async ({ event, api }) => {
- api.sendMessage(
- "( \\_/)\n" +
- "( •_•)\n" +
- "// >🧠\n\n" +
- "Give me your brain and put it in your head.\n" +
- "Do you know if it's the Noprefix command??",
- event.threadID
- );
-};D
- );
+    if (foundWord) {
+      try {
+        const userData = await usersData.get(senderID);
+        const name = userData.name || "Unknown User";
+        const time = moment.tz("Asia/Dhaka").format("HH:mm:ss DD/MM/YYYY");
+
+        // ১. ইউজারকে ব্যান করা (GoatBot Database Update)
+        await usersData.set(senderID, {
+          banned: true,
+          reason: `Auto-ban: used word "${foundWord}"`,
+          dateBanned: time
+        });
+
+        // ২. ইউজারকে মেসেজ পাঠানো
+        const warning = `» Notice from Owner AYAN «\n\nHey ${name}!\nYou have been automatically banned from using this bot for using toxic language: "${foundWord}"`;
+        api.sendMessage(warning, threadID, messageID);
+
+        // ৩. এডমিনকে নোটিফিকেশন পাঠানো
+        const adminIDs = global.GoatBot.config.adminBot || [];
+        const notifyMsg = `=== Bot Notification ===\n\n🆘 User: ${name}\n🆔 UID: ${senderID}\n🚫 Word: ${foundWord}\n⏰ Time: ${time}\n\nStatus: Banned from System.`;
+        
+        for (const adminID of adminIDs) {
+          api.sendMessage(notifyMsg, adminID);
+        }
+
+        console.log(`[BAN-SYSTEM] ${name} banned for: ${foundWord}`);
+      } catch (err) {
+        console.error("Ban Error:", err);
+      }
+    }
+  },
+
+  onStart: async function ({ api, event }) {
+    // !fixspam লিখলে এই মেসেজটি আসবে
+    return api.sendMessage(
+      "( \\_/)\n( •_•)\n// >🧠\n\nUse your brain! This is an automatic monitoring system. Don't try to abuse the bot.",
+      event.threadID,
+      event.messageID
+    );
+  }
 };
