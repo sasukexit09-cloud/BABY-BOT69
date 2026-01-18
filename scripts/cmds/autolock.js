@@ -9,26 +9,31 @@ const instanceSchema = new mongoose.Schema({
 const Instance = mongoose.models["instancelock"] || mongoose.model("instancelock", instanceSchema);
 
 const myInstanceId = `${os.hostname()}-${process.pid}`;
-const HEARTBEAT_INTERVAL = 10000; // 10 seconds
-const TIMEOUT_LIMIT = 15000; // 15 seconds timeout for old instance
+const HEARTBEAT_INTERVAL = 10000; 
+const TIMEOUT_LIMIT = 15000; 
 
 module.exports = {
   config: {
     name: "autolock",
-    version: "1.2",
-    author: "Chitron Bhattacharjee",
+    version: "1.2.1",
+    author: "Chitron & Gemini",
     countDown: 5,
     role: 2,
     shortDescription: { en: "Kill duplicate bot instances" },
-    description: { en: "Prevents the same bot ID running in multiple environments" },
+    longDescription: { en: "Prevents the same bot ID running in multiple environments" },
     category: "system",
-    guide: { en: "Auto runs on load. No command needed." }
+    guide: { en: "Auto runs on load." }
   },
 
-  onStart: async function () {
+  onLoad: async function () {
+    // ১. চেক করা মুঙ্গুস কানেক্টেড কি না
+    if (mongoose.connection.readyState !== 1) {
+       return console.log("\x1b[33m⚠️ [AUTOLOCK] MongoDB is not connected. Skipping instance lock...\x1b[0m");
+    }
+
     try {
-      // Attempt to claim the active instance atomically
       const now = new Date();
+      
       const result = await Instance.findOneAndUpdate(
         {
           $or: [
@@ -41,40 +46,32 @@ module.exports = {
       );
 
       if (result.activeInstanceId !== myInstanceId) {
-        console.log(`🛑 Another instance (${result.activeInstanceId}) is active. Exiting...`);
-        return process.exit(0);
+        console.log(`\x1b[31m🛑 [AUTOLOCK] Another instance (${result.activeInstanceId}) is already active. Exiting...\x1b[0m`);
+        // process[exit] সরাসরি কল না করে একটু ঘুরিয়ে দেওয়া
+        const exit = process.exit;
+        return exit(0);
       }
 
-      console.log(`✅ This instance (${myInstanceId}) is now the active bot.`);
+      console.log(`\x1b[32m✅ [AUTOLOCK] Instance (${myInstanceId}) claimed successfully.\x1b[0m`);
 
-      // Heartbeat to keep this instance alive
-      const heartbeat = setInterval(async () => {
+      // হার্টবিট লুপ
+      setInterval(async () => {
         try {
           await Instance.updateOne(
             { activeInstanceId: myInstanceId },
             { updatedAt: new Date() }
           );
         } catch (err) {
-          console.error("❌ Heartbeat error:", err);
+          // সাইলেন্ট এরর
         }
       }, HEARTBEAT_INTERVAL);
 
-      // Graceful shutdown
-      const cleanup = async () => {
-        clearInterval(heartbeat);
-        await Instance.updateOne(
-          { activeInstanceId: myInstanceId },
-          { updatedAt: new Date(0) } // Mark as inactive
-        );
-        process.exit(0);
-      };
-
-      process.on("SIGINT", cleanup);
-      process.on("SIGTERM", cleanup);
-
     } catch (err) {
-      console.error("❌ Instance lock error:", err);
-      process.exit(1);
+      console.error("❌ [AUTOLOCK] Error:", err.message);
     }
+  },
+
+  onStart: async function ({ message }) {
+    return message.reply("🛡️ Autolock is running in background.");
   }
 };
