@@ -1,125 +1,114 @@
-module.exports.config = {
-    name: "group",
-    version: "1.0.1",
-    hasPermssion: 0,
-    credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-    description: "Parent group settings.",
-    commandCategory: "box",
-    usages: "[name/emoji/admin/image/info]",
-    cooldowns: 1,
-    dependencies: {
-        "request": "",
-        "fs-extra": ""
-    }
-};
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
-module.exports.run = async ({ api, event, args }) => {
-    const fs = global.nodemodule["fs-extra"];
-    const request = global.nodemodule["request"];
+module.exports = {
+    config: {
+        name: "group",
+        version: "1.2.0",
+        author: "CYBER & Gemini",
+        countDown: 5,
+        role: 0,
+        shortDescription: { en: "Manage group chat settings" },
+        category: "box",
+        guide: { en: "{pn} [name/emoji/admin/image/info]" }
+    },
 
-    if (!args.length) {
-        return api.sendMessage(
-            `You can use:\n
-/groupemoji [icon]\n
-/groupname [new group name]\n
-/groupimage [reply to an image to set it as group chat image]\n
-/gcadmin [tag] => give admin to the tagged user\n
-/groupinfo => Get all group information`,
-            event.threadID,
-            event.messageID
-        );
-    }
+    onStart: async function ({ api, event, args }) {
+        const { threadID, messageID, senderID, mentions, messageReply } = event;
 
-    // CHANGE GROUP NAME
-    if (args[0] === "name") {
-        const newName = args.slice(1).join(" ") || (event.messageReply && event.messageReply.body);
-        if (!newName) return api.sendMessage("❌ Please provide a new group name.", event.threadID, event.messageID);
-        return api.setTitle(newName, event.threadID);
-    }
-
-    // CHANGE GROUP EMOJI
-    if (args[0] === "emoji") {
-        const emoji = args[1] || (event.messageReply && event.messageReply.body);
-        if (!emoji) return api.sendMessage("❌ Please provide an emoji.", event.threadID, event.messageID);
-        return api.changeThreadEmoji(emoji, event.threadID);
-    }
-
-    // GIVE BOT ITSELF ADMIN (ME ADMIN)
-    if (args[0] === "me" && args[1] === "admin") {
-        const threadInfo = await api.getThreadInfo(event.threadID);
-        const botAdmin = threadInfo.adminIDs.find(el => el.id === api.getCurrentUserID());
-        if (!botAdmin) return api.sendMessage("❌ Bot must be admin to use this command.", event.threadID, event.messageID);
-        if (!global.config.ADMINBOT.includes(event.senderID)) return api.sendMessage("❌ You don't have permission.", event.threadID, event.messageID);
-        return api.changeAdminStatus(event.threadID, event.senderID, true);
-    }
-
-    // GIVE OR REMOVE ADMIN TO USERS
-    if (args[0] === "admin") {
-        let targetID;
-        if (Object.keys(event.mentions).length) targetID = Object.keys(event.mentions)[0];
-        else if (event.messageReply) targetID = event.messageReply.senderID;
-        else targetID = args[1];
-
-        if (!targetID) return api.sendMessage("❌ Please tag or reply to a user.", event.threadID, event.messageID);
-
-        const threadInfo = await api.getThreadInfo(event.threadID);
-        const senderAdmin = threadInfo.adminIDs.some(ad => ad.id === event.senderID);
-        const botAdmin = threadInfo.adminIDs.some(ad => ad.id === api.getCurrentUserID());
-        const targetIsAdmin = threadInfo.adminIDs.some(ad => ad.id === targetID);
-
-        if (!senderAdmin) return api.sendMessage("❌ You are not an admin.", event.threadID, event.messageID);
-        if (!botAdmin) return api.sendMessage("❌ Bot must be admin to change roles.", event.threadID, event.messageID);
-
-        return api.changeAdminStatus(event.threadID, targetID, !targetIsAdmin);
-    }
-
-    // CHANGE GROUP IMAGE
-    if (args[0] === "image") {
-        if (!event.messageReply || !event.messageReply.attachments || !event.messageReply.attachments.length)
-            return api.sendMessage("❌ Reply to an image to set it as group image.", event.threadID, event.messageID);
-        if (event.messageReply.attachments.length > 1)
-            return api.sendMessage("❌ Please reply to only one image.", event.threadID, event.messageID);
-
-        const callback = () => {
-            api.changeGroupImage(fs.createReadStream(__dirname + "/cache/1.png"), event.threadID, () => fs.unlinkSync(__dirname + "/cache/1.png"));
-        };
-
-        return request(encodeURI(event.messageReply.attachments[0].url))
-            .pipe(fs.createWriteStream(__dirname + '/cache/1.png'))
-            .on('close', callback);
-    }
-
-    // GROUP INFO
-    if (args[0] === "info") {
-        const threadInfo = await api.getThreadInfo(event.threadID);
-
-        const totalMembers = threadInfo.participantIDs.length;
-        let maleCount = 0, femaleCount = 0, unknownCount = 0;
-
-        for (let userID in threadInfo.userInfo) {
-            const gender = threadInfo.userInfo[userID].gender;
-            if (gender === 'MALE') maleCount++;
-            else if (gender === 'FEMALE') femaleCount++;
-            else unknownCount++;
+        if (!args.length) {
+          return api.sendMessage(
+            `💠 গ্রুফ সেটিংস মেনু 💠\n━━━━━━━━━━━━━\n` +
+            `🔹 {pn} name [নতুন নাম] -> নাম পরিবর্তন\n` +
+            `🔹 {pn} emoji [আইকন] -> ইমোজি পরিবর্তন\n` +
+            `🔹 {pn} image [রিপ্লাই ছবি] -> গ্রুফ ফটো পরিবর্তন\n` +
+            `🔹 {pn} admin [ট্যাগ/রিপ্লাই] -> এডমিন দেওয়া/নেওয়া\n` +
+            `🔹 {pn} info -> গ্রুফ ডিটেইলস দেখা\n` +
+            `🔹 {pn} me admin -> নিজেকে এডমিন করা (এডমিন হতে হবে)`,
+            threadID, messageID
+          );
         }
 
-        const adminList = [];
-        for (let i of threadInfo.adminIDs) {
-            const userInfo = await api.getUserInfo(i.id);
-            adminList.push(userInfo[i.id].name);
+        const threadInfo = await api.getThreadInfo(threadID);
+        const isAdmin = threadInfo.adminIDs.some(ad => ad.id === senderID);
+        const botIsAdmin = threadInfo.adminIDs.some(ad => ad.id === api.getCurrentUserID());
+
+        // ১. নাম পরিবর্তন
+        if (args[0] === "name") {
+            const newName = args.slice(1).join(" ") || (messageReply && messageReply.body);
+            if (!newName) return api.sendMessage("❌ নতুন নামটি লিখুন!", threadID, messageID);
+            return api.setTitle(newName, threadID);
         }
 
-        const approvalStatus = threadInfo.approvalMode ? '✅ On' : '❎ Off';
+        // ২. ইমোজি পরিবর্তন
+        if (args[0] === "emoji") {
+            const emoji = args[1] || (messageReply && messageReply.body);
+            if (!emoji) return api.sendMessage("❌ একটি ইমোজি দিন!", threadID, messageID);
+            return api.changeThreadEmoji(emoji, threadID);
+        }
 
-        const callback = () => {
-            api.sendMessage({
-                body: `📌 GC Name: ${threadInfo.threadName}\n🆔 GC ID: ${threadInfo.threadID}\n✅ Approval: ${approvalStatus}\n😀 Emoji: ${threadInfo.emoji}\n\n👥 Members: ${totalMembers}\n♂️ Male: ${maleCount}\n♀️ Female: ${femaleCount}\n❓ Unknown: ${unknownCount}\n\n🛡️ Admins (${adminList.length}):\n• ${adminList.join('\n• ')}\n\n✉️ Total messages: ${threadInfo.messageCount}`,
-                attachment: fs.createReadStream(__dirname + '/cache/1.png')
-            }, event.threadID, () => fs.unlinkSync(__dirname + '/cache/1.png'), event.messageID);
-        };
+        // ৩. নিজেকে এডমিন করা
+        if (args[0] === "me" && args[1] === "admin") {
+            if (!botIsAdmin) return api.sendMessage("❌ আগে বটকে এডমিন করুন!", threadID, messageID);
+            const botAdmins = global.GoatBot.config.adminBot;
+            if (!botAdmins.includes(senderID)) return api.sendMessage("❌ আপনি বটের ওনার নন!", threadID, messageID);
+            return api.changeAdminStatus(threadID, senderID, true);
+        }
 
-        return request(encodeURI(threadInfo.imageSrc))
-            .pipe(fs.createWriteStream(__dirname + '/cache/1.png'))
-            .on('close', callback);
+        // ৪. ইউজারকে এডমিন দেওয়া বা রিমুভ করা
+        if (args[0] === "admin") {
+            if (!isAdmin) return api.sendMessage("❌ আপনি গ্রুফ এডমিন নন!", threadID, messageID);
+            if (!botIsAdmin) return api.sendMessage("❌ বট এডমিন না হলে পারমিশন দিতে পারবে না!", threadID, messageID);
+
+            let targetID;
+            if (Object.keys(mentions).length) targetID = Object.keys(mentions)[0];
+            else if (messageReply) targetID = messageReply.senderID;
+            else targetID = args[1];
+
+            if (!targetID) return api.sendMessage("❌ ইউজার ট্যাগ করুন বা রিপ্লাই দিন!", threadID, messageID);
+            const targetIsAdmin = threadInfo.adminIDs.some(ad => ad.id === targetID);
+            return api.changeAdminStatus(threadID, targetID, !targetIsAdmin);
+        }
+
+        // ৫. গ্রুফ ইমেজ পরিবর্তন
+        if (args[0] === "image") {
+            if (!messageReply || !messageReply.attachments || !messageReply.attachments.length)
+                return api.sendMessage("❌ একটি ছবিতে রিপ্লাই দিয়ে {pn} image লিখুন।", threadID, messageID);
+            
+            const imgUrl = messageReply.attachments[0].url;
+            const cachePath = path.join(process.cwd(), "cache", `gc_image_${threadID}.png`);
+
+            try {
+                const response = await axios.get(imgUrl, { responseType: "arraybuffer" });
+                fs.writeFileSync(cachePath, Buffer.from(response.data));
+                return api.changeGroupImage(fs.createReadStream(cachePath), threadID, () => fs.unlinkSync(cachePath));
+            } catch (err) {
+                return api.sendMessage("❌ ছবি আপলোড করতে সমস্যা হয়েছে।", threadID, messageID);
+            }
+        }
+
+        // ৬. গ্রুফ ইনফো (ছবিসহ)
+        if (args[0] === "info") {
+            const totalMembers = threadInfo.participantIDs.length;
+            const adminCount = threadInfo.adminIDs.length;
+            const approvalStatus = threadInfo.approvalMode ? 'অন ✅' : 'অফ ❎';
+            
+            const infoMsg = `📌 গ্রুফ নাম: ${threadInfo.threadName}\n` +
+                            `🆔 আইডি: ${threadID}\n` +
+                            `👥 সদস্য: ${totalMembers} জন\n` +
+                            `👮 এডমিন: ${adminCount} জন\n` +
+                            `✅ মেম্বার অ্যাপ্রুভাল: ${approvalStatus}\n` +
+                            `😀 বর্তমান ইমোজি: ${threadInfo.emoji || "ডিফল্ট"}`;
+
+            const imgUrl = threadInfo.imageSrc;
+            if (imgUrl) {
+                const imgPath = path.join(process.cwd(), "cache", `info_${threadID}.png`);
+                const getImg = await axios.get(imgUrl, { responseType: "arraybuffer" });
+                fs.writeFileSync(imgPath, Buffer.from(getImg.data));
+                return api.sendMessage({ body: infoMsg, attachment: fs.createReadStream(imgPath) }, threadID, () => fs.unlinkSync(imgPath));
+            }
+            return api.sendMessage(infoMsg, threadID);
+        }
     }
 };
