@@ -2,7 +2,7 @@ module.exports = {
     config: {
         name: "birthday",
         version: "1.0",
-        author: "Samir",
+        author: "AYAN",
         aliases: ["own-bty"],
         countDown: 5,
         role: 0,
