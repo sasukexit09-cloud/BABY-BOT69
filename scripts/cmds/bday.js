@@ -1,105 +1,81 @@
-module.exports.config = {
- name: "bday",
- version: "1.0.0",
- hasPermssion: 0,
- credits: "ULLASH and SAHU ",
- description: "See admin's birthday",
- usePrefix: false,
- commandCategory: "bday",
- cooldowns: 5
-};
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
-module.exports.run = async ({ api, event }) => {
- const axios = global.nodemodule["axios"];
- const fs = global.nodemodule["fs-extra"];
- const path = __dirname + "/cache/1.png";
+module.exports = {
+  config: {
+    name: "bday",
+    version: "1.2.0",
+    author: "ULLASH, SAHU & Gemini",
+    countDown: 5,
+    role: 0,
+    shortDescription: { en: "See admin's birthday countdown with HQ profile pic" },
+    category: "info",
+    guide: { en: "{pn}" }
+  },
 
- const targetDate = new Date("November 13, 2025 00:00:00");
- const now = new Date();
+  onStart: async function ({ api, event }) {
+    const { threadID, messageID } = event;
+    
+    // ১. এডমিনের জন্ম তারিখ ও আইডি সেটআপ
+    const birthMonth = 10; // November (0=Jan, 10=Nov)
+    const birthDay = 13;
+    const adminUID = "61584308632995";
+    const accessToken = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+    
+    const now = new Date();
+    let targetDate = new Date(now.getFullYear(), birthMonth, birthDay);
 
- const diffMs = targetDate - now;
- const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
- const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
- const diffMinutes = Math.floor((diffMs / (1000 * 60)) % 60);
- const diffSeconds = Math.floor((diffMs / 1000) % 60);
+    if (now > targetDate) {
+      targetDate.setFullYear(now.getFullYear() + 1);
+    }
 
- if (diffDays === 1) {
- const tomorrowMessage =
-`👉ADMIN AYAN এর জন্মদিন আগামীকাল!\n অবশেষে এডমিনের জন্মদিন ফাঁস হয়ে গেল!\n\n উইশ করতে ভুলবে না কিন্তু...🥰😘
-`;
- return api.sendMessage(tomorrowMessage, event.threadID, event.messageID);
- }
+    const diffMs = targetDate - now;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    const diffMinutes = Math.floor((diffMs / (1000 * 60)) % 60);
+    const diffSeconds = Math.floor((diffMs / 1000) % 60);
 
- if (diffDays === 0) {
- const happyBirthdayMessage = 
-`╔═══ 🎉 𝐇𝐀𝐏𝐏𝐘 𝐁𝐈𝐑𝐓𝐇𝐃𝐀𝐘 🎉 ════╗
-║ 𝐎𝐔𝐑 𝐁𝐎𝐒𝐒 - 𝐀𝐘𝐀𝐍 𝐀𝐇𝐌𝐄𝐃𝐙 💖 
-╟─────────────────
-║ 🎂 Everyone Please Wish Him Today! 
-║ 🥳 আজ আমাদের Boss এর জন্মদিন! 
-║ ❤️ মন থেকে উইশ করো সবাই! 
-╟─────────────────
-║ 📩 Connect With Him: 
-║ ➤ 📘 Facebook : 
-║ www.facebook.com/61582355550594 
-║ ➤ 💬 Messenger : 
-║ https://m.me/Ayanokujo.69 
-║ ➤ 📱 WhatsApp : 
-║ https://wa.me/+8801914227459 
-╟─────────────────
-║ 🫶 উইশ করো, দোয়া করো?
-║ এবং ভালোবাসা জানাও প্রিয় বস আয়ানকে! ❤️‍🩹 
-╚═════════════════════════╝`;
- return api.sendMessage(happyBirthdayMessage, event.threadID, event.messageID);
- }
+    // ২. কাউন্টডাউন টেক্সট
+    let msg = "";
+    if (diffDays === 0 && now.getDate() === birthDay) {
+      msg = `╔═══ 🎉 𝐇𝐀𝐏𝐏𝐘 𝐁𝐈𝐑𝐓𝐇𝐃𝐀𝐘 🎉 ════╗\n║ 🎂 𝐇𝐁𝐃 𝐀𝐘𝐀𝐍 𝐀𝐇𝐌𝐄𝐃𝐙! 💖 \n╟─────────────────\n║ 🥳 আজ আমাদের প্রিয় এডমিনের জন্মদিন! \n║ ❤️ সবাই মন থেকে প্রাণভরে উইশ করো! \n╚═════════════════════════╝`;
+    } else {
+      msg = `╔═══════════════════╗\n║ 🎂 ADMIN AYAN 💫\n║ এর জন্মদিন ফাঁস হয়ে গেছে ❤️‍🩹🤌\n║═══════════════════\n║ 📅 Days : ${diffDays}\n║ ⏰ Hours : ${diffHours}\n║ 🕰️ Minutes : ${diffMinutes}\n║ ⏳ Seconds : ${diffSeconds}\n╚════════════════════╝`;
+    }
 
- if (diffDays < 0) {
- const leakMessage =
-`╔═══════════════════╗
-║ 🎂 ADMIN AYAN 💫
-║ এর জন্মদিন ফাঁস হয়ে গেছে ❤️‍🩹🤌
-╚═══════════════════╝`;
- return api.sendMessage(leakMessage, event.threadID, event.messageID);
- }
+    // ৩. এক্সেস টোকেনসহ ইমেজ ইউআরএল
+    const url = `https://graph.facebook.com/${adminUID}/picture?height=1500&width=1500&access_token=${accessToken}`;
+    const cacheDir = path.join(process.cwd(), "cache");
+    const imgPath = path.join(cacheDir, `bday_${adminUID}.png`);
 
- const countdownMessage = 
-`╔═══════════════════╗
-║ 🎂 ADMIN AYAN 💫
-║ এর জন্মদিন ফাঁস হয়ে গেছে ❤️‍🩹🤌
-║═══════════════════
-║ 📅 Days : ${diffDays}
-║ ⏰ Hours : ${diffHours}
-║ 🕰️ Minutes : ${diffMinutes}
-║ ⏳ Seconds : ${diffSeconds}
-╚════════════════════╝`;
+    try {
+      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
- const url = `https://graph.facebook.com/61582355550594/picture?height=720&width=720`;
+      const response = await axios({
+        url,
+        method: "GET",
+        responseType: "stream"
+      });
 
- try {
- const response = await axios({
- url,
- method: "GET",
- responseType: "stream",
- });
+      const writer = fs.createWriteStream(imgPath);
+      response.data.pipe(writer);
 
- const writer = fs.createWriteStream(path);
- response.data.pipe(writer);
+      writer.on("finish", () => {
+        api.sendMessage({
+          body: msg,
+          attachment: fs.createReadStream(imgPath)
+        }, threadID, () => {
+          if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+        }, messageID);
+      });
 
- writer.on("finish", () => {
- api.sendMessage(
- {
- body: countdownMessage,
- attachment: fs.createReadStream(path),
- },
- event.threadID,
- () => fs.unlinkSync(path)
- );
- });
+      writer.on("error", () => {
+        api.sendMessage(msg, threadID, messageID);
+      });
 
- writer.on("error", () => {
- api.sendMessage("❌ Image download failed.", event.threadID, event.messageID);
- });
- } catch {
- api.sendMessage("❌ Error occurred while getting image.", event.threadID, event.messageID);
- }
+    } catch (err) {
+      api.sendMessage(msg, threadID, messageID);
+    }
+  }
 };
