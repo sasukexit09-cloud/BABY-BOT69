@@ -61,7 +61,7 @@ module.exports = {
   config: {
     name: "bbyintro",
     version: "1.0.8",
-    author: "Maya x Shahadat",
+    author: "Maya x AYAN",
     countDown: 5,
     role: 0,
     shortDescription: "Fancy quotes with Alaya intro + picture",
