@@ -1,45 +1,74 @@
 const axios = require("axios");
+const https = require("https");
 
-module.exports.config = {
- name: "flux2",
- version: "2.0",
- hasPermssion: 0,
- credits: "Dipto",
- description: "Flux Image Generator",
- commandCategory: "𝗜𝗠𝗔𝗚𝗘 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗢𝗥",
- usage: "{pn} [prompt] --ratio 1024x1024\n{pn} [prompt]",
- countDown: 15,
-};
+module.exports = {
+  config: {
+    name: "flux2",
+    version: "2.6.0",
+    author: "Dipto & Gemini",
+    countDown: 15,
+    role: 0,
+    shortDescription: { en: "High-quality Flux AI Image Generator (SSL Fixed)" },
+    category: "AI-IMAGE",
+    guide: { 
+      en: "{pn} [prompt] --ratio 16:9\n{pn} [prompt]" 
+    }
+  },
 
-module.exports.run = async ({ event, args, api }) => {
- const dipto = "https://www.noobs-api.rf.gd/dipto";
+  onStart: async function ({ api, event, args }) {
+    const { threadID, messageID } = event;
+    
+    // SSL সার্টিফিকেট এরর এড়াতে www বাদ দিয়ে ডিরেক্ট সাবডোমেইন ব্যবহার
+    const diptoApi = "https://noobs-api.rf.gd/dipto";
 
- try {
- const prompt = args.join(" ");
- const [prompt2, ratio = "1:1"] = prompt.includes("--ratio")
- ? prompt.split("--ratio").map(s => s.trim())
- : [prompt, "1:1"];
+    if (!args[0]) {
+      return api.sendMessage("❌ দয়াকরে একটি প্রম্পট লিখুন!\nউদাহরণ: flux2 a cat wearing sunglasses --ratio 16:9", threadID, messageID);
+    }
 
- const startTime = Date.now();
+    try {
+      const fullText = args.join(" ");
+      const [prompt, ratio = "1:1"] = fullText.includes("--ratio")
+        ? fullText.split("--ratio").map(s => s.trim())
+        : [fullText, "1:1"];
 
- const waitMessage = await api.sendMessage("Generating image, please wait... 😘", event.threadID);
- api.setMessageReaction("⌛", event.messageID, () => {}, true);
+      const startTime = Date.now();
 
- const apiurl = `${dipto}/flux?prompt=${encodeURIComponent(prompt2)}&ratio=${encodeURIComponent(ratio)}`;
- const response = await axios.get(apiurl, { responseType: "stream" });
+      // ১. ওয়েটিং মেসেজ ও রিঅ্যাকশন
+      const waitMessage = await api.sendMessage("🎨 𝗙𝗹𝘂𝘅 𝗔𝗜 আপনার ছবিটি তৈরি করছে, দয়াকরে অপেক্ষা করুন... ✨", threadID);
+      api.setMessageReaction("🎨", messageID, () => {}, true);
 
- const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
+      // ২. এপিআই কল (SSL Bypass যুক্ত করা হয়েছে)
+      const apiurl = `${diptoApi}/flux?prompt=${encodeURIComponent(prompt)}&ratio=${encodeURIComponent(ratio)}`;
+      
+      const response = await axios.get(apiurl, { 
+        responseType: "stream",
+        timeout: 90000, // ১.৫ মিনিট সময় দেওয়া হয়েছে বড় ইমেজের জন্য
+        httpsAgent: new https.Agent({  
+          rejectUnauthorized: false // এই লাইনটি আপনার SSL Certificate Altname এরর ফিক্স করবে
+        })
+      });
 
- api.setMessageReaction("✅", event.messageID, () => {}, true);
- api.unsendMessage(waitMessage.messageID);
+      const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
 
- api.sendMessage({
- body: `Here's your image (Generated in ${timeTaken} seconds)`,
- attachment: response.data,
- }, event.threadID, event.messageID);
+      // ৩. সাকসেস রিঅ্যাকশন ও আগের মেসেজ ডিলিট
+      api.setMessageReaction("✅", messageID, () => {}, true);
+      api.unsendMessage(waitMessage.messageID);
 
- } catch (e) {
- console.error(e);
- api.sendMessage("Error: " + e.message, event.threadID, event.messageID);
- }
+      // ৪. ইমেজ ও বিস্তারিত তথ্য পাঠানো
+      return api.sendMessage({
+        body: `✅ 𝗜𝗺𝗮𝗴𝗲 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱!\n━━━━━━━━━━━━━━\n📝 𝗣𝗿𝗼𝗺𝗽𝘁: ${prompt}\n📐 𝗥𝗮𝘁𝗶𝗼: ${ratio}\n⏱️ 𝗧𝗶𝗺𝗲: ${timeTaken}s\n━━━━━━━━━━━━━━`,
+        attachment: response.data,
+      }, threadID, messageID);
+
+    } catch (e) {
+      console.error(e);
+      api.setMessageReaction("❌", messageID, () => {}, true);
+      
+      let errorMsg = "সার্ভারে সমস্যা হয়েছে, আবার চেষ্টা করুন।";
+      if (e.code === 'ECONNABORTED') errorMsg = "এপিআই রেসপন্স দিতে অনেক দেরি করছে।";
+      if (e.response) errorMsg = `এপিআই এরর: ${e.response.statusText}`;
+
+      return api.sendMessage(`❌ এরর: ${errorMsg}`, threadID, messageID);
+    }
+  }
 };
