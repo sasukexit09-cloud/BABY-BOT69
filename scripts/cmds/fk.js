@@ -6,112 +6,101 @@ const path = require("path");
 module.exports = {
   config: {
     name: "fk",
-    aliases: ["fk", "fuck"],
-    version: "1.3",
-    author: "Tarek + Maya Fix",
+    aliases: ["fuck"],
+    version: "1.7",
+    author: "Tarek + Maya + Gemini",
     countDown: 5,
-    role: 0,
-    shortDescription: "FK with custom image (VIP only, auto-detect)",
-    longDescription: "Generate a FK image with the mentioned user using a custom background. Male on right, female on left. Only VIP users can use.",
+    role: 0, 
+    shortDescription: { en: "FK with Ultra HD image (1500x1500px)" },
     category: "funny",
-    guide: "{pn} @mention"
+    guide: { en: "{pn} @mention or reply" }
   },
 
-  isVIP: async function(userID, usersData) {
-    try {
-      const data = await usersData.get(userID);
-      return data.isVIP === true;
-    } catch {
-      return false;
-    }
-  },
+  onStart: async function ({ api, event, usersData }) {
+    const { threadID, messageID, senderID, mentions, messageReply } = event;
 
-  fetchAvatar: async function(uid) {
-    try {
-      const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`;
-      const res = await axios.get(url, { responseType: "arraybuffer" });
-      return await Canvas.loadImage(res.data);
-    } catch {
-      const img = new Canvas.Canvas(512, 512);
-      const ctx = img.getContext("2d");
-      ctx.fillStyle = "#cccccc";
-      ctx.fillRect(0, 0, 512, 512);
-      return img;
-    }
-  },
-
-  onStart: async function ({ api, message, event, usersData }) {
-    const senderID = event.senderID;
-    if (!(await this.isVIP(senderID, usersData))) {
-      return message.reply("❌ এই কমান্ডটি শুধুমাত্র VIP user এর জন্য।");
+    // ১. টার্গেট আইডি নির্ধারণ (Reply > Mention)
+    let targetID;
+    if (messageReply) {
+      targetID = messageReply.senderID;
+    } else if (Object.keys(mentions).length > 0) {
+      targetID = Object.keys(mentions)[0];
+    } else {
+      return api.sendMessage("⚠️ দয়া করে একজনকে মেনশন করুন বা তার মেসেজে রিপ্লাই দিন!", threadID, messageID);
     }
 
-    const mention = Object.keys(event.mentions);
-    if (!mention[0]) return message.reply("Please mention someone to FK.");
-    const mentionedID = mention[0];
-
     try {
+      api.sendMessage("⌛ অরিজিনাল HD ছবি প্রসেস হচ্ছে... একটু অপেক্ষা করুন।", threadID, (err, info) => {
+        setTimeout(() => api.unsendMessage(info.messageID), 3000);
+      }, messageID);
+
       const senderData = await usersData.get(senderID);
-      const mentionedData = await usersData.get(mentionedID);
+      const targetData = await usersData.get(targetID);
 
-      const senderGender = senderData.gender || "male";
-      const mentionedGender = mentionedData.gender || "female";
+      // ২. জেন্ডার ডিটেকশন
+      const senderGender = (senderData.gender === 1 || senderData.gender === "female") ? "female" : "male";
+      const targetGender = (targetData.gender === 1 || targetData.gender === "female") ? "female" : "male";
 
-      let maleID = senderGender === "male" ? senderID : mentionedID;
-      let femaleID = senderGender === "female" ? senderID : mentionedID;
+      let maleID = senderGender === "male" ? senderID : targetID;
+      let femaleID = senderGender === "female" ? senderID : targetID;
 
-      const [avatarMale, avatarFemale] = await Promise.all([
-        this.fetchAvatar(maleID),
-        this.fetchAvatar(femaleID)
-      ]);
+      // ৩. আপনার দেওয়া সেই অরিজিনাল HD লিঙ্ক (1500x1500px)
+      const token = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+      
+      const getAvt = async (uid) => {
+        // এখানে আপনার সেই স্পেশাল লিঙ্কটি সেট করা হয়েছে
+        const url = `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=${token}`;
+        const res = await axios.get(url, { responseType: "arraybuffer" });
+        return await Canvas.loadImage(res.data);
+      };
 
-      // Background
-      const bgUrl = "https://i.imgur.com/PlVBaM1.jpg"; // direct link, safe
+      const [avatarMale, avatarFemale] = await Promise.all([getAvt(maleID), getAvt(femaleID)]);
+
+      // ৪. ক্যানভাস এডিটিং
+      const bgUrl = "https://i.imgur.com/PlVBaM1.jpg";
       const bgRes = await axios.get(bgUrl, { responseType: "arraybuffer" });
       const bg = await Canvas.loadImage(bgRes.data);
 
-      const canvasWidth = 850;
-      const canvasHeight = 600;
-      const canvas = Canvas.createCanvas(canvasWidth, canvasHeight);
+      const canvas = Canvas.createCanvas(850, 600);
       const ctx = canvas.getContext("2d");
+      ctx.drawImage(bg, 0, 0, 850, 600);
 
-      ctx.drawImage(bg, 0, 0, canvasWidth, canvasHeight);
-
-      // Female avatar
-      ctx.save();
       const avatarSize = 170;
-      const femaleX = 300;
-      const yFemale = canvasHeight/2 - avatarSize - 90;
-      ctx.beginPath();
-      ctx.arc(femaleX + avatarSize/2, yFemale + avatarSize/2, avatarSize/2, 0, Math.PI*2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatarFemale, femaleX, yFemale, avatarSize, avatarSize);
-      ctx.restore();
 
-      // Male avatar
+      // Female Avatar পজিশন
+      const femaleX = 300, femaleY = 110;
       ctx.save();
-      const maleX = 130;
-      const yMale = canvasHeight/2 + 50;
       ctx.beginPath();
-      ctx.arc(maleX + avatarSize/2, yMale + avatarSize/2, avatarSize/2, 0, Math.PI*2);
+      ctx.arc(femaleX + 85, femaleY + 85, 85, 0, Math.PI * 2);
       ctx.closePath();
       ctx.clip();
-      ctx.drawImage(avatarMale, maleX, yMale, avatarSize, avatarSize);
+      ctx.drawImage(avatarFemale, femaleX, femaleY, avatarSize, avatarSize);
       ctx.restore();
 
-      const imgPath = path.join(__dirname, "tmp", `${maleID}_${femaleID}_fk.png`);
-      await fs.ensureDir(path.dirname(imgPath));
+      // Male Avatar পজিশন
+      const maleX = 130, maleY = 350;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(maleX + 85, maleY + 85, 85, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(avatarMale, maleX, maleY, avatarSize, avatarSize);
+      ctx.restore();
+
+      // ৫. সেভ এবং সেন্ড
+      const imgPath = path.join(process.cwd(), "cache", `fk_hd_${senderID}.png`);
       fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
 
-      message.reply({
-        body: "Fkkkk! 😏",
+      return api.sendMessage({
+        body: "🔥 Ultra HD মিম রেডি! 😈",
         attachment: fs.createReadStream(imgPath)
-      }, () => fs.unlinkSync(imgPath));
+      }, threadID, () => {
+        if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+      }, messageID);
 
     } catch (err) {
-      console.error("Error in fk command:", err);
-      message.reply("❌ There was an error creating the FK image.");
+      console.error(err);
+      return api.sendMessage("❌ ছবি তৈরি করতে সমস্যা হয়েছে। টোকেনটি চেক করুন!", threadID, messageID);
     }
   }
 };
