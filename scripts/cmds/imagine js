@@ -1,110 +1,76 @@
-const axios = require('axios');
+!cmd install imagine.js const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
-module.exports = {
-  config: {
-    name: "imagine",
-    version: "1.1",
-    author: "OtinXSandip + milan",
-    countDown: 10,
-    role: 0,
-    shortDescription: {
-      en: 'Text to Image'
-    },
-    longDescription: {
-      en: "Text to image"
-    },
-    category: "image",
-    guide: {
-      en: '{pn} your prompt | Type' +
-        ' here are supported models:' +
-        '\n' +
-        ' 1: Analog-Diffusion-1.0' +
-        '\n 2: Anything V3' +
-        '\n 3: Anything V4.5' +
-        '\n 4: AOM3A3' +
-        '\n 5: Deliberate V2' +
-        '\n 6: Dreamlike-Diffusion-1.0' +
-        '\n 7: Dreamlike-Diffusion-2.0' +
-        '\n 8: Dreamshaper 5Baked vae' +
-        '\n 9: Dreamshaper 6Baked vae' +
-        '\n 10: Elldreths-Vivid-Mix' +
-        '\n 11: Lyriel_V15' +
-        '\n 12: Lyriel_V16' +
-        '\n 13: Mechamix_V10' +
-        '\n 14: Meinamix_Meinav9' +
-        '\n 15: Openjourney_V4' +
-        '\n 16: Portrait+1.0' +
-        '\n 17: Realistic_Vision_V1.4' +
-        '\n 18: Realistic_Vision_V2.0' +
-        '\n 19: revAnimated_v122' +
-        '\n 20: sdv1_4' +
-        '\n 21: V1' +
-        '\n 22: shoninsBeautiful_v10' +
-        '\n 23: Theallys-MIX-II-CHURNED' +
-        '\n 24: Timeless-1.0'
-    }
+module.exports.config = {
+  name: "imagine2",
+  version: "5.0.0",
+  role: 0,
+  author: "AYAN & Gemini",
+  description: "AI image generator using Heru API",
+  category: "image",
+  guide: {
+    en: "{pn} a beautiful girl in the rain"
   },
+  countDown: 10
+};
 
-  onStart: async function ({ api, event, args, message, usersData }) {
-    const text = args.join(" ");
-    if (!text) {
-      return message.reply("Please provide a prompt.");
-    }   
-        
+module.exports.onStart = async function ({ api, event, args }) {
+  const { threadID, messageID } = event;
+  const prompt = args.join(" ");
 
-    let prompt, model;
-    if (text.includes("|")) {
-      const [promptText, modelText] = text.split("|").map((str) => str.trim());
-      prompt = promptText;
-      model = modelText;
-    } else {
-      prompt = text;
-      model = 19;
-    }
-    message.reply("✅| Creating your Imagination...", async (err, info) => {
-      let ui = info.messageID;
-api.setMessageReaction("⏳", event.messageID, () => {}, true);
-      try {
-        const response = await axios.get(`https://shivadon.onrender.com/test?prompt=${encodeURIComponent(prompt)}&model=${model}`);
-api.setMessageReaction("✅", event.messageID, () => {}, true);
-        const img = response.data.combinedImageUrl;
-        message.unsend(ui);
-        message.reply({
-          body: `Here's your imagination 🖼.\nPlease reply with the image number (1, 2, 3, 4) to get the corresponding image in high resolution.`,
-          attachment: await global.utils.getStreamFromURL(img)
-        }, async (err, info) => {
-          let id = info.messageID;
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName: this.config.name,
-            messageID: info.messageID,
-            author: event.senderID,
-            imageUrls: response.data.imageUrls 
-          });
-        });
-      } catch (error) {
-        console.error(error);
-        api.sendMessage(`Error: ${error}`, event.threadID);
-      }
+  if (!prompt) {
+    return api.sendMessage("✨ দয়া করে একটি প্রম্পট লিখুন!\nযেমন: imagine a cute cat on a moon", threadID, messageID);
+  }
+
+  const waitMsg = await api.sendMessage("🎨 AI আপনার প্রম্পট অনুযায়ী ছবি আঁকছে...\nএকটু সময় দিন।", threadID);
+
+  try {
+    const cacheDir = path.join(process.cwd(), "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+    
+    const imgPath = path.join(cacheDir, `imagine_${Date.now()}.png`);
+
+    // নতুন এবং কার্যকর এপিআই লিঙ্ক
+    const API_URL = `https:// heru-apiv2.onrender.com/api/imagine?prompt=${encodeURIComponent(prompt)}`;
+
+    const response = await axios.get(API_URL, {
+      responseType: "arraybuffer",
+      timeout: 60000 // ১ মিনিট টাইমআউট দেওয়া হয়েছে
     });
-  },
 
-
-  onReply: async function ({ api, event, Reply, usersData, args, message }) {
-    const reply = parseInt(args[0]);
-    const { author, messageID, imageUrls } = Reply;
-    if (event.senderID !== author) return;
-    try {
-      if (reply >= 1 && reply <= 4) {
-        const img = imageUrls[`image${reply}`];
-        message.reply({ attachment: await global.utils.getStreamFromURL(img) });
-      } else {
-        message.reply("Invalid image number. Please reply with a number between 1 and 4.");
-        return;
-      }
-    } catch (error) {
-      console.error(error);
-      api.sendMessage(`Error: ${error}`, event.threadID);
+    if (response.data.length < 100) { // যদি ডাটা খুব ছোট হয় তার মানে এরর মেসেজ এসেছে
+       throw new Error("Invalid image data received.");
     }
-    message.unsend(Reply.messageID); 
-  },
+
+    fs.writeFileSync(imgPath, Buffer.from(response.data));
+
+    await api.sendMessage({
+      body: `✅ আপনার ছবি তৈরি হয়েছে!\n📝 প্রম্পট: ${prompt}`,
+      attachment: fs.createReadStream(imgPath)
+    }, threadID, () => {
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+      api.unsendMessage(waitMsg.messageID);
+    }, messageID);
+
+  } catch (err) {
+    console.error(err);
+    api.unsendMessage(waitMsg.messageID);
+    
+    // দ্বিতীয় বিকল্প (Fallback) হিসেবে Pollinations ব্যবহার
+    try {
+        const fallbackURL = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+        const res = await axios.get(fallbackURL, { responseType: "arraybuffer" });
+        const fallbackPath = path.join(process.cwd(), "cache", `fallback_${Date.now()}.png`);
+        
+        fs.writeFileSync(fallbackPath, Buffer.from(res.data));
+        return api.sendMessage({
+            body: `✅ (Backup API) প্রম্পট: ${prompt}`,
+            attachment: fs.createReadStream(fallbackPath)
+        }, threadID, () => fs.unlinkSync(fallbackPath), messageID);
+        
+    } catch (fallbackErr) {
+        return api.sendMessage("❌ সার্ভার বর্তমানে বিজি আছে। কিছুক্ষণ পর আবার চেষ্টা করুন।", threadID, messageID);
+    }
+  }
 };
