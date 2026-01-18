@@ -1,51 +1,35 @@
 const axios = require("axios");
 const fs = require("fs");
 
-// Mock user database (balance optional)
-const users = {
-  "123456789": { balance: 50 },
-  "987654321": { balance: 100 }
-};
-
 let userSession = {};
 
 module.exports = {
   config: {
     name: "segs",
-    version: "1.9",
-    author: "AYAN BBE💋",
-    role: 0, // কেউই restriction নেই
+    version: "2.0",
+    author: "AYAN BBE💋 (VIP removed by Maya)",
+    role: 0, // সবাই ব্যবহার করতে পারবে
     category: "18+",
     shortDescription: "Search & select HD videos",
-    longDescription: "Search, paginate and download HD porn videos (no VIP required)"
+    longDescription: "Search, paginate and download HD porn videos (FREE)"
   },
-  
+
   onStart: async ({ api, event, args }) => {
     const sender = event.senderID;
     const thread = event.threadID;
     const keyword = args.join(" ");
 
-    // Balance check (optional, you can remove if you want free usage)
-    const cost = 10;
-    const user = users[sender] || { balance: 0 };
-    if (user.balance < cost) {
+    if (!keyword) {
       return api.sendMessage(
-        `❌ আপনার ব্যালেন্স পর্যাপ্ত নয়! ${cost} balance প্রয়োজন।\n💰 আপনার বর্তমান ব্যালেন্স: ${user.balance}`,
+        `❗ KEYWORD দাও\n👉 Example: /segs mia khalifa`,
         thread
       );
     }
-    user.balance -= cost;
 
     api.sendMessage(
-      `💰 বাকি ব্যালেন্স: ${user.balance}\n🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚... Please wait...`,
+      `🔍 𝗦𝗘𝗔𝗥𝗖𝗛𝗜𝗡𝗚...\nPlease wait...`,
       thread
     );
-
-    if (!keyword)
-      return api.sendMessage(
-        `❗ 𝗞𝗘𝗬𝗪𝗢𝗥𝗗\n👉 Example: /segs mia khalifa`,
-        thread
-      );
 
     try {
       const res = await axios.get(
@@ -53,9 +37,13 @@ module.exports = {
       );
 
       const results = res.data.list || [];
-      if (!results.length)
-        return api.sendMessage(`❌ 𝗡𝗢 𝗥𝗘𝗦𝗨𝗟𝗧\nVideo পাওয়া যায়নি।`, thread);
-      
+      if (!results.length) {
+        return api.sendMessage(
+          `❌ No result found!`,
+          thread
+        );
+      }
+
       userSession[sender] = {
         results,
         page: 0,
@@ -67,7 +55,7 @@ module.exports = {
 
     } catch (e) {
       console.error(e);
-      api.sendMessage(`❌ 𝗘𝗥𝗥𝗢𝗥\nSearch error!`, thread);
+      api.sendMessage(`❌ Search error!`, thread);
     }
   },
 
@@ -81,7 +69,7 @@ module.exports = {
     if (Date.now() > userSession[sender].expires) {
       delete userSession[sender];
       return api.sendMessage(
-        `⏳ 𝗧𝗜𝗠𝗘 𝗢𝗨𝗧\nAbar /segs use করুন।`,
+        `⏳ Time out!\nAbar /segs use করো।`,
         thread
       );
     }
@@ -98,7 +86,7 @@ module.exports = {
 
     if (msg === "prev") {
       if (session.page === 0)
-        return api.sendMessage("❗ Page 1 e আছেন!", thread);
+        return api.sendMessage("❗ First page!", thread);
 
       session.page--;
       return sendPage(api, thread, sender);
@@ -115,7 +103,7 @@ module.exports = {
       const item = session.results[index];
 
       api.sendMessage(
-        `╔══ ⬇𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗜𝗡𝗚 ══╗\n🎬 ${item.name}\nPlease wait...\n╚═════════════════╝`,
+        `⬇️ Downloading...\n🎬 ${item.name}`,
         thread
       );
 
@@ -131,7 +119,7 @@ module.exports = {
 
         api.sendMessage(
           {
-            body: `╔══ ✨ 𝗩𝗜𝗗𝗘𝗢 𝗥𝗘𝗔𝗗𝗬 ══╗\n🎬 ${item.name}\nMade by 𝐀𝐳𝐚𝐝𝐱𝟔𝟗𝐱 💜\n╚════════════════╝`,
+            body: `🎬 ${item.name}\nEnjoy 😈🔥`,
             attachment: fs.createReadStream(filePath)
           },
           thread,
@@ -144,14 +132,9 @@ module.exports = {
         console.error(e);
         api.sendMessage("❌ Video load error!", thread);
       }
-
-      return;
     }
-
-    api.sendMessage("❗ next / prev / number dao.", thread);
   }
 };
-
 
 function sendPage(api, thread, user) {
   const s = userSession[user];
@@ -159,27 +142,21 @@ function sendPage(api, thread, user) {
   const end = Math.min(start + s.perPage, s.results.length);
 
   let msg =
-`╔═🔥 𝗛𝗗 𝗩𝗜𝗗𝗘𝗢 𝗦𝗘𝗔𝗥𝗖𝗛 🔥═╗
+`🔥 HD VIDEO SEARCH 🔥
 📄 Page: ${s.page + 1}
-🎯 Results: ${start + 1} - ${end} of ${s.results.length}
-╚═══════════════════╝\n\n`;
+🎯 Results: ${start + 1}-${end} / ${s.results.length}
+
+`;
 
   s.results.slice(start, end).forEach((item, i) => {
-    msg +=
-`┏━━━━━━━━━━━━━━━━━━━━┓
-┃ 🆔 **${i + 1}. ${item.name}**
-┃ ⏱ Duration: ${item.time}
-┗━━━━━━━━━━━━━━━━━━━━┛\n\n`;
+    msg += `${i + 1}. ${item.name}\n⏱ ${item.time}\n\n`;
   });
 
   msg +=
-`╔══ 📌 𝗖𝗢𝗡𝗧𝗥𝗢𝗟𝗦 ═╗
-➡ Next Page:   next
-⬅ Prev Page:   prev
-🎬 Select Video: 1 - 20
-╚══════════════╝
+`➡ next | ⬅ prev
+🎬 Select: 1 - 20
 
-Made by AYAN 💜🥵`;
+Made by AYAN 💜`;
 
   api.sendMessage(msg, thread);
 }
