@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
-const imageUrl = "https://i.imgur.com/CbScwwJ.jpeg";
+const imageUrl = "https://files.catbox.moe/69zkea.jpg";
 const imagePath = path.join(__dirname, "ping_image.jpg");
 
 // ===== DOWNLOAD IMAGE ONCE =====
