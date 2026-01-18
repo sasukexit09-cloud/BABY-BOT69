@@ -92,7 +92,7 @@ module.exports = {
       fs.writeFileSync(imgPath, canvas.toBuffer("image/png"));
 
       return api.sendMessage({
-        body: "🔥 Ultra HD মিম রেডি! 😈",
+        body: "🔥 Ultra HD FUCK রেডি! 😈",
         attachment: fs.createReadStream(imgPath)
       }, threadID, () => {
         if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
