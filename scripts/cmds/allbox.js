@@ -1,134 +1,124 @@
-module.exports.config = {
-  name: 'allbox',
-  version: '1.0.2',
-  credits: 'BABY BOT TEAM (Fixed by Maya)',
-  hasPermssion: 2,
-  description: '[Ban/Unban/Del/Remove] Manage joined groups.',
-  commandCategory: 'Admin',
-  usages: '[page/all]',
-  cooldowns: 5
-};
+const moment = require("moment-timezone");
 
-module.exports.handleReply = async function ({ api, event, Threads, handleReply }) {
-  if (event.senderID != handleReply.author) return;
+module.exports = {
+  config: {
+    name: "allbox",
+    version: "1.0.2",
+    author: "BABY BOT TEAM & Gemini",
+    countDown: 5,
+    role: 2, // Admin only
+    shortDescription: {
+      en: "Manage joined groups (Ban/Unban/Del/Out)"
+    },
+    longDescription: {
+      en: "View list of all groups and manage them using reply."
+    },
+    category: "Admin",
+    guide: {
+      en: "{pn} [page]"
+    }
+  },
 
-  const moment = require("moment-timezone");
-  const time = moment.tz("Asia/Dhaka").format("HH:mm:ss - DD/MM/YYYY");
+  onReply: async function ({ api, event, Reply, threadsData, message }) {
+    if (event.senderID != Reply.author) return;
 
-  const arg = event.body.split(" ");
-  const index = arg[1] - 1;
+    const time = moment.tz("Asia/Dhaka").format("HH:mm:ss - DD/MM/YYYY");
+    const arg = event.body.split(" ");
+    const action = arg[0].toLowerCase();
+    const index = parseInt(arg[1]) - 1;
 
-  const id = handleReply.groupid[index];
-  const name = handleReply.groupName[index];
+    const id = Reply.groupid[index];
+    const name = Reply.groupName[index];
 
-  if (!id) return api.sendMessage("❌ Invalid number!", event.threadID);
+    if (!id) return message.reply("❌ Invalid number!");
 
-  // ---------------- BAN ----------------
-  if (["ban", "Ban"].includes(arg[0])) {
-    const data = (await Threads.getData(id)).data || {};
-    data.banned = 1;
-    data.dateAdded = time;
+    try {
+      // ---------------- BAN ----------------
+      if (action === "ban") {
+        await threadsData.set(id, {
+          "data.banned": true,
+          "data.dateAdded": time
+        });
+        return message.reply(`✅ Ban Success\n\n🔷 ${name}\n🔰 TID: ${id}`);
+      }
 
-    await Threads.setData(id, { data });
-    global.data.threadBanned.set(id, { dateAdded: time });
+      // --------------- UNBAN ---------------
+      if (["unban", "ub"].includes(action)) {
+        await threadsData.set(id, {
+          "data.banned": false,
+          "data.dateAdded": null
+        });
+        return message.reply(`✅ Unban Success\n\n🔷 ${name}\n🔰 TID: ${id}`);
+      }
 
-    return api.sendMessage(
-      `✅ Ban Success\n\n🔷 ${name}\n🔰 TID: ${id}`,
-      event.threadID
-    );
-  }
+      // ---------------- DELETE DATA ----------------
+      if (action === "del") {
+        await threadsData.remove(id);
+        return message.reply(`🗑️ Delete Success\n\n🔷 ${name}\n🔰 TID: ${id}`);
+      }
 
-  // --------------- UNBAN ---------------
-  if (["unban", "Unban", "ub", "Ub"].includes(arg[0])) {
-    const data = (await Threads.getData(id)).data || {};
-    data.banned = 0;
-    data.dateAdded = null;
+      // ---------------- OUT GROUP ----------------
+      if (action === "out") {
+        api.removeUserFromGroup(api.getCurrentUserID(), id, (err) => {
+          if (err) return message.reply("❌ Error removing bot!");
+          message.reply(`🚪 Bot Removed\n\n🔷 ${name}\n🔰 TID: ${id}`);
+        });
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+      return message.reply("❌ Something went wrong!");
+    }
+  },
 
-    await Threads.setData(id, { data });
-    global.data.threadBanned.delete(id);
+  onStart: async function ({ api, event, args, message }) {
+    let threads;
+    try {
+      threads = await api.getThreadList(100, null, ["INBOX"]);
+    } catch (e) {
+      return message.reply("⚠️ Can't load thread list!");
+    }
 
-    return api.sendMessage(
-      `✅ Unban Success\n\n🔷 ${name}\n🔰 TID: ${id}`,
-      event.threadID
-    );
-  }
+    const list = threads
+      .filter(t => t.isGroup)
+      .map(t => ({
+        name: t.name || "Unnamed Group",
+        id: t.threadID,
+        count: t.messageCount || 0
+      }))
+      .sort((a, b) => b.count - a.count);
 
-  // ---------------- DELETE DATA ----------------
-  if (["del", "Del"].includes(arg[0])) {
+    let page = parseInt(args[0]) || 1;
+    const limit = 20; // প্রতি পেজে ২০টি গ্রুপ
+    const total = Math.ceil(list.length / limit);
 
-    await Threads.delData(id);
+    if (page > total) page = total;
+    if (page < 1) page = 1;
 
-    return api.sendMessage(
-      `🗑️ Delete Success\n\n🔷 ${name}\n🔰 TID: ${id}`,
-      event.threadID
-    );
-  }
+    const start = (page - 1) * limit;
+    const end = start + limit;
 
-  // ---------------- OUT GROUP ----------------
-  if (["out", "Out"].includes(arg[0])) {
+    let msg = `🎭 𝐆𝐑𝐎𝐔𝐏 𝐋𝐈𝐒𝐓 (Page ${page}/${total}) 🎭\n\n`;
 
-    api.removeUserFromGroup(api.getCurrentUserID(), id, () => {
-      api.sendMessage(
-        `🚪 Bot Removed\n\n🔷 ${name}\n🔰 TID: ${id}`,
-        event.threadID
-      );
+    const groupid = [];
+    const groupName = [];
+
+    list.slice(start, end).forEach((g, idx) => {
+      msg += `${idx + 1}. ${g.name}\n🔰 𝐓𝐈𝐃: ${g.id}\n💌 𝐌𝐬𝐠: ${g.count}\n\n`;
+      groupid.push(g.id);
+      groupName.push(g.name);
     });
 
-    return;
-  }
-};
+    msg += `👉 Reply: Ban / Unban / Del / Out + index (e.g., Ban 1)`;
 
-
-module.exports.run = async function ({ api, event, args }) {
-  let threads;
-
-  try {
-    threads = await api.getThreadList(500, null, ["INBOX"]);
-  } catch (e) {
-    return api.sendMessage("⚠️ Can't load thread list!", event.threadID);
-  }
-
-  const list = threads
-    .filter(t => t.isGroup)
-    .map(t => ({
-      name: t.name,
-      id: t.threadID,
-      count: t.messageCount
-    }))
-    .sort((a, b) => b.count - a.count);
-
-  let page = 1;
-  const limit = 100;
-
-  if (args[0] && !isNaN(args[0])) page = parseInt(args[0]);
-  const total = Math.ceil(list.length / limit);
-
-  if (page > total) page = total;
-
-  const start = (page - 1) * limit;
-  const end = start + limit;
-
-  let msg = `🎭 GROUP LIST (Page ${page}/${total}) 🎭\n\n`;
-
-  const groupid = [];
-  const groupName = [];
-
-  list.slice(start, end).forEach((g, idx) => {
-    msg += `${start + idx + 1}. ${g.name}\n🔰 TID: ${g.id}\n💌 Messages: ${g.count}\n\n`;
-    groupid.push(g.id);
-    groupName.push(g.name);
-  });
-
-  msg += `Reply: Ban / Unban / Del / Out + number`;
-
-  api.sendMessage(msg, event.threadID, (e, info) => {
-    global.client.handleReply.push({
-      name: module.exports.config.name,
-      author: event.senderID,
-      messageID: info.messageID,
-      groupid,
-      groupName,
-      type: "reply"
+    return message.reply(msg, (err, info) => {
+      global.GoatBot.onReply.set(info.messageID, {
+        commandName: this.config.name,
+        author: event.senderID,
+        messageID: info.messageID,
+        groupid,
+        groupName
+      });
     });
-  });
+  }
 };
