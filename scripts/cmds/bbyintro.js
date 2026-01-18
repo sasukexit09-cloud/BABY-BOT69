@@ -17,7 +17,6 @@ const fancyText = (text) => {
   return text.split('').map(c => letters[c] || c).join('');
 };
 
-// Quotes
 const quotes = [
   "I know you wanna ride the wave gotta wait in line but you",
   "Be low key & let em wonder",
@@ -35,7 +34,6 @@ const quotes = [
   "Ironic you been sleepin on the one you been dreaming bout...."
 ];
 
-// Generate intro text
 function makeIntro() {
   const randomQuotes = quotes
     .sort(() => 0.5 - Math.random())
@@ -45,7 +43,7 @@ function makeIntro() {
 
   const intro = `
 ╔══✦══◇══✦══╗
-   💖 ${fancyText("B O T  I N T R O")} 💖
+    💖 ${fancyText("B O T  I N T R O")} 💖
 ╚══✦══◇══✦══╝
 
 ${fancyText("NAME")}: 𝐀𝐋𝐀𝐘𝐀 💋
@@ -63,39 +61,39 @@ module.exports = {
   config: {
     name: "bbyintro",
     version: "1.0.8",
-    hasPermssion: 0,
-    credits: "Maya x Shahadat",
-    description: "Fancy quotes with Alaya intro + picture",
-    commandCategory: "Fun",
-    usages: "bbyintro",
-    cooldowns: 5
+    author: "Maya x Shahadat",
+    countDown: 5,
+    role: 0,
+    shortDescription: "Fancy quotes with Alaya intro + picture",
+    longDescription: "Fancy quotes with Alaya intro + picture",
+    category: "Fun",
+    guide: { en: "{pn}" }
   },
 
-  onStart: async function ({ api, event }) {
-    const imgURL = "https://files.catbox.moe/t2qm8n.jpeg"; // new image
-    const cacheDir = path.join(__dirname, "cache");
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
-    const filePath = path.join(cacheDir, "bbyintro.jpg");
+  onStart: async function ({ api, event, message }) {
+    const imgURL = "https://files.catbox.moe/d80bk3.jpg";
+    const cachePath = path.join(__dirname, "cache", "bbyintro.jpg");
 
     try {
+      // ফোল্ডার চেক
+      if (!fs.existsSync(path.join(__dirname, "cache"))) {
+        fs.mkdirSync(path.join(__dirname, "cache"), { recursive: true });
+      }
+
       const response = await axios.get(imgURL, { responseType: "arraybuffer" });
-      fs.writeFileSync(filePath, Buffer.from(response.data));
+      fs.writeFileSync(cachePath, Buffer.from(response.data));
 
-      const msg = {
+      // GoatBot এ message.reply ব্যবহার করা বেশি নিরাপদ
+      return message.reply({
         body: makeIntro(),
-        attachment: fs.createReadStream(filePath)
-      };
+        attachment: fs.createReadStream(cachePath)
+      }, () => {
+        if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath);
+      });
 
-      await api.sendMessage(msg, event.threadID, event.messageID);
     } catch (err) {
       console.error(err);
-      await api.sendMessage("❌ | Couldn't send the image, but here’s the text:\n\n" + makeIntro(), event.threadID, event.messageID);
-    } finally {
-      try { fs.unlinkSync(filePath); } catch(e) {}
+      return message.reply("❌ | Couldn't send the image, but here’s the text:\n\n" + makeIntro());
     }
-  },
-
-  onLoad: function () {
-    console.log("✅ | bbyintro command loaded successfully!");
   }
 };
