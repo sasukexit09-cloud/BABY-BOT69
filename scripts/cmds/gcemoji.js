@@ -1,18 +1,31 @@
-module.exports.config = {
-	name: "groupemoji/gcemoji",
-	version: "1.0.0", 
-	hasPermssion: 0,
-	credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-	description: "Change your group Emoji",
-	commandCategory: "Box", 
-	usages: "groupemoji [name]", 
-	cooldowns: 0,
-	dependencies: [] 
-};
+module.exports = {
+  config: {
+    name: "gcemoji",
+    aliases: ["groupemoji", "setemoji"],
+    version: "1.0.1",
+    author: "CYBER BOT TEAM & Gemini",
+    countDown: 5,
+    role: 0,
+    shortDescription: { en: "Change group chat emoji" },
+    category: "box",
+    guide: { en: "{pn} [emoji]" }
+  },
 
-module.exports.run = async function({ api, event, args }) {
-	var emoji = args.join(" ")
-	if (!emoji) api.sendMessage("You have not entered Emoji 🐸", event.threadID, event.messageID)
-	else api.changeThreadEmoji(emoji, event.threadID, () => api.sendMessage(`🔨 The bot successfully changed Emoji to: ${emoji}`, event.threadID, event.messageID));
-});
-}
+  onStart: async function ({ api, event, args }) {
+    const { threadID, messageID } = event;
+    const emoji = args.join(" ");
+
+    // ইমোজি না দিলে মেসেজ দিবে
+    if (!emoji) {
+      return api.sendMessage("⚠️ আপনি কোন ইমোজি দিতে চান তা লিখুন। উদাহরণ: {pn} 🐸", threadID, messageID);
+    }
+
+    // ইমোজি পরিবর্তন করার ফাংশন
+    return api.changeThreadEmoji(emoji, threadID, (err) => {
+      if (err) {
+        return api.sendMessage("❌ ইমোজি পরিবর্তন করতে সমস্যা হয়েছে। নিশ্চিত করুন বট অ্যাডমিন কি না।", threadID, messageID);
+      }
+      return api.sendMessage(`🔨 সফলভাবে গ্রুপের ইমোজি পরিবর্তন করে ${emoji} করা হয়েছে!`, threadID, messageID);
+    });
+  }
+};
