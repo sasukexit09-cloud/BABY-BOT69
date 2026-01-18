@@ -1,74 +1,67 @@
-module.exports.config = {
+module.exports = {
+  config: {
     name: "ban",
     version: "4.0.0",
-    hasPermssion: 2,
-    credits: "Ayan",
-    description: "Ban user by mention বা reply",
-    commandCategory: "system",
-    usages: "-ban @mention বা রিপ্লাই করে -ban",
-    cooldowns: 0
-};
+    author: "Ayan & Gemini",
+    countDown: 0,
+    role: 2, // শুধুমাত্র এডমিনদের জন্য
+    shortDescription: { en: "Ban user by mention or reply", bn: "মেনশন বা রিপ্লাই দিয়ে ইউজারকে ব্যান করুন" },
+    category: "system",
+    guide: { en: "{pn} @mention | or reply to a message with {pn}" }
+  },
 
-module.exports.run = async ({ event, api, Users, args }) => {
-    const { threadID, messageID } = event;
+  onStart: async function ({ api, event, usersData, args }) {
+    const { threadID, messageID, mentions, messageReply, senderID } = event;
     let targetID;
 
-    // =============== METHOD 1: mention দিয়ে ban ===============
-    if (Object.keys(event.mentions).length > 0) {
-        targetID = Object.keys(event.mentions)[0];
+    // ১. টার্গেট ইউজার আইডি খুঁজে বের করা
+    if (Object.keys(mentions).length > 0) {
+      targetID = Object.keys(mentions)[0];
+    } else if (messageReply) {
+      targetID = messageReply.senderID;
+    } else {
+      return api.sendMessage("❌ কাকে ban করবেন? মেনশন দিন অথবা মেসেজে রিপ্লাই করুন!", threadID, messageID);
     }
 
-    // =============== METHOD 2: reply দিয়ে ban ===============
-    else if (event.type === "message_reply") {
-        targetID = event.messageReply.senderID;
-    }
+    // বটের নিজের আইডি বা এডমিন আইডি ব্যান করা থেকে সুরক্ষা
+    if (targetID == api.getCurrentUserID()) return api.sendMessage("❌ আমি নিজেকে ব্যান করতে পারব না!", threadID, messageID);
+    
+    try {
+      // ২. GoatBot ডাটাবেসে ব্যান স্ট্যাটাস আপডেট করা
+      const userData = await usersData.get(targetID);
+      const name = userData.name || "User";
 
-    // =============== METHOD 3: কিছু না দিলে error ===============
-    else {
-        return api.sendMessage(
-            "❌ কাকে ban করবে? Mention দাও অথবা রিপ্লাই করো!",
-            threadID,
-            messageID
-        );
-    }
+      const banData = {
+        banned: true,
+        reason: args.join(" ") || "Manual BAN by admin",
+        date: new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" })
+      };
 
-    // User data collect
-    let data = (await Users.getData(targetID)).data || {};
+      // ডাটাবেসে সেভ করা
+      await usersData.set(targetID, {
+        banned: true,
+        data: { ...userData.data, banInfo: banData }
+      });
 
-    data.banned = 1;
-    data.reason = "Manual BAN by admin";
-    data.dateAdded = new Date().toLocaleString("en-US", {
-        timeZone: "Asia/Dhaka"
-    });
-
-    // Save user ban data
-    await Users.setData(targetID, { data });
-
-    // Global system update (same as your anti-abuse code)
-    global.data.userBanned.set(targetID, {
-        reason: data.reason,
-        dateAdded: data.dateAdded
-    });
-
-    // Get user name
-    const name = await Users.getNameUser(targetID);
-
-    // Notify all admins (same as your previous code)
-    const adminList = global.config.ADMINBOT;
-    for (const adminID of adminList) {
+      // ৩. এডমিনদের নোটিফিকেশন পাঠানো
+      const adminList = global.GoatBot.config.adminBot || [];
+      for (const adminID of adminList) {
         api.sendMessage(
-`=== BAN Notification ===
-👤 Name: ${name}
-🆔 UID: ${targetID}
-🚫 Status: BANNED
-📅 Time: ${data.dateAdded}`,
-            adminID
+          `=== BAN Notification ===\n👤 Name: ${name}\n🆔 UID: ${targetID}\n🚫 Status: BANNED\n📅 Time: ${banData.date}\n📝 Reason: ${banData.reason}`,
+          adminID
         );
-    }
+      }
 
-    // Send result
-    return api.sendMessage(
-        `✅ Successfully BANNED!\n\n🔰 Name: ${name}\n🆔 UID: ${targetID}`,
-        threadID
-    );
+      // ৪. সাকসেস মেসেজ
+      return api.sendMessage(
+        `✅ Successfully BANNED!\n\n🔰 Name: ${name}\n🆔 UID: ${targetID}\n📝 Reason: ${banData.reason}`,
+        threadID,
+        messageID
+      );
+
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage(`❌ Error: ${err.message}`, threadID, messageID);
+    }
+  }
 };
