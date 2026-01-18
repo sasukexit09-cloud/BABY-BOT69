@@ -1,15 +1,32 @@
+const path = require("path");
+
 module.exports.config = {
-	name: "load",
-	version: "1.0.0",
-	hasPermssion: 2,
-	credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-	description: "reload config file data",
-	commandCategory: "Admin",
-	usages: "[]",
-	cooldowns: 30
+    name: "load",
+    version: "1.2.0",
+    role: 2,
+    author: "—͟͟͞͞𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 & Gemini",
+    description: "বটের config.json ফাইল রিলোড করা",
+    category: "Admin",
+    guide: { en: "{pn}" },
+    countDown: 10
 };
-module.exports.run = async function({ api, event, args,Threads, Users }) {
-delete require.cache[require.resolve(global.client.configPath)];
-global.config = require(global.client.configPath);
-return api.sendMessage("[OK] Reloading config...", event.threadID, event.messageID);    
-}
+
+module.exports.onStart = async function({ api, event }) {
+    const { threadID, messageID } = event;
+
+    try {
+        // ১. কনফিগ ফাইলের পাথ নির্ধারণ (এটি সব বটের জন্য কাজ করবে)
+        const configPath = global.client.configPath || path.join(process.cwd(), "config.json");
+
+        // ২. ক্যাশ থেকে পুরনো ফাইল ডিলিট করা
+        delete require.cache[require.resolve(configPath)];
+
+        // ৩. নতুন করে লোড করা
+        global.config = require(configPath);
+
+        return api.sendMessage("✅ [SUCCESS] config.json সফলভাবে রিলোড হয়েছে।", threadID, messageID);
+    } catch (error) {
+        console.error(error);
+        return api.sendMessage(`❌ [ERROR] ফাইল খুঁজে পাওয়া যায়নি বা পাথে সমস্যা আছে।`, threadID, messageID);
+    }
+};
