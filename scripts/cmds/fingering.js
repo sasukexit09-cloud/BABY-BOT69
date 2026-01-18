@@ -1,85 +1,73 @@
 const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
-const jimp = require("jimp");
+const { Jimp } = require("jimp"); // v1.0+ এর জন্য পরিবর্তন
 
 module.exports = {
   config: {
     name: "fingering",
     aliases: ["fg"],
-    version: "1.3",
-    author: "Jun",
+    version: "1.5",
+    author: "Jun & Gemini",
     countDown: 5,
     role: 0,
-    shortDescription: "fingering image",
-    longDescription: "18+ fingering image",
+    shortDescription: { en: "fingering image (18+)" },
     category: "18+",
-    guide: "{pn}"
-  },
-
-  onLoad: async function () {
-    const pathImg = path.resolve(__dirname, "fingeringv2.png");
-    if (!fs.existsSync(pathImg)) {
-      try {
-        const response = await axios.get(
-          "https://drive.google.com/uc?export=download&id=1HEIUVZXrUgxbJOCkr7h6c9_eeyGgzr3V",
-          { responseType: "arraybuffer" }
-        );
-        fs.writeFileSync(pathImg, response.data);
-        console.log("✅ fingeringv2.png downloaded successfully");
-      } catch (e) {
-        console.error("❌ Failed to download fingeringv2.png", e.message);
-      }
-    }
-  },
-
-  circle: async function (image) {
-    const img = await jimp.read(image);
-    img.circle();
-    return img.getBufferAsync("image/png");
-  },
-
-  makeImage: async function ({ one, two }) {
-    const templatePath = path.resolve(__dirname, "fingeringv2.png");
-    if (!fs.existsSync(templatePath)) throw new Error("Template missing");
-
-    const pathImg = path.resolve(__dirname, `fingering_${one}_${two}.png`);
-    const avatarOne = path.resolve(__dirname, `avt_${one}.png`);
-    const avatarTwo = path.resolve(__dirname, `avt_${two}.png`);
-
-    const downloadAvatar = async (uid, savePath) => {
-      const url = `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
-      const res = await axios.get(url, { responseType: "arraybuffer" });
-      await fs.writeFile(savePath, res.data);
-    };
-
-    await downloadAvatar(one, avatarOne);
-    await downloadAvatar(two, avatarTwo);
-
-    const circleOne = await jimp.read(await this.circle(avatarOne));
-    const circleTwo = await jimp.read(await this.circle(avatarTwo));
-
-    const baseImg = await jimp.read(templatePath);
-    baseImg.composite(circleOne.resize(70, 70), 180, 110);
-    baseImg.composite(circleTwo.resize(70, 70), 120, 140);
-
-    await baseImg.writeAsync(pathImg);
-
-    await fs.unlink(avatarOne);
-    await fs.unlink(avatarTwo);
-
-    return pathImg;
+    guide: { en: "{pn} @mention or reply" }
   },
 
   onStart: async function ({ event, api }) {
     const { threadID, messageID, senderID, messageReply, mentions } = event;
 
-    const mentionIDs = Object.keys(mentions || {});
-    const targetID = messageReply?.senderID || mentionIDs[0];
+    const targetID = messageReply?.senderID || Object.keys(mentions || {})[0];
     if (!targetID) return api.sendMessage("⚠️ Please mention or reply to 1 person.", threadID, messageID);
 
-    this.makeImage({ one: senderID, two: targetID })
-      .then(filePath => api.sendMessage({ attachment: fs.createReadStream(filePath) }, threadID, () => fs.unlinkSync(filePath), messageID))
-      .catch(err => api.sendMessage("❌ Error: " + err.message, threadID, messageID));
+    const cacheDir = path.join(process.cwd(), "cache", "canvas");
+    const templatePath = path.join(cacheDir, "fingeringv2.png");
+    const outPath = path.join(cacheDir, `fg_${senderID}_${targetID}.png`);
+
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
+    try {
+      api.sendMessage("⌛ একটু দাঁড়ান, মিম তৈরি হচ্ছে...", threadID, (err, info) => {
+         setTimeout(() => api.unsendMessage(info.messageID), 3000);
+      }, messageID);
+
+      if (!fs.existsSync(templatePath)) {
+        const response = await axios.get("https://drive.google.com/uc?export=download&id=1HEIUVZXrUgxbJOCkr7h6c9_eeyGgzr3V", { responseType: "arraybuffer" });
+        fs.writeFileSync(templatePath, response.data);
+      }
+
+      const token = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+      
+      const getAvt = async (uid) => {
+        const url = `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=${token}`;
+        const res = await axios.get(url, { responseType: "arraybuffer" });
+        const img = await Jimp.read(res.data); // Jimp.read ব্যবহার করা হয়েছে
+        return img.circle();
+      };
+
+      const [baseImg, avtOne, avtTwo] = await Promise.all([
+        Jimp.read(templatePath), // Jimp.read ব্যবহার করা হয়েছে
+        getAvt(senderID),
+        getAvt(targetID)
+      ]);
+
+      baseImg.composite(avtOne.resize({ w: 70, h: 70 }), 180, 110);
+      baseImg.composite(avtTwo.resize({ w: 70, h: 70 }), 120, 140);
+
+      const buffer = await baseImg.getBuffer("image/png");
+      fs.writeFileSync(outPath, buffer);
+
+      return api.sendMessage({
+        attachment: fs.createReadStream(outPath)
+      }, threadID, () => {
+        if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+      }, messageID);
+
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage("❌ Jimp Error: " + err.message, threadID, messageID);
+    }
   }
 };
