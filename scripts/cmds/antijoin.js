@@ -1,22 +1,50 @@
-module.exports.config = {
+module.exports = {
+  config: {
     name: "antijoin",
     version: "1.0.0",
-    credits: "𝐁𝐀𝐁𝐘 𝐁𝐎𝐓 𝐓𝐄𝐀𝐌",
-    hasPermssion: 1,
-    description: "Turn off antijoin",
-    usages: "antijoin on/off",
-    commandCategory: "system",
-    cooldowns: 0
-};
+    author: "BABY BOT TEAM & Gemini",
+    countDown: 5,
+    role: 1, // Admin only
+    shortDescription: {
+      en: "Enable/Disable Anti-Join"
+    },
+    longDescription: {
+      en: "When enabled, the bot will automatically kick new members who join the group."
+    },
+    category: "system",
+    guide: {
+      en: "{pn} on/off"
+    }
+  },
 
-module.exports.run = async({ api, event, Threads}) => {
-    const info = await api.getThreadInfo(event.threadID);
-    if (!info.adminIDs.some(item => item.id == api.getCurrentUserID())) 
-      return api.sendMessage('[ 𝐀𝐍𝐓𝐈 𝐉𝐎𝐈𝐍 ] » 𝗡𝗲𝗲𝗱 𝗴𝗿𝗼𝘂𝗽 𝗮𝗱𝗺𝗶𝗻 𝗽𝗲𝗿𝗺𝗶𝘀𝘀𝗶𝗼𝗻𝘀, 𝗽𝗹𝗲𝗮𝘀𝗲 𝗮𝗱𝗱 𝗮𝗻𝗱 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻', event.threadID, event.messageID);
-    const data = (await Threads.getData(event.threadID)).data || {};
-    if (typeof data.newMember == "undefined" || data.newMember == false) data.newMember = true;
-    else data.newMember = false;
-    await Threads.setData(event.threadID, { data });
-      global.data.threadData.set(parseInt(event.threadID), data);
-    return api.sendMessage(`[ 𝐀𝐍𝐓𝐈 𝐉𝐎𝐈𝐍 ] » 𝗜𝗺𝗽𝗹𝗲𝗺𝗲𝗻𝘁 ${(data.newMember == true) ? "𝗢𝗻" : "𝗢𝗳𝗳"} 𝗦𝘂𝗰𝗰𝗲𝘀𝘀𝗳𝘂𝗹 𝗔𝗻𝘁𝗶 𝗝𝗼𝗶𝗻 ✅`, event.threadID, event.messageID);
-}
+  onStart: async function ({ api, event, threadsData, message }) {
+    const { threadID, messageID } = event;
+    
+    // ১. চেক করা বট গ্রুপ এডমিন কি না
+    const threadInfo = await api.getThreadInfo(threadID);
+    const botID = api.getCurrentUserID();
+    const isAdmin = threadInfo.adminIDs.some(item => item.id == botID);
+
+    if (!isAdmin) {
+      return message.reply("⚠️ [ 𝐀𝐍𝐓𝐈 𝐉𝐎𝐈𝐍 ] » বটের গ্রুপ এডমিন পারমিশন প্রয়োজন। দয়া করে বটকে এডমিন বানিয়ে আবার চেষ্টা করুন।");
+    }
+
+    try {
+      // ২. ডেটাবেস থেকে বর্তমান সেটিংস নেওয়া
+      const data = await threadsData.get(threadID);
+      const isAntiJoin = data.settings?.antijoin || false;
+
+      // ৩. অন/অফ লজিক
+      const newState = !isAntiJoin;
+
+      await threadsData.set(threadID, {
+        "settings.antijoin": newState
+      });
+
+      return message.reply(`[ 𝐀𝐍𝐓𝐈 𝐉𝐎𝐈𝐍 ] » 𝗔𝗻𝘁𝗶 𝗝𝗼𝗶𝗻 এখন ${(newState) ? "𝗢𝗻 ✅" : "𝗢𝗳𝗳 ❌"} করা হয়েছে।`);
+    } catch (e) {
+      console.error(e);
+      return message.reply("❌ ডেটাবেস আপডেট করতে সমস্যা হয়েছে।");
+    }
+  }
+};
