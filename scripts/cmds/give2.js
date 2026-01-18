@@ -1,133 +1,96 @@
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
 
-const VIP_FILE = path.join(__dirname, "vip.json");
+// VIP ফাইলটি scripts ফোল্ডারের ভেতরে ডাটাবেজ হিসেবে থাকবে
+const VIP_FILE = path.join(process.cwd(), "scripts", "cache", "vip_users.json");
 
-// Create vip.json if not exists
+// ফোল্ডার এবং ফাইল না থাকলে তৈরি করবে
+if (!fs.existsSync(path.dirname(VIP_FILE))) fs.mkdirSync(path.dirname(VIP_FILE), { recursive: true });
 if (!fs.existsSync(VIP_FILE)) {
   fs.writeFileSync(VIP_FILE, JSON.stringify(["61584308632995"], null, 2));
 }
 
-module.exports.config = {
-  name: "give",
-  version: "1.3",
-  hasPermssion: 2,
-  credits: "rX Abdullah",
-  description: "Upload local command files to a pastebin service with VIP system.",
-  commandCategory: "utility",
-  usages: "[filename] [raw] | vip add | vip list",
-  cooldowns: 5
-};
+module.exports = {
+  config: {
+    name: "give",
+    version: "1.3.1",
+    author: "rX Abdullah & Gemini",
+    countDown: 5,
+    role: 0, // ভিআইপি চেক কোডের ভেতরে হবে
+    shortDescription: { en: "Upload scripts to Pastebin with VIP system" },
+    category: "utility",
+    guide: { en: "{pn} [filename] [raw] | {pn} vip add | {pn} vip list" }
+  },
 
-module.exports.run = async function({ api, event, args }) {
-  const { threadID, messageID, senderID, mentions, type, messageReply } = event;
-  const vipList = JSON.parse(fs.readFileSync(VIP_FILE));
+  onStart: async function ({ api, event, args }) {
+    const { threadID, messageID, senderID, mentions, type, messageReply } = event;
+    const vipList = JSON.parse(fs.readFileSync(VIP_FILE));
 
-  // --- VIP SYSTEM ---
-  if (args[0] && args[0].toLowerCase() === "vip") {
-    const subCmd = args[1] ? args[1].toLowerCase() : "";
+    // --- VIP SYSTEM ---
+    if (args[0] && args[0].toLowerCase() === "vip") {
+      const subCmd = args[1] ? args[1].toLowerCase() : "";
 
-    // ➕ Add new VIP
-    if (subCmd === "add") {
-      if (senderID !== "61579782879961") {
-        return api.sendMessage("❌ You don't have permission to add VIP users.", threadID, messageID);
+      // ১. ভিআইপি এড করা (শুধুমাত্র নির্দিষ্ট আইডি পারবে)
+      if (subCmd === "add") {
+        if (senderID !== "61584308632995") {
+          return api.sendMessage("❌ আপনার ভিআইপি মেম্বার এড করার অনুমতি নেই।", threadID, messageID);
+        }
+
+        let targetID = type === "message_reply" ? messageReply.senderID : Object.keys(mentions)[0];
+        
+        if (!targetID) return api.sendMessage("⚠️ দয়াকরে একজনকে মেনশন করুন বা রিপ্লাই দিন।", threadID, messageID);
+        if (vipList.includes(targetID)) return api.sendMessage("ℹ️ এই ইউজার অলরেডি ভিআইপি লিস্টে আছে।", threadID, messageID);
+
+        vipList.push(targetID);
+        fs.writeFileSync(VIP_FILE, JSON.stringify(vipList, null, 2));
+        return api.sendMessage(`✅ ইউজার ${targetID} সফলভাবে ভিআইপি হিসেবে যুক্ত হয়েছে!`, threadID, messageID);
       }
 
-      let targetID;
-
-      if (Object.keys(mentions).length > 0) {
-        targetID = Object.keys(mentions)[0];
-      } else if (type === "message_reply") {
-        targetID = messageReply.senderID;
-      } else {
-        return api.sendMessage("⚠️ Mention or reply to the user you want to add as VIP.", threadID, messageID);
+      // ২. ভিআইপি লিস্ট দেখানো
+      if (subCmd === "list") {
+        if (vipList.length === 0) return api.sendMessage("📭 বর্তমানে কোন ভিআইপি নেই।", threadID, messageID);
+        let msg = "👑 VIP User List 👑\n\n";
+        vipList.forEach(uid => msg += `• https://www.facebook.com/${uid}\n`);
+        return api.sendMessage(msg, threadID, messageID);
       }
-
-      if (vipList.includes(targetID)) {
-        return api.sendMessage("ℹ️ This user is already a VIP.", threadID, messageID);
-      }
-
-      vipList.push(targetID);
-      fs.writeFileSync(VIP_FILE, JSON.stringify(vipList, null, 2));
-
-      return api.sendMessage(`✅ Successfully added <@${targetID}> as VIP!`, threadID, messageID);
     }
 
-    // 📋 Show VIP list
-    if (subCmd === "list") {
-      if (vipList.length === 0) {
-        return api.sendMessage("📭 No VIPs found.", threadID, messageID);
-      }
-
-      let msg = "👑 VIP User List 👑\n\n";
-      let mentionsList = [];
-
-      for (let uid of vipList) {
-        msg += `• @${uid}\n`;
-        mentionsList.push({ tag: `@${uid}`, id: uid });
-      }
-
-      return api.sendMessage({ body: msg, mentions: mentionsList }, threadID, messageID);
+    // --- VIP CHECK ---
+    if (!vipList.includes(senderID)) {
+      return api.sendMessage("🚫 আপনি ভিআইপি ইউজার নন। এই কমান্ডটি আপনার জন্য নয়।", threadID, messageID);
     }
 
-    // Unknown vip subcommand
-    return api.sendMessage("⚠️ Invalid VIP command.\nUse: !give vip add | !give vip list", threadID, messageID);
-  }
+    // --- FILE UPLOAD ---
+    if (args.length === 0) return api.sendMessage("📁 ফাইলের নাম দিন। ব্যবহার: {pn} <filename> [raw]", threadID, messageID);
 
-  // --- VIP CHECK ---
-  if (!vipList.includes(senderID)) {
-    return api.sendMessage("🚫 You are not a VIP user. You can't use this command.", threadID, messageID);
-  }
+    const fileName = args[0];
+    const isRaw = args[1] && args[1].toLowerCase() === "raw";
+    const scriptsPath = path.join(process.cwd(), "scripts");
+    
+    let filePath = path.join(scriptsPath, fileName.endsWith(".js") ? fileName : fileName + ".js");
 
-  // --- FILE UPLOAD ---
-  if (args.length === 0)
-    return api.sendMessage("📁 Please provide a file name.\nUsage: !give <filename> [raw]", threadID, messageID);
-
-  const fileName = args[0];
-  const isRaw = args[1] && args[1].toLowerCase() === "raw";
-
-  const commandsPath = path.join(__dirname, "..", "commands");
-  const filePath1 = path.join(commandsPath, fileName);
-  const filePath2 = path.join(commandsPath, fileName + ".js");
-
-  let fileToRead;
-  if (fs.existsSync(filePath1)) fileToRead = filePath1;
-  else if (fs.existsSync(filePath2)) fileToRead = filePath2;
-  else return api.sendMessage("❌ File not found in `commands` folder.", threadID, messageID);
-
-  fs.readFile(fileToRead, "utf8", async (err, data) => {
-    if (err) {
-      console.error("❗ Read error:", err);
-      return api.sendMessage("❗ Error reading the file.", threadID, messageID);
+    if (!fs.existsSync(filePath)) {
+      return api.sendMessage(`❌ scripts ফোল্ডারে '${path.basename(filePath)}' ফাইলটি পাওয়া যায়নি।`, threadID, messageID);
     }
 
     try {
-      api.sendMessage("📤 Uploading file to PasteBin, please wait...", threadID, async (error, info) => {
-        if (error) return console.error(error);
+      const data = fs.readFileSync(filePath, "utf8");
+      api.sendMessage("📤 PasteBin-এ আপলোড হচ্ছে...", threadID, async (err, info) => {
+        try {
+          const response = await axios.post("https://pastebin-api.vercel.app/paste", { text: data });
+          setTimeout(() => api.unsendMessage(info.messageID), 1500);
 
-        const pastebinAPI = "https://pastebin-api.vercel.app";
-        const response = await axios.post(`${pastebinAPI}/paste`, { text: data });
-
-        setTimeout(() => api.unsendMessage(info.messageID), 1000);
-
-        if (response.data && response.data.id) {
-          const link = isRaw 
-            ? `${pastebinAPI}/raw/${response.data.id}` 
-            : `${pastebinAPI}/${response.data.id}`;
-
-          return api.sendMessage(
-            `📄 File: ${path.basename(fileToRead)}\n✅ Successfully uploaded:\n🔗 ${link}`,
-            threadID
-          );
-        } else {
-          console.error("⚠️ Unexpected API response:", response.data);
-          return api.sendMessage("⚠️ Upload failed. No valid ID received from PasteBin server.", threadID);
+          if (response.data && response.data.id) {
+            const link = isRaw ? `https://pastebin-api.vercel.app/raw/${response.data.id}` : `https://pastebin-api.vercel.app/${response.data.id}`;
+            return api.sendMessage(`📄 ফাইল: ${path.basename(filePath)}\n✅ আপলোড সফল হয়েছে!\n🔗 লিঙ্ক: ${link}`, threadID, messageID);
+          }
+        } catch (e) {
+          return api.sendMessage("⚠️ আপলোড ব্যর্থ হয়েছে।", threadID, messageID);
         }
-      });
-    } catch (uploadError) {
-      console.error("❌ Upload error:", uploadError);
-      return api.sendMessage("❌ Failed to upload file:\n" + uploadError.message, threadID);
+      }, messageID);
+    } catch (e) {
+      return api.sendMessage("❗ ফাইলটি রিড করতে সমস্যা হয়েছে।", threadID, messageID);
     }
-  });
+  }
 };
