@@ -1,0 +1,80 @@
+const axios = require('axios');
+const fs = require('fs-extra');
+const path = require('path');
+const stream = require('stream');
+const { promisify } = require('util');
+
+const pipeline = promisify(stream.pipeline);
+// এখানে Anihug এর কার্যকরী এপিআই এন্ডপয়েন্ট দেওয়া হয়েছে
+const API_ENDPOINT = "https://api.dipto.xyz/canvas/anihug";
+const CACHE_DIR = path.join(__dirname, 'cache');
+
+module.exports = {
+  config: {
+    name: "anihug",
+    aliases: ["hug", "hugging"],
+    version: "1.5",
+    author: "Neoaz ゐ & Gemini",
+    countDown: 10,
+    role: 0,
+    longDescription: "Generate an anime hug video using profile pictures.",
+    category: "fun",
+    guide: {
+      en: "{pn} @mention or reply to a message"
+    }
+  },
+
+  onStart: async function ({ args, message, event, api }) {
+    const { type, messageReply, senderID, mentions } = event;
+
+    // --- ID Determination (Reply/Mention) ---
+    let targetID;
+    if (type === "message_reply") {
+      targetID = messageReply.senderID;
+    } else if (Object.keys(mentions).length > 0) {
+      targetID = Object.keys(mentions)[0];
+    } else {
+      return message.reply("Please mention someone or reply to a message to hug.");
+    }
+
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+    }
+
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+    let tempFilePath;
+
+    try {
+      // আপনার দেওয়া এক্সেস টোকেন
+      const token = "6628568379%7Cc1e620fa708a1d5696fb991c1bde5662";
+      const fullApiUrl = `${API_ENDPOINT}?id1=${senderID}&id2=${targetID}&token=${token}`;
+      
+      const videoDownloadResponse = await axios.get(fullApiUrl, {
+        responseType: 'stream',
+        timeout: 60000, // ১ মিনিট সময়সীমা
+      });
+      
+      const fileHash = Date.now() + Math.random().toString(36).substring(2, 8);
+      tempFilePath = path.join(CACHE_DIR, `anihug_${fileHash}.mp4`);
+      
+      await pipeline(videoDownloadResponse.data, fs.createWriteStream(tempFilePath));
+
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+      
+      await message.reply({
+        body: "Hug video generated 💖",
+        attachment: fs.createReadStream(tempFilePath)
+      });
+
+    } catch (error) {
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      console.error("Anihug Command Error:", error);
+      message.reply("Failed to generate hug video. API might be down.");
+
+    } finally {
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    }
+  }
+};
