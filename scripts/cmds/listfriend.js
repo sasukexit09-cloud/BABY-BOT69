@@ -1,90 +1,100 @@
 module.exports.config = {
   name: "listfriend",
-  version: "1.0.0",
-  hasPermssion: 2,
-  credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-  description: "View friends information/Delete friends by replying",
-  commandCategory: "System",
-  usages: "",
-  cooldowns: 5
+  version: "1.1.0",
+  role: 2, // Admin only
+  author: "—͟͟͞͞𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 & Gemini",
+  description: "বটের ফ্রেন্ড লিস্ট দেখুন এবং রিপ্লাই দিয়ে আনফ্রেন্ড করুন",
+  category: "System",
+  guide: { en: "{pn} [page number]" },
+  countDown: 5
 };
 
-module.exports.handleReply = async function ({ api, args, Users, handleReply, event, Threads }) {
-  const { threadID, messageID } = event;
-  if (parseInt(event.senderID) !== parseInt(handleReply.author)) return;
+module.exports.handleReply = async function ({ api, handleReply, event }) {
+  const { threadID, messageID, senderID, body } = event;
+  
+  // শুধুমাত্র যে কমান্ড দিয়েছে সে রিপ্লাই দিতে পারবে
+  if (parseInt(senderID) !== parseInt(handleReply.author)) return;
 
-  switch (handleReply.type) {
-    case "reply":
-      {
-        var msg ="" , name, urlUser, uidUser;
-        var arrnum = event.body.split(" ");
-        var nums = arrnum.map(n => parseInt(n));
-        for (let num of nums) {
-          name = handleReply.nameUser[num - 1];
-          urlUser = handleReply.urlUser[num - 1];
-          uidUser = handleReply.uidUser[num - 1];
+  if (handleReply.type === "reply") {
+    const arrnum = body.split(" ");
+    const nums = arrnum.map(n => parseInt(n)).filter(n => !isNaN(n));
+    
+    let msg = "";
+    let count = 0;
 
-          api.unfriend(uidUser);
-          msg += '- ' + name + '\n🌐ProfileUrl: ' + urlUser + "\n";
-          //console.log(msg);
-        }
+    for (const num of nums) {
+      const index = num - 1;
+      const name = handleReply.nameUser[index];
+      const uidUser = handleReply.uidUser[index];
 
-        api.sendMessage(`💢Delete Friends💢\n\n${msg}`, threadID, () =>
-          api.unsendMessage(handleReply.messageID));
+      if (uidUser) {
+        await api.unfriend(uidUser);
+        msg += `✅ ${name} (ID: ${uidUser})\n`;
+        count++;
       }
-      break;
+    }
+
+    if (count > 0) {
+      api.sendMessage(`♻️ সফলভাবে ${count} জন বন্ধুকে আনফ্রেন্ড করা হয়েছে:\n\n${msg}`, threadID, () => 
+        api.unsendMessage(handleReply.messageID), messageID);
+    } else {
+      api.sendMessage("⚠ সঠিক নম্বর দিন (১ থেকে ১০ এর মধ্যে)।", threadID, messageID);
+    }
   }
 };
 
-
-module.exports.run = async function ({ event, api, args }) {
+module.exports.onStart = async function ({ event, api, args }) {
   const { threadID, messageID, senderID } = event;
-  //var unfriend =  await api.unfriend();
+
   try {
-    var listFriend = [];
-    var dataFriend = await api.getFriendsList();
-    var countFr = dataFriend.length;
+    const dataFriend = await api.getFriendsList();
+    const countFr = dataFriend.length;
 
-    for (var friends of dataFriend) {
-      listFriend.push({
-        name: friends.fullName || "Chưa đặt tên",
-        uid: friends.userID,
-        gender: friends.gender,
-        vanity: friends.vanity,
-        profileUrl: friends.profileUrl
-      });
-    }
-    var nameUser = [], urlUser = [], uidUser = [];
-    var page = 1;
-    page = parseInt(args[0]) || 1;
-    page < -1 ? page = 1 : "";
-    var limit = 10;
-    var msg = `🎭DS INCLUDES ${countFr} FRIENDS🎭\n\n`;
-    var numPage = Math.ceil(listFriend.length / limit);
+    if (countFr === 0) return api.sendMessage("বটের ফ্রেন্ড লিস্টে কোনো বন্ধু পাওয়া যায়নি।", threadID, messageID);
 
-    for (var i = limit * (page - 1); i < limit * (page - 1) + limit; i++) {
+    let listFriend = dataFriend.map(friend => ({
+      name: friend.fullName || "Unnamed",
+      uid: friend.userID,
+      gender: friend.gender,
+      profileUrl: friend.profileUrl
+    }));
+
+    const limit = 10;
+    const page = parseInt(args[0]) || 1;
+    const numPage = Math.ceil(listFriend.length / limit);
+    
+    if (page > numPage) return api.sendMessage(`⚠ এই পেজটি নেই। মোট পেজ আছে: ${numPage} টি।`, threadID, messageID);
+
+    let msg = `🎭 𝐁𝐎𝐓 𝐅𝐑𝐈𝐄𝐍𝐃 𝐋𝐈𝐒𝐓 (Total: ${countFr}) 🎭\n━━━━━━━━━━━━━━━━━━\n`;
+    let nameUser = [], uidUser = [], urlUser = [];
+
+    for (let i = limit * (page - 1); i < limit * (page - 1) + limit; i++) {
       if (i >= listFriend.length) break;
-      let infoFriend = listFriend[i];
-      msg += `${i + 1}. ${infoFriend.name}\n🙇‍♂️ID: ${infoFriend.uid}\n🧏‍♂️Gender: ${infoFriend.gender}\n❄️Vanity: ${infoFriend.vanity}\n🌐Profile Url: ${infoFriend.profileUrl}\n\n`;
-      nameUser.push(infoFriend.name);
-      urlUser.push(infoFriend.profileUrl);
-      uidUser.push(infoFriend.uid);
+      
+      let info = listFriend[i];
+      msg += `${i + 1}. ${info.name}\n🙇‍♂️ ID: ${info.uid}\n🌐 Profile: ${info.profileUrl}\n\n`;
+      
+      nameUser.push(info.name);
+      uidUser.push(info.uid);
+      urlUser.push(info.profileUrl);
     }
-    msg += `✎﹏﹏﹏﹏﹏﹏﹏﹏﹏﹏\n--> Page ${page}/${numPage} <--\nUse .friend page number/all\n\n`;
 
-    return api.sendMessage(msg + '🎭Reply number in order (from 1->10), can rep multiple numbers, separated by way sign to delete that friend from the list!', event.threadID, (e, data) =>
+    msg += `━━━━━━━━━━━━━━━━━━\n📖 Page: ${page}/${numPage}\n\n💡 আনফ্রেন্ড করতে ওই ফ্রেন্ডের নম্বরটি রিপ্লাই দিন (একাধিক হলে স্পেস দিয়ে লিখুন, যেমন: 1 3 5)`;
+
+    return api.sendMessage(msg, threadID, (err, info) => {
       global.client.handleReply.push({
         name: this.config.name,
-        author: event.senderID,
-        messageID: data.messageID,
+        author: senderID,
+        messageID: info.messageID,
         nameUser,
-        urlUser,
         uidUser,
+        urlUser,
         type: 'reply'
-      })
-    )
+      });
+    }, messageID);
+
+  } catch (e) {
+    console.error(e);
+    return api.sendMessage("❌ ফ্রেন্ড লিস্ট সংগ্রহ করতে সমস্যা হয়েছে। সম্ভবত ফেসবুকের নতুন আপডেটের কারণে এটি আপনার প্যানেলে কাজ করছে না।", threadID, messageID);
   }
-  catch (e) {
-    return console.log(e)
-  }
-}
+};
