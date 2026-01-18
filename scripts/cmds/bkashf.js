@@ -1,62 +1,68 @@
 const axios = require("axios");
 
-module.exports.config = {
- name: "bkashf",
- version: "1.0",
- hasPermssion: 0,
- credits: "ULLASH",
- description: "Create a fake Bkash screenshot",
- usePrefix: true,
- prefix: true,
- commandCategory: "Fun",
- usages: "<number> - <transaction ID> - <amount>",
- cooldowns: 5,
-};
+module.exports = {
+  config: {
+    name: "bkashf",
+    version: "1.0.1",
+    author: "AYAN & Gemini",
+    countDown: 5,
+    role: 0,
+    shortDescription: { en: "Create a fake Bkash screenshot" },
+    category: "fun",
+    guide: { en: "{pn} number - transactionID - amount" }
+  },
 
-module.exports.run = async function ({ api, event, args }) {
- const input = args.join(" ");
- if (!input.includes("-")) {
- return api.sendMessage(
- `❌| Wrong format!\nUse: ${global.config.PREFIX}bkashf 017xxxxxxxx - TXN12345 - 1000`,
- event.threadID,
- event.messageID
- );
- }
+  onStart: async function ({ api, event, args }) {
+    const { threadID, messageID } = event;
+    const input = args.join(" ");
 
- const [numberRaw, transactionRaw, amountRaw] = input.split("-");
- const number = numberRaw.trim();
- const transaction = transactionRaw.trim();
- const amount = amountRaw.trim();
+    // ১. ইনপুট চেক
+    if (!input || !input.includes("-")) {
+      return api.sendMessage(
+        `❌ সঠিক ফরম্যাট ব্যবহার করুন!\nউদাহরণ: {pn} 017xxxxxxxx - TXN12345 - 1000`,
+        threadID,
+        messageID
+      );
+    }
 
- const url = `https://masterapi.site/api/bkashf.php?number=${encodeURIComponent(number)}&transaction=${encodeURIComponent(transaction)}&amount=${encodeURIComponent(amount)}`;
+    const parts = input.split("-");
+    if (parts.length < 3) {
+      return api.sendMessage("⚠️ দয়া করে নম্বর, ট্রানজ্যাকশন আইডি এবং টাকার পরিমাণ—তিনটিই দিন।", threadID, messageID);
+    }
 
- api.sendMessage(
- `📤 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗶𝗻𝗴 𝗳𝗮𝗸𝗲 𝗕𝗸𝗮𝘀𝗵 𝘀𝗰𝗿𝗲𝗲𝗻𝘀𝗵𝗼𝘁... 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 🕐`,
- event.threadID,
- (err, info) =>
- setTimeout(() => {
- api.unsendMessage(info.messageID);
- }, 4000)
- );
+    const number = parts[0].trim();
+    const transaction = parts[1].trim();
+    const amount = parts[2].trim();
 
- try {
- const response = await axios.get(url, { responseType: "stream" });
- const attachment = response.data;
+    // ২. এপিআই ইউআরএল
+    const url = `https://masterapi.site/api/bkashf.php?number=${encodeURIComponent(number)}&transaction=${encodeURIComponent(transaction)}&amount=${encodeURIComponent(amount)}`;
 
- api.sendMessage(
- {
- body: `━━━━━━━━━━━━━━━━━━\n📸 𝗙𝗮𝗸𝗲 𝗕𝗞𝗔𝗦𝗛 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧 ✅\n━━━━━━━━━━━━━━━━━━\n\n📱 𝗠𝗼𝗯𝗶𝗹𝗲 𝗡𝘂𝗺𝗯𝗲𝗿 : ${number}\n🧾 𝐓𝐫𝐚𝐧𝐬𝐚𝐜𝐭𝐢𝐨𝐧 𝐈𝐃: ${transaction}\n💵 𝐀𝐦𝐨𝐮𝐧𝐭: ৳${amount}\n\n📤 𝗬𝗼𝘂𝗿 𝗳𝗮𝗸𝗲 𝗕𝗸𝗮𝘀𝗵 𝗿𝗲𝗰𝗲𝗶𝗽𝘁 𝗶𝘀 𝗿𝗲𝗮𝗱𝘆!\n\n━━━━━━━━━━━━━━━━━━\n\n🛠 𝗣𝗼𝘄𝗲𝗿𝗲𝗱 𝗯𝘆: ─꯭─⃝‌‌𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭\n━━━━━━━━━━━━━━━━━━`,
- attachment,
- },
- event.threadID,
- event.messageID
- );
- } catch (err) {
- console.error(err);
- api.sendMessage(
- "❌ An error occurred while generating the screenshot.",
- event.threadID,
- event.messageID
- );
- }
+    // ৩. লোডিং মেসেজ
+    api.sendMessage(
+      `📤 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗶𝗻𝗴 𝗳𝗮𝗸𝗲 𝗕𝗸𝗮𝘀𝗵 𝘀𝗰𝗿𝗲𝗲𝗻𝘀𝗵𝗼𝘁... 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 🕐`,
+      threadID,
+      (err, info) => {
+        if (!err) setTimeout(() => api.unsendMessage(info.messageID), 4000);
+      },
+      messageID
+    );
+
+    try {
+      // ৪. এপিআই থেকে ইমেজ নেওয়া
+      const response = await axios.get(url, { responseType: "stream" });
+
+      return api.sendMessage({
+        body: `━━━━━━━━━━━━━━━━━━\n📸 𝗙𝗮𝗸𝗲 𝗕𝗞𝗔𝗦𝗛 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧 ✅\n━━━━━━━━━━━━━━━━━━\n\n📱 𝗡𝘂𝗺𝗯𝗲𝗿 : ${number}\n🧾 𝗧𝘅𝗻𝗜𝗗: ${transaction}\n💵 𝗔𝗺𝗼𝘂𝗻𝘁: ৳${amount}\n\n📤 𝗬𝗼𝘂𝗿 𝗿𝗲𝗰𝗲𝗶𝗽𝘁 𝗶𝘀 𝗿𝗲𝗮𝗱𝘆!\n━━━━━━━━━━━━━━━━━━`,
+        attachment: response.data
+      }, threadID, messageID);
+
+    } catch (err) {
+      console.error(err);
+      return api.sendMessage(
+        "❌ এপিআই সার্ভারে সমস্যা হচ্ছে অথবা লিঙ্কটি কাজ করছে না।",
+        threadID,
+        messageID
+      );
+    }
+  }
 };
