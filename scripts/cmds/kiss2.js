@@ -1,98 +1,106 @@
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
+const { Jimp } = require("jimp");
+
 module.exports.config = {
     name: "kiss2",
-    version: "2.0.0",
-    hasPermssion: 0,
-    credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-    description: "Kiss the person you want",
-    commandCategory: "Love",
-    usages: "kiss [tag]",
-    cooldowns: 5,
-    dependencies: {
-        "axios": "",
-        "fs-extra": "",
-        "path": "",
-        "jimp": ""
-    }
+    version: "2.3.0",
+    role: 0,
+    author: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 & Gemini",
+    description: "Kiss the person you want (Fixed Error)",
+    category: "Love",
+    guide: { en: "{pn} @tag or reply" },
+    countDown: 5
 };
 
-module.exports.onLoad = async () => {
-    const { resolve } = global.nodemodule["path"];
-    const { existsSync, mkdirSync } = global.nodemodule["fs-extra"];
-    const { downloadFile } = global.utils;
-    const dirMaterial = __dirname + `/cache/`;
-    const path = resolve(__dirname, 'cache', 'hon0.jpeg');
-    if (!existsSync(dirMaterial + "")) mkdirSync(dirMaterial, { recursive: true });
-    if (!existsSync(path)) await downloadFile("https://i.imgur.com/j96ooUs.jpeg", path);
+async function circle(image) {
+    const img = await Jimp.read(image);
+    img.circle();
+    return await img.getBufferAsync(Jimp.MIME_PNG);
 }
 
 async function makeImage({ one, two }) {
-    const fs = global.nodemodule["fs-extra"];
-    const path = global.nodemodule["path"];
-    const axios = global.nodemodule["axios"];
-    const jimp = global.nodemodule["jimp"];
-    const __root = path.resolve(__dirname, "cache");
+    const cacheDir = path.join(process.cwd(), "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    let hon_img = await jimp.read(__root + "/hon0.jpeg");
-    let pathImg = __root + `/hon0_${one}_${two}.jpeg`;
-    let avatarOne = __root + `/avt_${one}.png`;
-    let avatarTwo = __root + `/avt_${two}.png`;
+    const bgPath = path.join(cacheDir, "hon0.jpeg");
+    const outPath = path.join(cacheDir, `kiss_${one}_${two}_${Date.now()}.png`);
 
-    let getAvatarOne = (await axios.get(`https://graph.facebook.com/${one}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`, { responseType: 'arraybuffer' })).data;
-    fs.writeFileSync(avatarOne, Buffer.from(getAvatarOne, 'utf-8'));
-
-    let getAvatarTwo = (await axios.get(`https://graph.facebook.com/${two}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`, { responseType: 'arraybuffer' })).data;
-    fs.writeFileSync(avatarTwo, Buffer.from(getAvatarTwo, 'utf-8'));
-
-    let circleOne = await jimp.read(await circle(avatarOne));
-    let circleTwo = await jimp.read(await circle(avatarTwo));
-    hon_img.resize(700, 440).composite(circleOne.resize(150, 150), 390, 23).composite(circleTwo.resize(150, 150), 115, 130);
-
-    let raw = await hon_img.getBufferAsync("image/png");
-
-    fs.writeFileSync(pathImg, raw);
-    fs.unlinkSync(avatarOne);
-    fs.unlinkSync(avatarTwo);
-
-    return pathImg;
-}
-
-async function circle(image) {
-    const jimp = require("jimp");
-    image = await jimp.read(image);
-    image.circle();
-    return await image.getBufferAsync("image/png");
-}
-
-module.exports.run = async function ({ event, api, args, Currencies }) {
-    const fs = global.nodemodule["fs-extra"];
-    const hc = Math.floor(Math.random() * 101);
-    const rd = Math.floor(Math.random() * 100000) + 100000;
-    const { threadID, messageID, senderID } = event;
-    const mention = Object.keys(event.mentions);
-    var one = senderID, two = mention[0];
-    await Currencies.increaseMoney(event.senderID, parseInt(hc * rd));
-
-    const captions = [
-        "কারণে অকারণে প্রতিদিন নিয়ম করে, তোমার মায়াতে জড়িয়ে পড়ছি আমি বারেবার!🌷",
-        "তোমাকে কেন ভালোবাসি তার কোন বিশেষ কারণ আমার জানা নাই! কিন্তু তোমার কাছে সারাজীবন থেকে যাওয়ার হাজারটা কারণ আমার কাছে আছে!💚",
-        "তোমার সাথে কাটানো সময়গুলোর কথা চিন্তা করলে মনে হয়, এই এক জনম তোমার সাথে অনেক কম সময়!😘",
-        "প্রিয় তুমি কি আমার জীবনের সেই গল্প হবে? যেই গল্পের শুরু থাকবে, কিন্তু কোনো শেষ থাকবে না!♥️",
-        "তুমি পাশে থাকলে সবকিছু সুন্দর মনে হয়, জীবন যেন একটা মধুর কবিতায় রূপ নেয়!😍",
-        "তোমাকে ছাড়া জীবনটা অসম্পূর্ণ, তুমি আমার ভালোবাসার পূর্ণতা!🧡",
-        "তুমি আমার স্বপ্ন, তুমি আমার জীবনের প্রতিটি সুন্দর মুহূর্ত!🌻",
-        "আমার চোখে তোমার অস্থিত্ব খোঁজতে এসোনা, হারিয়ে যাবে! কেননা আমার পুরোটা-জুরেই তোমারই নির্বাক আনাগোনা!🌺",
-        "তোমাতে শুরু তোমাতেই শেষ, তুমি না থাকলে আমাদের গল্প এখানেই শেষ!😘",
-        "ভালোবাসা যদি কোনো অনুভূতি হয়, তাহলে তোমার প্রতি আমার অনুভূতি পৃথিবীর সেরা অনুভূতি।🌻ღ🌺"
-    ];
-
-    const caption = captions[Math.floor(Math.random() * captions.length)];
-
-    if (!two) return api.sendMessage("Please tag 1 person", threadID, messageID);
-    else {
-        return makeImage({ one, two }).then(path => api.sendMessage({
-            body: `${caption}`,
-            attachment: fs.createReadStream(path)
-        }, threadID, () => fs.unlinkSync(path), messageID));
+    // ১. ব্যাকগ্রাউন্ড ইমেজ ডাউনলোড লজিক (Error Fix)
+    const bgURL = "https://i.imgur.com/j96ooUs.jpeg";
+    if (!fs.existsSync(bgPath) || fs.statSync(bgPath).size < 100) {
+        const res = await axios.get(bgURL, { responseType: "arraybuffer" });
+        fs.writeFileSync(bgPath, Buffer.from(res.data));
     }
 
+    const getAvt = async (uid) => {
+        const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`;
+        const res = await axios.get(url, { responseType: "arraybuffer" });
+        const circleBuffer = await circle(res.data);
+        return await Jimp.read(circleBuffer);
+    };
+
+    try {
+        const [bg, avtOne, avtTwo] = await Promise.all([
+            Jimp.read(bgPath),
+            getAvt(one),
+            getAvt(two)
+        ]);
+
+        bg.resize({ w: 700, h: 440 });
+        avtOne.resize({ w: 150, h: 150 });
+        avtTwo.resize({ w: 150, h: 150 });
+
+        bg.composite(avtOne, 390, 23);
+        bg.composite(avtTwo, 115, 130);
+
+        await bg.writeAsync(outPath);
+        return outPath;
+    } catch (err) {
+        // যদি ব্যাকগ্রাউন্ড ফাইলটি কারাপ্ট হয় তবে তা ডিলিট করে দিবে যাতে পরের বার ফ্রেশ ডাউনলোড হয়
+        if (fs.existsSync(bgPath)) fs.unlinkSync(bgPath);
+        throw err;
+    }
 }
+
+module.exports.onStart = async function ({ event, api }) {
+    const { threadID, messageID, senderID, mentions, type, messageReply } = event;
+    
+    let targetID;
+    if (type === "message_reply") {
+        targetID = messageReply.senderID;
+    } else {
+        const mention = Object.keys(mentions);
+        targetID = mention[0];
+    }
+
+    if (!targetID) {
+        return api.sendMessage("দয়া করে কাউকে ট্যাগ করুন অথবা তার মেসেজে রিপ্লাই দিন! 🥰", threadID, messageID);
+    }
+
+    try {
+        api.setMessageReaction("⌛", messageID, () => {}, true);
+        const imagePath = await makeImage({ one: senderID, two: targetID });
+
+        const captions = [
+            "কারণে অকারণে প্রতিদিন নিয়ম করে, তোমার মায়াতে জড়িয়ে পড়ছি আমি বারেবার!🌷",
+            "প্রিয় তুমি কি আমার জীবনের সেই গল্প হবে? যেই গল্পের শুরু থাকবে, কিন্তু কোনো শেষ থাকবে না!♥️",
+            "ভালোবাসা যদি কোনো অনুভূতি হয়, তাহলে তোমার প্রতি আমার অনুভূতি পৃথিবীর সেরা অনুভূতি।🌻ღ🌺"
+        ];
+        const caption = captions[Math.floor(Math.random() * captions.length)];
+
+        api.sendMessage({
+            body: caption,
+            attachment: fs.createReadStream(imagePath)
+        }, threadID, () => {
+            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+            api.setMessageReaction("✅", messageID, () => {}, true);
+        }, messageID);
+
+    } catch (e) {
+        console.error(e);
+        api.setMessageReaction("❌", messageID, () => {}, true);
+        api.sendMessage(`❌ এরর: ছবি তৈরি করা সম্ভব হয়নি।\n\nসম্ভাব্য কারণ: এপিআই সমস্যা বা ইন্টারনেটের ধীরগতি।`, threadID, messageID);
+    }
+};
