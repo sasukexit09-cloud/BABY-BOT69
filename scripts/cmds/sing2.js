@@ -25,7 +25,7 @@ module.exports = {
     name: "sing2",
     aliases: ["music", "play"],
     version: "2.2 STABLE 🚀",
-    author: "Dipto | Fixed by Maya",
+    author: "𝙰𝚈𝙰𝙽 | Fixed by Maya",
     countDown: 3,
     role: 0,
     noPrefix: true,
