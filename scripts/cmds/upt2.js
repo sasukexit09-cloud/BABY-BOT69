@@ -1,77 +1,162 @@
-const os = require('os');
-const moment = require('moment-timezone');
-const startTime = new Date();
+const fs = require("fs");
+const path = require("path");
+const Canvas = require("canvas");
 
 module.exports = {
   config: {
     name: "upt2",
-    version: "2.0.0",
-    hasPermssion: 0,
-    credits: "SHAHADAT SAHU",
-    description: "Show advanced system uptime.",
-    commandCategory: "system",
-    usages: "uptime",
-    prefix: false,
-    cooldowns: 5
+    aliases: ["uptime2", "upt2"],
+    version: "1.7",
+    author: "Azadx69x",
+    countDown: 5,
+    role: 0,
+    shortDescription: "Bot Status",
+    longDescription: "background card with clean premium spacing",
+    category: "system",
+    guide: "{p}uptime"
   },
 
-  run: async function ({ api, event }) {
-    const { threadID } = event;
-
+  onStart: async function ({ message, api, event }) {
+    const startTime = Date.now();
     try {
-      
-      const uptimeSec = (new Date() - startTime) / 1000;
-      const days = Math.floor(uptimeSec / 86400);
-      const hours = Math.floor((uptimeSec % 86400) / 3600);
-      const minutes = Math.floor((uptimeSec % 3600) / 60);
-      const seconds = Math.floor(uptimeSec % 60);
-      const uptimeFormatted = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-      const totalMem = os.totalmem() / 1073741824;
-      const freeMem = os.freemem() / 1073741824;
-      const usedMem = totalMem - freeMem;
-      const usedPercent = ((usedMem / totalMem) * 100).toFixed(1);
-      const cpuModel = os.cpus()[0].model;
-      const cpuCount = os.cpus().length;
-      const cpuSpeed = os.cpus()[0].speed;
-      const now = moment.tz("Asia/Dhaka");
-      const date = now.format("DD MMMM YYYY");
-      const time = now.format("hh:mm:ss A");
-      const ping = Math.floor(Math.random() * 300);
+      api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
-      let pingStatus;
-      if (ping < 100) pingStatus = "⚡ Ultra Fast";
-      else if (ping < 200) pingStatus = "🚀 Stable";
-      else if (ping < 400) pingStatus = "⚠️ Normal";
-      else pingStatus = "🐢 Slow";
+      const uptime = process.uptime();
+      const h = Math.floor(uptime / 3600);
+      const m = Math.floor((uptime % 3600) / 60);
+      const s = Math.floor(uptime % 60);
+      const uptimeStr = `${h}h ${m}m ${s}s`;
 
-      
-      const status = usedPercent < 70 ? "✅ SYSTEM STABLE" : usedPercent < 90 ? "⚠️ HIGH LOAD" : "⛔ CRITICAL";
-      const finalMsg = `
-╭───〔⚙️ SYSTEM STATUS ⚙️〕───╮
-│ 👑 𝗢𝗪𝗡𝗘𝗥: 💫𝐀𝐘𝐀𝐍 𝐀𝐇𝐌𝐄𝐃𝐙💫
-│ 🤖 𝗕𝗢𝗧: 💋 𝗕𝗔𝗕𝗬 𝗕𝗢𝗧 💋
-│ 🕐 𝗦𝗧𝗔𝗥𝗧 𝗧𝗜𝗠𝗘: ${startTime.toLocaleString()}
-│ ⏰ 𝗨𝗣𝗧𝗜𝗠𝗘: ${uptimeFormatted}
-├───────────────────────
-│ 💻 𝗢𝗦: ${os.type()} ${os.arch()}
-│ 🧠 𝗖𝗣𝗨: ${cpuModel}
-│ 🔢 𝗖𝗢𝗥𝗘𝗦: ${cpuCount}
-│ ⚙️ 𝗦𝗣𝗘𝗘𝗗: ${cpuSpeed} MHz
-│ 💾 𝗥𝗔𝗠: ${usedMem.toFixed(2)} GB / ${totalMem.toFixed(2)} GB (${usedPercent}%)
-│ 🧩 𝗡𝗢𝗗𝗘: ${process.version}
-├───────────────────────
-│ 📅 𝗗𝗔𝗧𝗘: ${date}
-│ ⏰ 𝗧𝗜𝗠𝗘: ${time}
-│ 📡 𝗣𝗜𝗡𝗚: ${ping}ms (${pingStatus})
-│ 🧭 𝗦𝗧𝗔𝗧𝗨𝗦: ${status}
-╰───────────────────────
-`;
+      const ping = Date.now() - startTime;
+      const memUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+      const memTotal = (process.memoryUsage().heapTotal / 1024 / 1024).toFixed(2);
+      const memPercent = ((memUsed / memTotal) * 100).toFixed(1);
 
-      await api.sendMessage(finalMsg, threadID);
+      const cpuUsage = Math.min(
+        ((process.cpuUsage().user + process.cpuUsage().system) / 1000000) % 100,
+        100
+      );
 
-    } catch (error) {
-      console.error("Uptime command error:", error);
-      await api.sendMessage("call admin sahu", event.threadID);
+      const threads = process._getActiveHandles().length;
+      const nodeVersion = process.version;
+      const platform = process.platform.toUpperCase();
+
+      const canvas = Canvas.createCanvas(1400, 900);
+      const ctx = canvas.getContext("2d");
+
+      const bg = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      bg.addColorStop(0, "#000428");
+      bg.addColorStop(1, "#004e92");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const containerX = 30;
+      const containerY = 30;
+      const containerW = canvas.width - 60;
+      const containerH = canvas.height - 60;
+
+      ctx.fillStyle = "rgba(255,255,255,0.07)";
+      ctx.beginPath();
+      ctx.roundRect(containerX, containerY, containerW, containerH, 45);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.beginPath();
+      ctx.roundRect(containerX, containerY, containerW, 150, 45);
+      ctx.fill();
+
+      ctx.font = "bold 78px Segoe UI";
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "center";
+      ctx.fillText("📉 BOT STATUS DASHBOARD", canvas.width / 2, containerY + 95);
+
+      ctx.font = "italic 30px Segoe UI";
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.fillText("All systems running smoothly", canvas.width / 2, containerY + 130);
+
+      const stats = [
+        { icon: "⏰", title: "SYSTEM UPTIME", value: uptimeStr, sub: "Running Time", color: "#FFD700", bar: Math.min((uptime / 3600) * 4.1667, 100) },
+        { icon: "📡", title: "NETWORK PING", value: `${ping} ms`, sub: "Latency", color: "#00FFAA", bar: Math.min(ping / 10, 100) },
+        { icon: "💾", title: "MEMORY USAGE", value: `${memUsed} MB`, sub: `${memPercent}% of ${memTotal}MB`, color: "#00FF00", bar: memPercent },
+        { icon: "📊", title: "CPU LOAD", value: `${cpuUsage.toFixed(1)}%`, sub: "Processor", color: "#FFAA00", bar: cpuUsage },
+        { icon: "⚒️", title: "NODE VERSION", value: nodeVersion, sub: "Runtime", color: "#9D4EDD", bar: 100 },
+        { icon: "👑", title: "BOT OWNER", value: "Azadx69x", sub: "Administrator", color: "#FFA500", bar: 100 }
+      ];
+
+      const boxW = (containerW - 120) / 2;
+      const boxH = 190;
+      const startX = containerX + 40;
+      const startY = containerY + 180;
+
+      stats.forEach((s, i) => {
+        const row = Math.floor(i / 2);
+        const col = i % 2;
+        const x = startX + col * (boxW + 40);
+        const y = startY + row * (boxH + 30);
+
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.beginPath();
+        ctx.roundRect(x, y, boxW, boxH, 28);
+        ctx.fill();
+
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = "bold 58px Segoe UI";
+        ctx.fillStyle = s.color;
+        ctx.fillText(s.icon, x + 35, y + 75);
+
+        ctx.font = "bold 28px Segoe UI";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(s.title, x + 200, y + 55);
+
+        ctx.font = "18px Segoe UI";
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.fillText(s.sub, x + 150, y + 90);
+
+        ctx.font = "bold 42px Segoe UI";
+        ctx.fillStyle = s.color;
+        ctx.textAlign = "right";
+        ctx.fillText(s.value, x + boxW - 35, y + 145);
+        ctx.textAlign = "left";
+
+        const barY = y + boxH - 30;
+        const barW = boxW - 70;
+
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.beginPath();
+        ctx.roundRect(x + 35, barY, barW, 12, 6);
+        ctx.fill();
+
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.roundRect(x + 35, barY, (barW * s.bar) / 100, 12, 6);
+        ctx.fill();
+
+        ctx.font = "bold 16px Segoe UI";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.textAlign = "center";
+        ctx.fillText(`${Math.min(s.bar, 100).toFixed(1)}%`, x + 35 + barW / 2, barY - 12);
+        ctx.textAlign = "left";
+      });
+
+      const filePath = path.join(__dirname, `uptime-${Date.now()}.png`);
+      fs.writeFileSync(filePath, canvas.toBuffer("image/png"));
+
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
+      await message.reply({
+        body: "✨ Bot Status Card",
+        attachment: fs.createReadStream(filePath)
+      });
+
+      setTimeout(() => fs.existsSync(filePath) && fs.unlinkSync(filePath), 5000);
+
+    } catch (err) {
+      console.error("Uptime error:", err);
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      message.reply("❌ Dashboard generate problem.");
     }
   }
 };
