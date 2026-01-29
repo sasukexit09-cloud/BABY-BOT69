@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 const baseApiUrl = async () => {
-  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
   return base.data.mahmud;
 };
 
@@ -9,7 +9,7 @@ module.exports = {
   config: {
     name: "cat",
     version: "1.7",
-    author: "MahMUD",
+    author: "𝐀𝐘𝐀𝐍",
     countDown: 10,
     role: 0,
     category: "image",
@@ -28,7 +28,7 @@ module.exports = {
       const attachments = await Promise.all(images.map(url => getStreamFromURL(url)));
       
       await api.sendMessage({
-        body: "🐱 | | 𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝐫𝐚𝐧𝐝𝐨𝐦 𝐜𝐚𝐭 𝐢𝐦𝐚𝐠𝐞𝐬",
+        body: "🐱 | | 𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝐫𝐚𝐧𝐝𝐨𝐦 𝐛𝐚𝐛𝐲 𝐜𝐚𝐭 𝐢𝐦𝐚𝐠𝐞𝐬",
         attachment: attachments
       }, event.threadID, event.messageID);
 
