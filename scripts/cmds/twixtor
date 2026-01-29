@@ -1,102 +1,157 @@
-const axios = require('axios');
+const axios = require("axios");
 
+// ===== COOLDOWN CONFIG =====
+const cooldownTime = 30 * 1000; // 30 seconds
+const cooldownMap = new Map();
+
+// ===== STREAM HELPER (HQ) =====
 async function getStreamFromURL(url) {
-  const response = await axios.get(url, { responseType: 'stream' });
-  return response.data;
+  const res = await axios({
+    method: "GET",
+    url,
+    responseType: "stream",
+    timeout: 45000,
+    maxRedirects: 5,
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      Accept: "*/*",
+      Referer: "https://www.tiktok.com/",
+    },
+  });
+  return res.data;
 }
 
+// ===== FETCH VIDEOS =====
 async function fetchTikTokVideos(query) {
   try {
-    const response = await axios.get(
-      `https://lyric-search-neon.vercel.app/kshitiz?keyword=${encodeURIComponent(query)}`
+    const res = await axios.get(
+      "https://lyric-search-neon.vercel.app/kshitiz",
+      {
+        params: { keyword: query },
+        timeout: 20000,
+      }
     );
-    return response.data;
-  } catch (error) {
-    console.error(error);
-    return null;
+
+    if (!res.data) return [];
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.data.data)) return res.data.data;
+
+    return [];
+  } catch (e) {
+    console.error("API ERROR:", e.message);
+    return [];
   }
 }
 
 module.exports = {
   config: {
     name: "twixtor",
-    version: "1.0",
-    author: "AYAN☺️✨",
+    version: "2.2",
+    author: "AYAN ☺️✨ (HQ + cooldown by Maya)",
     role: 0,
     shortDescription: {
-      en: "Anime twixtor (VIP only)",
+      en: "Anime twixtor videos (HQ)",
     },
     longDescription: {
-      en: "Search and send anime twixtor videos (VIP only)",
+      en: "High quality anime twixtor with cooldown",
     },
     category: "fun",
     guide: {
-      en: "{p}twixtor [anime name]",
+      en: "{p}twixtor naruto",
     },
   },
 
-  onStart: async function ({ api, event, args, usersData }) {
+  onStart: async function ({ api, event, args }) {
     const userID = event.senderID;
+    const now = Date.now();
 
-    // ===== VIP CHECK =====
-    const userData = await usersData.get(userID);
-    if (!userData || userData.vip !== true) {
+    // ===== COOLDOWN CHECK =====
+    if (cooldownMap.has(userID)) {
+      const lastTime = cooldownMap.get(userID);
+      const remaining = cooldownTime - (now - lastTime);
+
+      if (remaining > 0) {
+        return api.sendMessage(
+          {
+            body: `⏳ | Slow down baby 😼\n\n🕒 ${
+              Math.ceil(remaining / 1000)
+            } sec পরে আবার try করো`,
+          },
+          event.threadID,
+          event.messageID
+        );
+      }
+    }
+
+    cooldownMap.set(userID, now);
+    api.setMessageReaction("✨", event.messageID, () => {}, true);
+
+    const query = args.join(" ");
+    if (!query) {
+      cooldownMap.delete(userID);
       return api.sendMessage(
         {
-          body: "🔒 | **VIP ONLY COMMAND**\n\n🥺 Baby, তুমি VIP না\n✨ আগে VIP নাও তারপর twixtor use করো 💋",
+          body:
+            "❌ | 𝙰𝙽𝙸𝙼𝙴 𝙽𝙰𝙼𝙴 দাও\n\nExample:\n👉 twixtor naruto",
         },
         event.threadID,
         event.messageID
       );
     }
 
-    // =====================
-    api.setMessageReaction("✨", event.messageID, () => {}, true);
+    const searchQuery = `${query} anime twixtor edit hd`;
+    const videos = await fetchTikTokVideos(searchQuery);
 
-    const query = args.join(" ");
-    if (!query) {
+    if (!videos.length) {
+      cooldownMap.delete(userID);
       return api.sendMessage(
-        { body: "❌ | Anime name দাও\n\nExample: twixtor naruto" },
+        {
+          body: `😿 | **${query}** এর কোনো twixtor পাওয়া যায়নি`,
+        },
         event.threadID,
         event.messageID
       );
     }
 
-    const modifiedQuery = `${query} anime free twixtor`;
-    const videos = await fetchTikTokVideos(modifiedQuery);
+    // Prefer HD / highest quality
+    const sorted = videos.sort((a, b) => {
+      const aQ = a.hd || a.quality || 0;
+      const bQ = b.hd || b.quality || 0;
+      return bQ - aQ;
+    });
 
-    if (!videos || !Array.isArray(videos) || videos.length === 0) {
+    const pick = sorted.find(
+      (v) => v.videoUrl || v.play || v.url
+    );
+    if (!pick) {
+      cooldownMap.delete(userID);
       return api.sendMessage(
-        { body: `😿 | **${query}** এর কোনো twixtor পাওয়া যায়নি` },
+        { body: "⚠️ | 𝙰𝙽𝙸𝙼𝙴 𝚅𝙸𝙳𝙴𝙾 পাওয়া যায়নি" },
         event.threadID,
         event.messageID
       );
     }
 
-    const selectedVideo = videos[Math.floor(Math.random() * videos.length)];
-    if (!selectedVideo.videoUrl) {
-      return api.sendMessage(
-        { body: "⚠️ | Video load করতে সমস্যা হচ্ছে" },
-        event.threadID,
-        event.messageID
-      );
-    }
+    const videoUrl = pick.videoUrl || pick.play || pick.url;
 
     try {
-      const stream = await getStreamFromURL(selectedVideo.videoUrl);
+      const stream = await getStreamFromURL(videoUrl);
       await api.sendMessage(
         {
-          body: `✨ **${query} Twixtor**`,
+          body: `✨ **${query} • Twixtor (HQ)**`,
           attachment: stream,
         },
         event.threadID,
         event.messageID
       );
     } catch (err) {
-      console.error(err);
+      console.error("SEND ERROR:", err.message);
+      cooldownMap.delete(userID);
       api.sendMessage(
         {
-          body: "❌ | Video send করতে error হয়েছে\n🔁 পরে আবার try করো",
+          body:
+            "❌ | 𝚂𝙾𝚁𝚁𝚈 𝚅𝙸𝙳𝙴𝙾 𝚂𝙴𝙽𝙳 করতে সমস্যা হয়েছে\n🔁 পরে আবার try করো",
         },
         event.threadID,
         event.messageID
