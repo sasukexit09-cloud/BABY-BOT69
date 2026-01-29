@@ -1,101 +1,96 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const yts = require("yt-search");
 
-// Mock user database for balance and VIP status
-let userData = {
-  // Example structure: userID: { balance: 1000, isVIP: false }
-};
-
-const BASE_COST = 250; // Taka per use
-
-let cachedBaseAPI;
 const baseApiUrl = async () => {
-  if (cachedBaseAPI) return cachedBaseAPI;
-  const base = await axios.get("https://raw.githubusercontent.com/nazrul4x/Noobs/main/Apis.json");
-  cachedBaseAPI = base.data.api;
-  return cachedBaseAPI;
+    const base = await axios.get(
+        `https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json`
+    );
+    return base.data.api;
 };
 
-// Helper to deduct balance
-const deductBalance = (userID) => {
-  if (!userData[userID]) userData[userID] = { balance: 0, isVIP: false };
+(async () => {
+    global.apis = {
+        diptoApi: await baseApiUrl()
+    };
+})();
 
-  if (userData[userID].isVIP) return true; // VIP users skip deduction
+async function getStreamFromURL(url, pathName) {
+    try {
+        const response = await axios.get(url, {
+            responseType: "stream"
+        });
+        response.data.path = pathName;
+        return response.data;
+    } catch (err) {
+        throw err;
+    }
+}
 
-  if (userData[userID].balance >= BASE_COST) {
-    userData[userID].balance -= BASE_COST;
-    return true;
-  } else {
-    return false;
-  }
+global.utils = {
+    ...global.utils,
+    getStreamFromURL: global.utils.getStreamFromURL || getStreamFromURL
 };
+
+function getVideoID(url) {
+    const checkurl = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
+    const match = url.match(checkurl);
+    return match ? match[1] : null;
+}
+
+const config = {
+    name: "video",
+    author: "Mesbah Saxx",
+    credits: "Mesbah Saxx",
+    version: "1.0.0",
+    role: 0,
+    hasPermssion: 0,
+    description: "",
+    usePrefix: true,
+    prfix: true,
+    category: "media",
+    commandCategory: "media",
+    cooldowns: 5,
+    countDown: 5,
+};
+
+async function onStart({ api, args, event }) {
+    try {
+        let videoID,w;
+        const url = args[0];
+
+        if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
+            videoID = getVideoID(url);
+            if (!videoID) {
+                await api.sendMessage("Invalid YouTube URL.", event.threadID, event.messageID);
+            }
+        } else {
+            const songName = args.join(' ');
+             w = await api.sendMessage(`Searching song "${songName}"... `, event.threadID);
+            const r = await yts(songName);
+            const videos = r.videos.slice(0, 50);
+
+            const videoData = videos[Math.floor(Math.random() * videos.length)];
+            videoID = videoData.videoId;
+        }
+
+        const { data: { title, quality, downloadLink } } = await axios.get(`${global.apis.diptoApi}/ytDl3?link=${videoID}&format=mp4`);
+
+        api.unsendMessage(w.messageID);
+        
+        const o = '.php';
+        const shortenedLink = (await axios.get(`https://tinyurl.com/api-create${o}?url=${encodeURIComponent(downloadLink)}`)).data;
+
+        await api.sendMessage({
+            body: `🔖 - 𝚃𝚒𝚝𝚕𝚎: ${title}\n✨ - 𝚀𝚞𝚊𝚕𝚒𝚝𝚢: ${quality}\n\n📥 - 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝙻𝚒𝚗𝚔: ${shortenedLink}`,
+            attachment: await global.utils.getStreamFromURL(downloadLink, title+'.mp4')
+        }, event.threadID, event.messageID);
+    } catch (e) {
+        api.sendMessage(e.message || "An error occurred.", event.threadID, event.messageID);
+    }
+}
 
 module.exports = {
-  config: {
-    name: "video",
-    aliases: ["music", "searchsong"],
-    version: "2.1.0",
-    author: "Nazrul + Edited by ChatGPT",
-    countDowns: 20,
-    role: 0,
-    description: "Search or Download YouTube Videos (250 Taka per use)",
-    category: "Media",
-    guide: {
-      en: "use {pn} song songName or YouTube link"
-    }
-  },
-
-  onStart: async function ({ api, event, args }) {
-    const userID = event.senderID;
-
-    if (!deductBalance(userID)) {
-      return api.sendMessage(
-        "❌ You don’t have enough balance (250 Taka required) or you are not VIP. Please top-up or buy VIP!",
-        event.threadID,
-        event.messageID
-      );
-    }
-
-    const songQuery = args.join(" ").trim();
-    const isUrl = songQuery.startsWith('https://') || songQuery.startsWith('http://');
-
-    if (isUrl) {
-      await this.downloadVideo(api, event, songQuery);
-    } else if (songQuery.length > 0) {
-      await this.searchSong(api, event, songQuery);
-    } else {
-      api.sendMessage("🎵 Please provide a Song Name or YouTube URL!", event.threadID, event.messageID);
-    }
-  },
-
-  downloadVideo: async function (api, event, videoUrl, videoTitle = "Unknown", videoDuration = "Unknown") {
-    try {
-      const res = await axios.get(`${await baseApiUrl()}/nazrul/ytMp4?url=${encodeURIComponent(videoUrl)}`);
-      const videoData = res.data;
-
-      if (!videoData.d_url) throw new Error('Download link not found!');
-
-      const videoPath = path.resolve(__dirname, `video_${Date.now()}.mp4`);
-      const writer = fs.createWriteStream(videoPath);
-      const videoStream = (await axios.get(videoData.d_url, { responseType: 'stream' })).data;
-
-      await new Promise((resolve, reject) => {
-        videoStream.pipe(writer);
-        writer.on('finish', resolve);
-        writer.on('error', reject);
-      });
-
-      await api.sendMessage({
-        body: `🎬 Here's your Video Song!\n\n♡ Title: ${videoData.title}\n♡ Duration: ${videoDuration}\n💸 250 Taka deducted!`,
-        attachment: fs.createReadStream(videoPath)
-      }, event.threadID, () => fs.unlinkSync(videoPath), event.messageID);
-
-    } catch (error) {
-      console.error('Error downloading video:', error.message);
-      api.sendMessage(`❌ Error: ${error.message}`, event.threadID, event.messageID);
-    }
-  },
-
-  // searchSong and onReply remain mostly same, balance deduction handled in onStart
+    config,
+    onStart,
+    run: onStart
 };
