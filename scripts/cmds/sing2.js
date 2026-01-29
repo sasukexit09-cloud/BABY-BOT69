@@ -7,9 +7,7 @@ const crypto = require("crypto");
 let cachedBaseAPI = null;
 async function baseApiUrl() {
   if (cachedBaseAPI) return cachedBaseAPI;
-  const { data } = await axios.get(
-    "    "https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json"
-  );
+  const { data } = await axios.get("https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json");
   cachedBaseAPI = data.api;
   return cachedBaseAPI;
 }
