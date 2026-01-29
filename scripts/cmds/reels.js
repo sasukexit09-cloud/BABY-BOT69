@@ -4,7 +4,12 @@ const path = require('path');
 const os = require('os');
 
 async function downloadVideo(url, destination) {
-  const response = await axios({ url, method: 'GET', responseType: 'stream' });
+  const response = await axios({
+    url,
+    method: 'GET',
+    responseType: 'stream'
+  });
+
   return new Promise((resolve, reject) => {
     const writer = fs.createWriteStream(destination);
     response.data.pipe(writer);
@@ -16,102 +21,112 @@ async function downloadVideo(url, destination) {
 module.exports = {
   config: {
     name: "reels",
-    version: "1.2",
-    author: "kshitiz",
+    version: "1.3",
+    author: "kshitiz (edited by Maya)",
     aliases: [],
     category: "FUN",
-    shortDescription: { en: "View Instagram reels by hashtag (VIP only)" },
-    longDescription: { en: "View Instagram reels by providing a hashtag and reply with the reel list by number" },
+    shortDescription: { en: "View Instagram reels by hashtag" },
+    longDescription: { en: "View Instagram reels by hashtag and reply with number to download" },
     guide: { en: "{p}reels [hashtag]" }
   },
 
-  onStart: async function ({ api, event, args, usersData }) {
+  onStart: async function ({ api, event, args }) {
     const { senderID, threadID, messageID } = event;
 
-    // ===== VIP CHECK =====
-    const userData = await usersData.get(senderID);
-    if (!userData || userData.vip !== true) {
+    const hashtag = args[0];
+    if (!hashtag) {
       return api.sendMessage(
-        "🔒 | **VIP ONLY COMMAND**\n\n🥺 Baby, তুমি VIP না\n✨ আগে VIP নাও তারপর reels use করো 💋",
+        "⚠️ Hashtag দাও\nExample: reels zoro",
         threadID,
         messageID
       );
     }
-    // =====================
-
-    const hashtag = args[0];
-    if (!hashtag) return api.sendMessage(
-      'Please provide a hashtag.\nExample: {p}reels zoro',
-      threadID,
-      messageID
-    );
 
     try {
-      const { data } = await axios.get(`https://reels-insta.vercel.app/reels?hashtag=${hashtag}`);
-      const videoURLs = data.videoURLs;
-      if (!videoURLs || videoURLs.length === 0) {
-        return api.sendMessage(`No reels found for hashtag ${hashtag}.`, threadID, messageID);
+      const { data } = await axios.get(
+        `https://reels-insta.vercel.app/reels?hashtag=${encodeURIComponent(hashtag)}`
+      );
+
+      const videoURLs = data?.videoURLs;
+      if (!Array.isArray(videoURLs) || videoURLs.length === 0) {
+        return api.sendMessage(
+          `😕 #${hashtag} এর জন্য কোনো reels পাওয়া যায়নি`,
+          threadID,
+          messageID
+        );
       }
 
-      const message = `Choose a reel by replying with its number:\n\n${videoURLs.map((url, i) => `${i+1}. ${url.slice(0,50)}...`).join('\n')}`;
+      const list = videoURLs
+        .map((url, i) => `${i + 1}. Reel ${i + 1}`)
+        .join('\n');
 
-      api.sendMessage(message, threadID, (err, info) => {
-        if (!global.GoatBot?.onReply || typeof global.GoatBot.onReply.set !== 'function') return;
-
-        global.GoatBot.onReply.set(info.messageID, {
-          commandName: 'reels',
-          messageID: info.messageID,
-          author: senderID,
-          videoURLs
-        });
-      });
+      api.sendMessage(
+        `🎬 Instagram Reels (#${hashtag})\n\n${list}\n\n👉 নাম্বার লিখে reply করো`,
+        threadID,
+        (err, info) => {
+          if (!global.GoatBot?.onReply) return;
+          global.GoatBot.onReply.set(info.messageID, {
+            commandName: "reels",
+            author: senderID,
+            videoURLs
+          });
+        }
+      );
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      api.sendMessage('An error occurred while fetching reels. Please try again later.', threadID, messageID);
+      console.error(err);
+      api.sendMessage(
+        "❌ Reels fetch করতে সমস্যা হচ্ছে, পরে try করো",
+        threadID,
+        messageID
+      );
     }
   },
 
-  onReply: async function ({ api, event, Reply, args, usersData }) {
+  onReply: async function ({ api, event, Reply, args }) {
     if (!Reply) return;
 
     const { senderID, threadID, messageID } = event;
+    const { author, videoURLs } = Reply;
 
-    // ===== VIP CHECK =====
-    const userData = await usersData.get(senderID);
-    if (!userData || userData.vip !== true) {
+    if (senderID !== author) return;
+
+    const index = parseInt(args[0]);
+    if (isNaN(index) || index < 1 || index > videoURLs.length) {
       return api.sendMessage(
-        "🔒 | VIP only\n✨ Download করার জন্য VIP লাগবে 💋",
+        "⚠️ সঠিক নাম্বার দাও",
         threadID,
         messageID
       );
     }
-    // =====================
-
-    const { author, messageID: origMsgID, videoURLs } = Reply;
-    if (senderID !== author || !videoURLs) return;
-
-    const reelIndex = parseInt(args[0], 10);
-    if (isNaN(reelIndex) || reelIndex <= 0 || reelIndex > videoURLs.length) {
-      return api.sendMessage('Invalid input. Please provide a valid number.', threadID, messageID);
-    }
 
     try {
-      const selectedVideoURL = videoURLs[reelIndex - 1];
-      const tempVideoPath = path.join(os.tmpdir(), `reels_video_${Date.now()}.mp4`);
+      const videoURL = videoURLs[index - 1];
+      const filePath = path.join(
+        os.tmpdir(),
+        `reel_${Date.now()}.mp4`
+      );
 
-      await downloadVideo(selectedVideoURL, tempVideoPath);
+      await downloadVideo(videoURL, filePath);
 
-      await api.sendMessage({
-        body: 'Here is the Instagram reel:',
-        attachment: fs.createReadStream(tempVideoPath)
-      }, threadID, messageID);
+      await api.sendMessage(
+        {
+          body: "🎥 Instagram Reel",
+          attachment: fs.createReadStream(filePath)
+        },
+        threadID,
+        messageID
+      );
 
-      fs.unlinkSync(tempVideoPath);
+      fs.unlinkSync(filePath);
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      api.sendMessage('An error occurred while processing the reel. Please try again later.', threadID, messageID);
+      console.error(err);
+      api.sendMessage(
+        "❌ Reel download করতে সমস্যা হয়েছে",
+        threadID,
+        messageID
+      );
     } finally {
-      if (global.GoatBot?.onReply?.delete) global.GoatBot.onReply.delete(origMsgID);
+      global.GoatBot?.onReply?.delete(event.messageReply?.messageID);
     }
   }
 };
