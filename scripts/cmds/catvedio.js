@@ -13,7 +13,7 @@ module.exports = {
     aliases: ["catvid"],
     version: "1.7",
     role: 0,
-    author: "MahMUD",
+    author: "𝙰𝚈𝙰𝙽",
     category: "media",
     guide: {
       en: "Use {pn} to get a random cat video."
@@ -48,7 +48,7 @@ module.exports = {
 
       writer.on("finish", () => {
         api.sendMessage({
-          body: "✨ | 𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝐂𝐚𝐭 𝐯𝐢𝐝𝐞𝐨",
+          body: "✨ | 𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝐛𝐛𝐲 𝐜𝐚𝐭 𝐯𝐢𝐝𝐞𝐨",
           attachment: fs.createReadStream(filePath)
         }, event.threadID, () => fs.unlinkSync(filePath), event.messageID);
       });
