@@ -27,7 +27,7 @@ module.exports = {
 };
 
 async function sendAlive(message) {
-  const voiceUrl = "https://files.catbox.moe/fq5vsd.mp3";
+  const voiceUrl = "https://files.catbox.moe/qbzn1a.mp3";
   const voicePath = `${__dirname}/cache/alive.mp3`;
 
   try {
@@ -44,11 +44,11 @@ async function sendAlive(message) {
       await message.reply({
         body: `
 ───────────────
-✨ ADMIN  AYAN ✨
+✨ 𝙰𝙳𝙼𝙸𝙽 𝙰𝚈𝙰𝙽 ✨
 
-Bot is alive and kicking!
-Made by: AYAN BBE💋
-Ready to serve you.
+𝙱𝙰𝙱𝚈 𝙸𝚂 𝙰𝙻𝙸𝚅𝙴 𝚄𝙼𝙼𝙼𝙼𝙰𝙷 😽💋
+𝙼𝙰𝙳𝙴 𝙱𝚈: 𝙰𝚈𝙰𝙽𝚄 𝙱𝙱𝙴💋
+𝙷𝙸𝙴 𝙱𝙰𝙱𝚈 𝙺𝙸𝚂𝚂 𝙼𝙴 💋
 
 ───────────────`,
         attachment: fs.createReadStream(voicePath)
