@@ -1,16 +1,25 @@
 module.exports.config = {
     name: "logout",
-    version: "1.0.1",
-    hasPermssion: 2,
-    credits: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 -𝐁𝐎𝐓 ⚠️ 𝑻𝑬𝑨𝑴_ ☢️",
-    description: "Logout ACC Bot",
-    commandCategory: "System",
-    usages: "",
-    cooldowns: 0
+    version: "1.0.2",
+    role: 2, // শুধুমাত্র অ্যাডমিন ব্যবহার করতে পারবে
+    author: "—͟͟͞͞𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 & Gemini",
+    description: "বট অ্যাকাউন্টটি ফেসবুক থেকে লগআউট করে দেওয়া",
+    category: "System",
+    guide: { en: "{pn}" },
+    countDown: 0
 };
 
-module.exports.run = async function({ api, event })
-{
-api.sendMessage("Logout ...",event.threadID,event.messageID)
-api.logout()
-}
+module.exports.onStart = async function({ api, event }) {
+    const { threadID, messageID } = event;
+
+    try {
+        // লগআউট প্রসেস শুরু হওয়ার মেসেজ
+        await api.sendMessage("🚀 বটের সেশন শেষ করা হচ্ছে... লগআউট সফল হলে বট অফলাইন হয়ে যাবে।", threadID, messageID);
+        
+        // ফেসবুক সেশন থেকে লগআউট
+        return api.logout();
+    } catch (error) {
+        console.error(error);
+        return api.sendMessage("❌ লগআউট করার সময় একটি সমস্যা হয়েছে।", threadID, messageID);
+    }
+};
