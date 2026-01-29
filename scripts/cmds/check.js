@@ -25,7 +25,7 @@ const COMMAND = {
                 name: "check",
                 aliases: ["chk"],
                 version: "1.3",
-                author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
+                author: "Chitron Bhattacharjee",
                 countDown: 5,
                 role: 0,
                 shortDescription: { en: "Bot health check" },
