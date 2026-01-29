@@ -7,7 +7,7 @@ module.exports = {
     name: "dl",
     aliases: ["download"],
     version: "1.1",
-    author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎",
+    author: "♡︎ 𝙰𝚈𝙰𝙽 ♡︎",
     countDown: 2,
     role: 0,
     description: {
