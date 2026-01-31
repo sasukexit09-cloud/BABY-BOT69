@@ -1,94 +1,65 @@
 const axios = require("axios");
+const fs = require("fs-extra");
 const path = require("path");
-const fs = require("fs");
+
+const mahmud = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+  return base.data.mahmud;
+};
 
 module.exports = {
   config: {
-    name: "pinterest",
-    aliases: ["pin"],
-    version: "1.3",
-    author: "ArYAN | Maya (VIP removed)",
+    name: "pin",
+    aliases: ["pinterest"],
+    version: "1.7",
+    author: "MahMUD",
+    countDown: 10,
     role: 0,
-    countDown: 20,
-    longDescription: {
-      en: "Search Pinterest images (FREE for everyone)"
-    },
-    category: "media",
-    guide: {
-      en: "{pn} <search query> - <number>\nExample: {pn} cat - 10"
-    }
+    category: "image gen",
+    guide: { en: "{pn} query - amount\nExample: {pn} goku ultra - 10" }
   },
 
-  onStart: async function ({ api, event, args }) {
+  onStart: async function ({ api, event, args, message }) {
+    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);
+    if (module.exports.config.author !== obfuscatedAuthor) {
+      return api.sendMessage(
+        "You are not authorized to change the author name.\n",
+        event.threadID,
+        event.messageID
+      );
+    }
+
     try {
-      const keySearch = args.join(" ");
-      if (!keySearch.includes("-")) {
-        return api.sendMessage(
-          `❌ Usage error\nExample:\n{pn} cat - 10`,
-          event.threadID,
-          event.messageID
-        );
-      }
+      const queryAndLength = args.join(" ").split("-");
+      const keySearch = queryAndLength[0]?.trim();
+      const count = queryAndLength[1]?.trim();
+      const numberSearch = count ? Math.min(parseInt(count), 20) : 6;
 
-      const query = keySearch.substring(0, keySearch.indexOf("-")).trim();
-      let count = parseInt(keySearch.split("-").pop()) || 6;
-      if (count > 20) count = 20;
+      if (!keySearch) return message.reply("❌ | Please enter a search query.\nExample: goku ultra - 10");
 
-      const apiUrl = `https://aryan-error-api.onrender.com/pinterest?search=${encodeURIComponent(
-        query
-      )}&count=${count}`;
+      const apiUrl = await mahmud();
+      const response = await axios.get(
+        `${apiUrl}/api/pin?query=${encodeURIComponent(keySearch)}&limit=${numberSearch}`
+      );
 
-      const res = await axios.get(apiUrl);
-      const images = res.data?.data;
-
-      if (!images || !images.length) {
-        return api.sendMessage(
-          "❌ No images found 🥺",
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      const cacheDir = path.join(__dirname, "cache_pin");
-      if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+      const data = response.data.images;
+      if (!data || data.length === 0) return message.reply("❌ | No images found for your query.");
 
       const attachments = [];
-
-      for (let i = 0; i < Math.min(count, images.length); i++) {
-        try {
-          const imgRes = await axios.get(images[i], {
-            responseType: "arraybuffer",
-            headers: { "User-Agent": "Mozilla/5.0" }
-          });
-
-          const imgPath = path.join(cacheDir, `${i + 1}.jpg`);
-          await fs.promises.writeFile(imgPath, imgRes.data);
-          attachments.push(fs.createReadStream(imgPath));
-        } catch (err) {
-          console.error("Image download failed:", err.message);
-        }
+      for (let i = 0; i < data.length; i++) {
+        const imgUrl = data[i];
+        const imgRes = await axios.get(imgUrl, { responseType: "arraybuffer" });
+        const imgPath = path.join(__dirname, `temp_pin_${Date.now()}_${i}.jpg`);
+        await fs.outputFile(imgPath, imgRes.data);
+        attachments.push(fs.createReadStream(imgPath));
       }
 
-      await api.sendMessage(
-        {
-          body: `✨ Pinterest Images\n🔎 Search: ${query}`,
-          attachment: attachments
-        },
-        event.threadID,
-        event.messageID
-      );
+      await message.reply({ body: `✅ | Here are your ${attachments.length} images for "${keySearch}"`, attachment: attachments });
+      attachments.forEach(att => fs.unlink(att.path, () => {}));
 
-      // ===== CLEAN CACHE =====
-      if (fs.existsSync(cacheDir)) {
-        await fs.promises.rm(cacheDir, { recursive: true, force: true });
-      }
-    } catch (error) {
-      console.error(error);
-      return api.sendMessage(
-        `❌ Error: ${error.message}`,
-        event.threadID,
-        event.messageID
-      );
+    } catch (err) {
+      console.error(err);
+      return message.reply(`🥹error, contact MahMUD`);
     }
   }
 };
