@@ -5,64 +5,70 @@ const path = require("path");
 module.exports = {
     config: {
         name: "buttslap",
-        version: "1.4",
+        version: "2.1",
         author: "Amit max ⚡ & Gemini",
         countDown: 5,
         role: 0,
-        shortDescription: "Buttslap image with high quality avatar",
-        longDescription: "Generate a funny buttslap image with auto-detected mentions and HQ avatars.",
+        shortDescription: "Buttslap image with FB new mention style",
+        longDescription: "Generate a buttslap image by mentioning or replying to a user.",
         category: "fun",
-        guide: { en: "{pn} @tag" }
+        guide: { en: "{pn} @tag or reply to a message" }
     },
 
-    langs: {
-        vi: { noTag: "Bạn phải tag người muốn đánh mông" },
-        en: { noTag: "You must tag the person you want to slap" }
-    },
+    onStart: async function ({ event, message, args }) {
+        const { senderID, mentions, messageReply } = event;
+        
+        let uid1 = senderID; // যে কমান্ড দিচ্ছে
+        let uid2;            // টার্গেট
+        let targetName = "";
 
-    onStart: async function ({ event, message, args, getLang }) {
-        const { senderID, mentions } = event;
-        const mentionIDs = Object.keys(mentions);
+        // ১. আইডি ডিটেকশন (Reply অথবা Mention)
+        if (messageReply) {
+            uid2 = messageReply.senderID;
+            targetName = "this person"; // রিপ্লাইয়ের ক্ষেত্রে নাম ডিফল্ট রাখা হয়েছে
+        } else if (Object.keys(mentions).length > 0) {
+            uid2 = Object.keys(mentions)[0];
+            targetName = mentions[uid2].replace("@", "");
+        } else {
+            return message.reply("দয়া করে একজনকে মেনশন করুন অথবা যার ওপর ইফেক্ট দিতে চান তার মেসেজে রিপ্লাই দিন।");
+        }
 
-        // ১. মেনশন চেক এবং সেন্ডার ডিটেকশন
-        if (mentionIDs.length === 0) return message.reply(getLang("noTag"));
+        // ২. নিজেকে নিজে ইফেক্ট দেওয়া আটকানো
+        if (uid1 == uid2) return message.reply("নিজেকে নিজে কি এসব করা ঠিক? 🐸");
 
-        const uid1 = senderID; // যে কমান্ড দিচ্ছে তার আইডি
-        const uid2 = mentionIDs[0]; // যাকে মেনশন করা হয়েছে তার আইডি
-
-        // ২. আপনার দেওয়া Access Token এবং High Quality লিঙ্ক
+        // ৩. Access Token ও HQ Avatar URLs
         const accessToken = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
         const avatar1 = `https://graph.facebook.com/${uid1}/picture?width=1500&height=1500&access_token=${accessToken}`;
         const avatar2 = `https://graph.facebook.com/${uid2}/picture?width=1500&height=1500&access_token=${accessToken}`;
 
+        const tmpDir = path.join(__dirname, "tmp");
+        const filePath = path.join(tmpDir, `buttslap_${Date.now()}.png`);
+
         try {
-            // ৩. ইমেজ জেনারেশন (Spank mode)
+            await fs.ensureDir(tmpDir);
+
+            // ৪. ইমেজ জেনারেশন (Spank mode)
             const imgBuffer = await new DIG.Spank().getImage(avatar1, avatar2);
+            await fs.writeFile(filePath, Buffer.from(imgBuffer));
 
-            const tmpDir = path.join(__dirname, "tmp");
-            if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+            // ৫. FB New Style Mention Logic
+            const msgBody = targetName !== "this person" ? `এই নে কড়া ডোজ ${targetName}! 🍑👋` : "এই নে কড়া ডোজ! 🍑👋";
 
-            const filePath = path.join(tmpDir, `${uid1}_${uid2}_spank.png`);
-            fs.writeFileSync(filePath, Buffer.from(imgBuffer));
-
-            // ৪. মেসেজ থেকে মেনশন নাম রিমুভ করা
-            let content = args.join(" ");
-            for (const id in mentions) {
-                const name = mentions[id];
-                content = content.replace(name, "").replace("@", "");
-            }
-
-            // ৫. রিপ্লাই পাঠানো এবং ফাইল ডিলিট করা
-            message.reply({ 
-                body: content.trim() || "এই নে কড়া ডোজ! 🍑👋", 
-                attachment: fs.createReadStream(filePath) 
+            // ৬. সেন্ড মেথড
+            return message.reply({
+                body: msgBody,
+                mentions: targetName !== "this person" ? [{
+                    tag: targetName,
+                    id: uid2
+                }] : [],
+                attachment: fs.createReadStream(filePath)
             }, () => {
                 if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
             });
 
         } catch (err) {
-            console.error("❌ buttslap command error:", err);
-            message.reply("ছবি তৈরি করতে সমস্যা হয়েছে। আপনার টোকেন বা ইউজার আইডি চেক করুন।");
+            console.error(err);
+            return message.reply("ছবি তৈরি করতে সমস্যা হয়েছে। আপনার টোকেন বা ইউজার আইডি চেক করুন।");
         }
     }
 };
