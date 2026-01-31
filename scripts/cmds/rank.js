@@ -40,7 +40,7 @@ module.exports = {
     name: "rank",
     aliases: ["level"],
     version: "FULL",
-    author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴 + 𝙼𝙰𝚈𝙰",
+    author: "𝙰𝚈𝙰𝙽 + Maya",
     role: 0,
     category: "ranking",
     shortDescription: { en: "Rank image + text" }
@@ -149,7 +149,7 @@ module.exports = {
 
     // ===== TYPEWRITER TEXT =====
     const text =
-`🍓 𝙱𝙰𝙱𝚈 𝚈𝙾𝚄𝚁 𝚁𝙰𝙽𝙺 𝙸𝙽𝙵𝙾 🍓
+🍓 𝙱𝙰𝙱𝚈 𝚄𝚁 𝚁𝙰𝙽𝙺 𝙸𝙽𝙵𝙾 🍓
 ──────────────────
 𝙽𝙰𝙼𝙴  : ${name}
 𝚄𝙸𝙳   : ${targetID}
