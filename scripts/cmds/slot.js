@@ -99,13 +99,13 @@ function calculateWinnings(s1, s2, s3, amount) {
 
 function formatResult({ name, amount, result, status, balance }) {
   return (
-    `🎰 SLOT MACHINE 🎰\n` +
+    `🍓 𝙱𝙰𝙱𝚈 𝚈𝙾𝚄𝚁 𝚂𝙻𝙾𝚃 🍓\n` +
     `╔═════════════════╗\n` +
-    `👤 Name      : ${name}\n` +
-    `💰 Bet       : $${amount}\n` +
-    `🎲 Result    : ${result.join(" | ")}\n` +
-    `🏆 Status    : ${status}\n` +
-    `💳 Balance   : $${balance}\n` +
+    `👤 𝙽𝙰𝙼𝙴      : ${name}\n` +
+    `💰 𝙱𝙴𝚃       : $${amount}\n` +
+    `🎲 𝚁𝙴𝚂𝚄𝙻𝚃    : ${result.join(" | ")}\n` +
+    `🏆 𝚂𝚃𝙰𝚃𝚄𝚂    : ${status}\n` +
+    `💳 𝙱𝙰𝙻𝙰𝙽𝙲𝙴   : $${balance}\n` +
     `╚═════════════════╝`
   );
 }
