@@ -1,69 +1,73 @@
 const axios = require("axios");
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
   config: {
-    name: "alldl",
-    aliases: ["autodl"],
-    version: "1.7.2",
-    author: "Nazrul",
+    name: "autodl",
+    version: "2.0.0",
+    author: "rX x Rahat",
+    countDown: 2, // Cooldown komiye deya hoyeche
     role: 0,
-    description: "Auto-download media from any platform",
+    description: { en: "Ultra-fast auto video downloader" },
     category: "media",
-    guide: { en: "Send any media link" }
+    guide: { en: "Paste link and wait for magic" }
   },
 
-  onStart: async function({}) {},
+  onStart: async function ({ api, event }) {
+    return api.sendMessage("⚡ Auto-downloader is active!", event.threadID, event.messageID);
+  },
 
-  onChat: async function({ api, event }) {
-    const url = event.body?.match(/https?:\/\/[^\s]+/)?.[0];
-    if (!url) return;
+  onChat: async function ({ api, event }) {
+    const { body, threadID, messageID } = event;
+    if (!body || !body.startsWith("https://")) return;
+
+    // Fast Regex Check
+    const isMedia = /youtu\.be|youtube\.com|tiktok\.com|instagram\.com|facebook\.com|fb\.watch/.test(body);
+    if (!isMedia) return;
+
+    const { alldown } = require("rx-dawonload");
 
     try {
-      api.setMessageReaction("🦆", event.messageID, () => {}, true);
+      // Non-blocking reaction
+      api.setMessageReaction("⚡", messageID, () => {}, true);
 
-      const apiUrl = (await axios.get("https://raw.githubusercontent.com/nazrul4x/Noobs/main/Apis.json")).data.api;
-      const { data } = await axios.get(`${apiUrl}/nazrul/alldlxx?url=${encodeURIComponent(url)}`);
-      if (!data.url) throw new Error(data.error || "No download link found");
+      // Fast fetching
+      const res = await alldown(body.trim());
+      if (!res || !res.url) return api.setMessageReaction("❌", messageID, () => {}, true);
 
-      const noticeMsg = await api.sendMessage(
-        "- আহহহ বেবি আস্তে 🥵, একটু ওয়েট করো ডাউনলোড করে দিচ্ছি.!🐤",
-        event.threadID
-      );
+      // Create stream instead of writing full file first
+      const cachePath = path.join(__dirname, "cache", `fast_${Date.now()}.mp4`);
+      if (!fs.existsSync(path.join(__dirname, "cache"))) fs.mkdirSync(path.join(__dirname, "cache"));
 
-      const filePath = path.join(__dirname, `n_${Date.now()}.mp4`);
-      const writer = fs.createWriteStream(filePath);
+      // Use Axios stream for high speed
       const response = await axios({
-        url: data.url,
-        method: "GET",
-        responseType: "stream",
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "*/*",
-          "Connection": "keep-alive"
-        }
+        method: 'get',
+        url: res.url,
+        responseType: 'stream',
+        headers: { 'User-Agent': 'Mozilla/5.0' }
       });
 
+      const writer = fs.createWriteStream(cachePath);
       response.data.pipe(writer);
-      await new Promise((resolve, reject) => {
-        writer.on("finish", resolve);
-        writer.on("error", reject);
+
+      writer.on('finish', () => {
+        api.sendMessage({
+          body: `✅ 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲\n🚀 𝗦𝗽𝗲𝗲𝗱: 𝚄𝙻𝚃𝚁𝙰 𝙵𝙰𝚂𝚃\n📍 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${res.title || 'Media'}`,
+          attachment: fs.createReadStream(cachePath)
+        }, threadID, (err) => {
+          if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath);
+          if (!err) api.setMessageReaction("✅", messageID, () => {}, true);
+        }, messageID);
       });
 
-      await api.sendMessage({
-        body: `${data.t}\n🛠️ Platform: ${data.p}`,
-        attachment: fs.createReadStream(filePath)
-      }, event.threadID);
+      writer.on('error', (err) => {
+        throw err;
+      });
 
-      if (noticeMsg?.messageID) api.unsendMessage(noticeMsg.messageID);
-
-      fs.unlink(filePath, () => {});
-      api.setMessageReaction("✅", event.messageID, () => {}, true);
-
-    } catch (e) {
-      api.setMessageReaction("❌", event.messageID, () => {}, true);
-      console.log(e.message);
+    } catch (err) {
+      console.error(err);
+      api.setMessageReaction("❌", messageID, () => {}, true);
     }
   }
 };
