@@ -2,142 +2,86 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
-// ===== BASE API =====
-const baseApiUrl = async () => {
-  return "https://www.noobs-api.top/dipto";
-};
-
-// ===== COOLDOWN SYSTEM =====
 const cooldown = new Map();
-const COOLDOWN_TIME = 30 * 1000; // 30 seconds per user
+const COOLDOWN_TIME = 30 * 1000;
 
 module.exports.config = {
   name: "tiktok",
-  version: "2.0",
-  author: "AYAN BBE💋 (ALL USERS by Maya)",
+  version: "2.1",
+  author: "AYAN BBE",
   countDown: 5,
   role: 0,
-  description: {
-    en: "Search & download TikTok videos (All users)",
-  },
+  description: { en: "Search & download TikTok videos" },
   category: "MEDIA",
-  guide: {
-    en:
-      "{pn} <search> - <optional: number>\n" +
-      "Example:\n{pn} caredit - 20",
-  },
+  guide: { en: "{pn} <search> - <limit>" },
 };
 
 module.exports.onStart = async function ({ api, args, event }) {
-  const userId = event.senderID;
-  const now = Date.now();
+  const { threadID, messageID, senderID } = event;
 
-  // ===== COOLDOWN CHECK =====
-  if (cooldown.has(userId)) {
-    const expire = cooldown.get(userId);
-    if (now < expire) {
-      const wait = Math.ceil((expire - now) / 1000);
-      return api.sendMessage(
-        `⏳ Slow down 😅\nTry again after ${wait}s`,
-        event.threadID,
-        event.messageID
-      );
+  // 1. Cache Folder Check (Fix: Error handle kore)
+  const cacheDir = path.join(__dirname, "cache");
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+
+  // 2. Cooldown Check
+  if (cooldown.has(senderID)) {
+    const expire = cooldown.get(senderID);
+    if (Date.now() < expire) {
+      return api.sendMessage(`⏳ Slow down! Try again in ${Math.ceil((expire - Date.now()) / 1000)}s`, threadID, messageID);
     }
   }
-  cooldown.set(userId, now + COOLDOWN_TIME);
+  cooldown.set(senderID, Date.now() + COOLDOWN_TIME);
 
-  // ===== PARSE SEARCH =====
   let search = args.join(" ");
-  let searchLimit = 30;
+  if (!search) return api.sendMessage("❌ Please provide a search keyword.", threadID, messageID);
 
+  let searchLimit = 30;
   const match = search.match(/^(.+)\s*-\s*(\d+)$/);
   if (match) {
     search = match[1].trim();
-    const parsed = parseInt(match[2], 10);
-    if (!isNaN(parsed)) searchLimit = parsed;
+    searchLimit = parseInt(match[2]);
   }
-
-  if (!search) {
-    return api.sendMessage(
-      "❌ Please provide a search keyword.\nExample: tiktok caredit",
-      event.threadID
-    );
-  }
-
-  const apiUrl = `${await baseApiUrl()}/tiktoksearch?search=${encodeURIComponent(
-    search
-  )}&limit=${searchLimit}`;
 
   try {
-    const response = await axios.get(apiUrl, { timeout: 15000 });
-    const data = response.data?.data;
+    api.sendMessage("🔍 Searching TikTok...🍓", threadID, messageID);
 
-    if (!Array.isArray(data) || !data.length) {
-      return api.sendMessage(
-        "❌ No videos found for your search.",
-        event.threadID
-      );
-    }
+    const apiUrl = `https://www.noobs-api.top/dipto/tiktoksearch?search=${encodeURIComponent(search)}&limit=${searchLimit}`;
+    const res = await axios.get(apiUrl);
+    const data = res.data?.data;
 
+    if (!data || data.length === 0) return api.sendMessage("❌ No videos found.😿", threadID);
+
+    // Random video pick
     const videoData = data[Math.floor(Math.random() * data.length)];
-    if (!videoData.video) {
-      return api.sendMessage(
-        "⚠️ Invalid video source.",
-        event.threadID
-      );
-    }
+    const videoUrl = videoData.video || videoData.nowatermark; // Backup key check
 
-    // ===== HQ DOWNLOAD =====
-    const filePath = path.join(
-      __dirname,
-      "cache",
-      `${Date.now()}.mp4`
-    );
+    if (!videoUrl) return api.sendMessage("⚠️ Video URL not found in API.🍓", threadID);
 
-    const videoStream = await axios({
-      method: "GET",
-      url: videoData.video,
-      responseType: "stream",
-      timeout: 45000,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-        Referer: "https://www.tiktok.com/",
-        Accept: "*/*",
-      },
+    const filePath = path.join(cacheDir, `${Date.now()}.mp4`);
+
+    // 3. Download Video
+    const response = await axios({
+      method: 'GET',
+      url: videoUrl,
+      responseType: 'stream'
     });
 
     const writer = fs.createWriteStream(filePath);
-    videoStream.data.pipe(writer);
+    response.data.pipe(writer);
 
-    writer.on("finish", () => {
-      const info =
-        `🎬 TikTok Video\n\n` +
-        `📌 Title: ${videoData.title || "N/A"}\n` +
-        `👤 Author: ${videoData.author || "N/A"}`;
-
-      api.sendMessage(
-        {
-          body: info,
-          attachment: fs.createReadStream(filePath),
-        },
-        event.threadID,
-        () => fs.unlinkSync(filePath)
-      );
+    writer.on('finish', () => {
+      api.sendMessage({
+        body: `🎬 TikTok: ${videoData.title || "No Title"}\n👤 Author: ${videoData.author || "Unknown"}`,
+        attachment: fs.createReadStream(filePath)
+      }, threadID, () => {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }, messageID);
     });
 
-    writer.on("error", (err) => {
-      console.error(err);
-      api.sendMessage(
-        "❌ Failed to download the TikTok video.",
-        event.threadID
-      );
-    });
-  } catch (error) {
-    console.error(error);
-    api.sendMessage(
-      "❌ An error occurred while fetching the TikTok video.",
-      event.threadID
-    );
+    writer.on('error', () => api.sendMessage("❌ Download failed.", threadID));
+
+  } catch (err) {
+    console.error(err);
+    api.sendMessage("❌ Connection Error or API Down.", threadID);
   }
 };
