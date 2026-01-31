@@ -1,5 +1,5 @@
 const axios = require("axios");
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 
 const baseApiUrl = async () => {
@@ -9,66 +9,74 @@ const baseApiUrl = async () => {
   return base.data.mahmud;
 };
 
-/**
-* @author MahMUD
-* @author: do not delete it
-*/
-
 module.exports = {
   config: {
     name: "buttslap",
     aliases: ["butslap"],
-    version: "1.7",
-    author: "MahMUD",
+    version: "2.0",
+    author: "MahMUD & Gemini",
     role: 0,
     category: "fun",
     cooldown: 8,
-    guide: "slap [mention/reply/UID]",
+    guide: {
+      en: "{pn} @tag or reply"
+    }
   },
 
   onStart: async function ({ api, event, args }) {
-    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);
-    if (module.exports.config.author !== obfuscatedAuthor) {
-      return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
-    }
-
     const { threadID, messageID, messageReply, mentions, senderID } = event;
-    const type = args[0];
 
-    if (!type) return api.sendMessage("Use: fun slap @tag", threadID, messageID);
-
-    let id = senderID;
+    let id1 = senderID;
     let id2;
+    let name2 = "";
 
+    // ১. টার্গেট আইডি এবং নাম ডিটেক্ট করা
     if (messageReply) {
       id2 = messageReply.senderID;
+      // রিপ্লাই থেকে নাম সংগ্রহ (ফেসবুকের নতুন নিয়মে নাম বের করা)
+      name2 = "this person"; 
     } else if (Object.keys(mentions).length > 0) {
       id2 = Object.keys(mentions)[0];
-    } else if (args[1]) {
-      id2 = args[1];
+      name2 = mentions[id2].replace("@", "");
+    } else if (args[0]) {
+      id2 = args[0];
+      name2 = "User";
     } else {
-      return api.sendMessage("Mention, reply, or provide UID of the target.", threadID, messageID);
+      return api.sendMessage("দয়া করে একজনকে মেনশন করুন বা মেসেজে রিপ্লাই দিন।", threadID, messageID);
     }
 
+    // ২. নিজেকে থাপ্পড় মারা আটকানো
+    if (id1 == id2) return api.sendMessage("নিজেকে নিজে কি এসব করা ঠিক? 🐸", threadID, messageID);
+
     try {
-      const url = `${await baseApiUrl()}/api/dig?type=buttslap&user=${id}&user2=${id2}`;
+      const baseUrl = await baseApiUrl();
+      const url = `${baseUrl}/api/dig?type=buttslap&user=${id1}&user2=${id2}`;
 
       const response = await axios.get(url, { responseType: "arraybuffer" });
-      const filePath = path.join(__dirname, `slap_${id2}.png`);
-      fs.writeFileSync(filePath, response.data);
+      const filePath = path.join(__dirname, "tmp", `buttslap_${Date.now()}.png`);
+      
+      await fs.ensureDir(path.join(__dirname, "tmp"));
+      fs.writeFileSync(filePath, Buffer.from(response.data));
 
-      api.sendMessage(
-        {
-          attachment: fs.createReadStream(filePath),
-          body: `Effect: buttslap successful 💥`
-        },
-        threadID,
-        () => fs.unlinkSync(filePath),
-        messageID
-      );
+      // ৩. FB New Mention Style Logic
+      // এখানে বডি টেক্সট এবং মেনশন অবজেক্ট পাঠানো হচ্ছে
+      const msgBody = `Effect: Buttslap successful! 💥\nএই নে কড়া ডোজ!`;
+
+      // ৪. রিপ্লাই পাঠানো (All users can see the mention/tag)
+      return api.sendMessage({
+        body: msgBody,
+        mentions: name2 !== "this person" && name2 !== "User" ? [{
+          tag: name2,
+          id: id2
+        }] : [],
+        attachment: fs.createReadStream(filePath)
+      }, threadID, (err) => {
+        if (!err && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }, messageID);
+
     } catch (err) {
       console.error(err);
-      api.sendMessage(`🥹error, contact MahMUD.`, threadID, messageID);
+      return api.sendMessage(`🥹 API তে সমস্যা হয়েছে, পরে চেষ্টা করুন।`, threadID, messageID);
     }
   }
 };
