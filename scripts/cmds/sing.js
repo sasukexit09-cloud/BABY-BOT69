@@ -1,159 +1,107 @@
 const axios = require("axios");
-const fs = require("fs");
-
-const baseApiUrl = async () => {
-  const base = await axios.get(
-    "https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json"
-  );
-  return base.data.api;
-};
+const fs = require("fs-extra");
 
 module.exports = {
   config: {
     name: "sing",
-    version: "1.1.6",
-    aliases: ["music", "play"],
-    author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴 (fixed by Maya)",
-    countDown: 5,
+    version: "2.0.0",
+    author: "xnil6x | Raha",
+    countDown: 2, // Fast command cooldown
     role: 0,
-    description: {
-      en: "Download audio from YouTube"
-    },
     category: "media",
-    guide: {
-      en:
-        "{pn} [<song name>|<song link>]\nExample:\n{pn} chipi chipi chapa chapa"
-    }
+    guide: { en: "{pn} [song name]" }
   },
 
-  onStart: async ({ api, args, event, commandName }) => {
-    if (!args[0])
-      return api.sendMessage(
-        "❌ 𝚂𝙾𝙽𝙶 𝙽𝙰𝙼𝙴 বা 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 𝙻𝙸𝙽𝙺 দাও",
-        event.threadID,
-        event.messageID
-      );
-
-    const checkurl =
-      /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/;
-
-    const isUrl = checkurl.test(args[0]);
+  onStart: async function({ args, message, event, commandName }) {
+    const { getStreamFromURL } = global.utils;
+    let keyWord = args.join(" ");
+    if (!keyWord) return message.reply("please type a song name 🍓🍒");
 
     try {
-      /* ===== DIRECT LINK ===== */
-      if (isUrl) {
-        const videoID = args[0].match(checkurl)[1];
-        const { data } = await axios.get(
-          `${await baseApiUrl()}/ytDl3?link=${videoID}&format=mp3`
-        );
+      // Step 1: Search and Parallel Thumbnail Fetching
+      const result = (await search(keyWord)).slice(0, 6);
+      if (result.length === 0) return message.reply("🍓Kono result pawa jayni.");
 
-        return api.sendMessage(
-          {
-            body: data.title,
-            attachment: await dipto(data.downloadLink, "audio.mp3")
-          },
-          event.threadID,
-          () => fs.unlinkSync("audio.mp3"),
-          event.messageID
-        );
-      }
+      // Parallel streaming for faster thumbnail loading
+      const thumbnails = await Promise.all(result.map(info => getStreamFromURL(info.thumbnail)));
 
-      /* ===== SEARCH ===== */
-      const keyWord = encodeURIComponent(args.join(" "));
-      const result = (
-        await axios.get(
-          `${await baseApiUrl()}/ytFullSearch?songName=${keyWord}`
-        )
-      ).data.slice(0, 6);
+      let msg = "▭ [ Fast Search ] ▭\n\n";
+      result.forEach((info, index) => {
+        msg += `${index + 1}. ${info.title}\n[-] Duration: ${info.time}\n\n`;
+      });
 
-      if (!result.length)
-        return api.sendMessage(
-          "😅𝙽𝙾 𝚂𝙰𝚁𝙲𝙷 𝚁𝙴𝚂𝚄𝙻𝚃 𝙵𝙾𝚄𝙽𝙳𝙴𝙳",
-          event.threadID,
-          event.messageID
-        );
-
-      let msg = "";
-      let i = 1;
-      const thumbs = [];
-
-      for (const info of result) {
-        msg += `${i++}. ${info.title}\n⏱ ${info.time}\n📺 ${
-          info.channel.name
-        }\n\n`;
-        thumbs.push(await diptoSt(info.thumbnail, "thumb.jpg"));
-      }
-
-      api.sendMessage(
-        {
-          body: msg + "🔁 𝙿𝙻𝙴𝙰𝚂𝙴 𝚁𝙴𝙿𝙻𝙰𝚈 𝚃𝙷𝙴 𝙽𝚄𝙼𝙱𝙴𝚁",
-          attachment: thumbs
-        },
-        event.threadID,
-        (err, info) => {
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName,
-            author: event.senderID,
-            messageID: info.messageID,
-            result
-          });
-        },
-        event.messageID
-      );
-    } catch (e) {
-      api.sendMessage(
-        "❌ Error: " + e.message,
-        event.threadID,
-        event.messageID
-      );
-    }
-  },
-
-  onReply: async ({ event, api, Reply }) => {
-    const choice = parseInt(event.body);
-    if (isNaN(choice) || choice < 1 || choice > Reply.result.length)
-      return api.sendMessage(
-        "🍓 𝙿𝙻𝙴𝙰𝚂𝙴 𝙲𝙷𝙾𝙸𝙲𝙴 𝙰 𝙽𝚄𝙼𝙱𝙴𝚁 1 𝚃𝙾 6",
-        event.threadID,
-        event.messageID
-      );
-
-    try {
-      const info = Reply.result[choice - 1];
-      const { data } = await axios.get(
-        `${await baseApiUrl()}/ytDl3?link=${info.id}&format=mp3`
-      );
-
-      await api.unsendMessage(Reply.messageID);
-
-      api.sendMessage(
-        {
-          body: `🎵 ${data.title}\n🎧 Quality: ${data.quality}`,
-          attachment: await dipto(data.downloadLink, "audio.mp3")
-        },
-        event.threadID,
-        () => fs.unlinkSync("audio.mp3"),
-        event.messageID
-      );
+      message.reply({
+        body: msg + "▭ Reply with a number.",
+        attachment: thumbnails
+      }, (err, info) => {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName,
+          messageID: info.messageID,
+          author: event.senderID,
+          result
+        });
+      });
     } catch (err) {
-      api.sendMessage(
-        "😅 𝚃𝙷𝙸𝚂 𝚂𝙾𝙽𝙶 𝙳𝙾𝙴𝚂𝙽'𝚃 𝙰𝚅𝙰𝙸𝙻𝙰𝙱𝙻𝙴 (size limit / api issue)",
-        event.threadID,
-        event.messageID
-      );
+      return message.reply(" [😿] YouTube logic error.");
+    }
+  },
+
+  onReply: async ({ event, api, Reply, message }) => {
+    const { getStreamFromURL } = global.utils;
+    const { result } = Reply;
+    const choice = parseInt(event.body);
+
+    if (isNaN(choice) || choice > result.length || choice <= 0) return;
+
+    try {
+      await message.unsend(Reply.messageID);
+      const loading = await message.reply("[🍓] Downloading Audio...");
+      
+      const id = result[choice - 1].id;
+      const title = result[choice - 1].title;
+
+      // Fast API List (Try multiple if one fails)
+      const apis = [
+        `https://api.samirxp.repl.co/ytdl?url=https://www.youtube.com/watch?v=${id}`,
+        `https://xnilapi-glvi.onrender.com/xnil/ytmp3?url=https://www.youtube.com/watch?v=${id}`,
+        `https://api.dipto.info/yt?url=https://www.youtube.com/watch?v=${id}`
+      ];
+
+      let audioUrl = null;
+      for (const apiUrl of apis) {
+        try {
+          const res = await axios.get(apiUrl, { timeout: 10000 }); // 10s timeout
+          audioUrl = res.data.download_link || res.data.data?.media || res.data.link;
+          if (audioUrl) break;
+        } catch (e) { continue; }
+      }
+
+      if (!audioUrl) throw new Error("All APIs failed.");
+
+      await message.unsend(loading.messageID);
+      await message.reply({
+        body: `🍓 [ BABY SINGED ] 🍓\n[-] Title: ${title}`,
+        attachment: await getStreamFromURL(audioUrl)
+      });
+    } catch (error) {
+      message.reply("▭ [!] Currently unavailable. Try again later.");
     }
   }
 };
 
-/* ===== HELPERS ===== */
-async function dipto(url, pathName) {
-  const res = await axios.get(url, { responseType: "arraybuffer" });
-  fs.writeFileSync(pathName, Buffer.from(res.data));
-  return fs.createReadStream(pathName);
-}
-
-async function diptoSt(url, pathName) {
-  const res = await axios.get(url, { responseType: "stream" });
-  res.data.path = pathName;
-  return res.data;
+async function search(keyWord) {
+  // Ultra fast direct scraping
+  const res = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(keyWord)}`);
+  const html = res.data;
+  const json = JSON.parse(html.split('ytInitialData = ')[1].split(';</script>')[0]);
+  const contents = json.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents[0].itemSectionRenderer.contents;
+  
+  return contents
+    .filter(v => v.videoRenderer)
+    .map(v => ({
+      id: v.videoRenderer.videoId,
+      title: v.videoRenderer.title.runs[0].text,
+      thumbnail: v.videoRenderer.thumbnail.thumbnails.pop().url,
+      time: v.videoRenderer.lengthText?.simpleText || "N/A"
+    }));
 }
