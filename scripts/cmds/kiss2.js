@@ -3,104 +3,95 @@ const fs = require("fs-extra");
 const path = require("path");
 const { Jimp } = require("jimp");
 
-module.exports.config = {
-    name: "kiss2",
-    version: "2.3.0",
-    role: 0,
-    author: "𝐂𝐘𝐁𝐄𝐑 ☢️_𖣘 & Gemini",
-    description: "Kiss the person you want (Fixed Error)",
-    category: "Love",
-    guide: { en: "{pn} @tag or reply" },
-    countDown: 5
-};
+module.exports = {
+    config: {
+        name: "kiss4",
+        version: "2.0",
+        author: "CYBER-BOT & Gemini",
+        countDown: 5,
+        role: 0,
+        category: "fun",
+        shortDescription: { en: "Kiss with FB new mention style" },
+        longDescription: { en: "Generate a kiss image by mentioning or replying to someone." },
+        guide: { en: "{pn} @tag or reply to a message" }
+    },
 
-async function circle(image) {
-    const img = await Jimp.read(image);
-    img.circle();
-    return await img.getBufferAsync(Jimp.MIME_PNG);
-}
+    onStart: async function ({ api, event, message, args }) {
+        const { threadID, messageID, senderID, mentions, messageReply } = event;
 
-async function makeImage({ one, two }) {
-    const cacheDir = path.join(process.cwd(), "cache");
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+        // ১. টার্গেট আইডি এবং নাম ডিটেকশন
+        let uid2 = messageReply ? messageReply.senderID : Object.keys(mentions)[0];
+        if (!uid2) return message.reply("দয়া করে একজনকে মেনশন করুন অথবা মেসেজে রিপ্লাই দিন।");
 
-    const bgPath = path.join(cacheDir, "hon0.jpeg");
-    const outPath = path.join(cacheDir, `kiss_${one}_${two}_${Date.now()}.png`);
+        let targetName = mentions[uid2] ? mentions[uid2].replace("@", "") : "User";
 
-    // ১. ব্যাকগ্রাউন্ড ইমেজ ডাউনলোড লজিক (Error Fix)
-    const bgURL = "https://i.imgur.com/j96ooUs.jpeg";
-    if (!fs.existsSync(bgPath) || fs.statSync(bgPath).size < 100) {
-        const res = await axios.get(bgURL, { responseType: "arraybuffer" });
-        fs.writeFileSync(bgPath, Buffer.from(res.data));
-    }
+        const cacheDir = path.join(__dirname, "cache", "canvas");
+        const bgPath = path.join(cacheDir, "kissv3.png");
+        const outPath = path.join(cacheDir, `kiss_${Date.now()}.png`);
 
-    const getAvt = async (uid) => {
-        const url = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`;
-        const res = await axios.get(url, { responseType: "arraybuffer" });
-        const circleBuffer = await circle(res.data);
-        return await Jimp.read(circleBuffer);
-    };
+        try {
+            await fs.ensureDir(cacheDir);
 
-    try {
-        const [bg, avtOne, avtTwo] = await Promise.all([
-            Jimp.read(bgPath),
-            getAvt(one),
-            getAvt(two)
-        ]);
+            // ২. ব্যাকগ্রাউন্ড চেক ও ডাউনলোড
+            if (!fs.existsSync(bgPath)) {
+                const getBG = await axios.get("https://i.imgur.com/3laJwc1.jpg", { responseType: "arraybuffer" });
+                await fs.writeFile(bgPath, Buffer.from(getBG.data));
+            }
 
-        bg.resize({ w: 700, h: 440 });
-        avtOne.resize({ w: 150, h: 150 });
-        avtTwo.resize({ w: 150, h: 150 });
+            // ৩. স্মার্ট ইমেজ ফেচার (Circle Crop + Rate Limit Bypass)
+            const getAvt = async (uid) => {
+                const token = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+                const hdUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512&access_token=${token}`;
+                const normalUrl = `https://graph.facebook.com/${uid}/picture?width=512&height=512`;
 
-        bg.composite(avtOne, 390, 23);
-        bg.composite(avtTwo, 115, 130);
+                try {
+                    const res = await axios.get(hdUrl, { responseType: 'arraybuffer', timeout: 8000 });
+                    const img = await Jimp.read(Buffer.from(res.data));
+                    return img.circle();
+                } catch (e) {
+                    const res = await axios.get(normalUrl, { responseType: 'arraybuffer' });
+                    const img = await Jimp.read(Buffer.from(res.data));
+                    return img.circle();
+                }
+            };
 
-        await bg.writeAsync(outPath);
-        return outPath;
-    } catch (err) {
-        // যদি ব্যাকগ্রাউন্ড ফাইলটি কারাপ্ট হয় তবে তা ডিলিট করে দিবে যাতে পরের বার ফ্রেশ ডাউনলোড হয়
-        if (fs.existsSync(bgPath)) fs.unlinkSync(bgPath);
-        throw err;
-    }
-}
+            const [baseImg, avt1, avt2] = await Promise.all([
+                Jimp.read(bgPath),
+                getAvt(senderID),
+                getAvt(uid2)
+            ]);
 
-module.exports.onStart = async function ({ event, api }) {
-    const { threadID, messageID, senderID, mentions, type, messageReply } = event;
-    
-    let targetID;
-    if (type === "message_reply") {
-        targetID = messageReply.senderID;
-    } else {
-        const mention = Object.keys(mentions);
-        targetID = mention[0];
-    }
+            // ৪. ইমেজ কম্পোজিট
+            baseImg.composite(avt1.resize(350, 350), 200, 300);
+            baseImg.composite(avt2.resize(350, 350), 600, 80);
 
-    if (!targetID) {
-        return api.sendMessage("দয়া করে কাউকে ট্যাগ করুন অথবা তার মেসেজে রিপ্লাই দিন! 🥰", threadID, messageID);
-    }
+            const buffer = await baseImg.getBufferAsync(Jimp.MIME_PNG);
+            await fs.writeFile(outPath, buffer);
 
-    try {
-        api.setMessageReaction("⌛", messageID, () => {}, true);
-        const imagePath = await makeImage({ one: senderID, two: targetID });
+            // ৫. ক্যাপশন লিস্ট
+            const captions = [
+                "কারণে অকারণে প্রতিদিন নিয়ম করে, তোমার মায়াতে জড়িয়ে পড়ছি আমি বারেবার!🌷",
+                "তোমাকে কেন ভালোবাসি তার কোন বিশেষ কারণ আমার জানা নাই! কিন্তু তোমার কাছে সারাজীবন থেকে যাওয়ার হাজারটা কারণ আমার কাছে আছে!💚",
+                "প্রিয় তুমি কি আমার জীবনের সেই গল্প হবে? যেই গল্পের শুরু থাকবে, কিন্তু কোনো শেষ থাকবে না!♥️",
+                "ভালোবাসা যদি কোনো অনুভূতি হয়, তাহলে তোমার প্রতি আমার অনুভূতি পৃথিবীর সেরা অনুভূতি।🌻ღ🌺"
+            ];
+            const caption = captions[Math.floor(Math.random() * captions.length)];
 
-        const captions = [
-            "কারণে অকারণে প্রতিদিন নিয়ম করে, তোমার মায়াতে জড়িয়ে পড়ছি আমি বারেবার!🌷",
-            "প্রিয় তুমি কি আমার জীবনের সেই গল্প হবে? যেই গল্পের শুরু থাকবে, কিন্তু কোনো শেষ থাকবে না!♥️",
-            "ভালোবাসা যদি কোনো অনুভূতি হয়, তাহলে তোমার প্রতি আমার অনুভূতি পৃথিবীর সেরা অনুভূতি।🌻ღ🌺"
-        ];
-        const caption = captions[Math.floor(Math.random() * captions.length)];
+            // ৬. FB New Mention Style এ রিপ্লাই পাঠানো
+            return message.reply({
+                body: `${targetName}, ${caption}`,
+                mentions: [{
+                    tag: targetName,
+                    id: uid2
+                }],
+                attachment: fs.createReadStream(outPath)
+            }, () => {
+                if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+            });
 
-        api.sendMessage({
-            body: caption,
-            attachment: fs.createReadStream(imagePath)
-        }, threadID, () => {
-            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-            api.setMessageReaction("✅", messageID, () => {}, true);
-        }, messageID);
-
-    } catch (e) {
-        console.error(e);
-        api.setMessageReaction("❌", messageID, () => {}, true);
-        api.sendMessage(`❌ এরর: ছবি তৈরি করা সম্ভব হয়নি।\n\nসম্ভাব্য কারণ: এপিআই সমস্যা বা ইন্টারনেটের ধীরগতি।`, threadID, messageID);
+        } catch (err) {
+            console.error(err);
+            return message.reply("ছবি বানাতে সমস্যা হয়েছে। সার্ভার সম্ভবত বিজি।");
+        }
     }
 };
