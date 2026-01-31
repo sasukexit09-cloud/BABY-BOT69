@@ -11,134 +11,118 @@ module.exports = {
   config: {
     name: "fakechat",
     aliases: ["fc"],
-    version: "3.0",
+    version: "9.0",
     author: "AYAN BBE & Gemini",
     category: "fun",
-    guide: "Reply → {p}fc Hi | How are you?"
+    guide: "Reply → {p}fc Hi 😈 | How are you? ❤️"
   },
 
   onStart: async function ({ api, event, message, args, usersData }) {
-    if (!event.messageReply)
-      return message.reply("❌ Reply করে fakechat command দাও");
+    if (!event.messageReply) return message.reply("❌ Reply করে fakechat command দাও");
 
-    const senderID = event.senderID;
-    const isOwner = OWNER_UID.includes(senderID);
-    
+    const uid = event.messageReply.senderID;
+    const texts = args.join(" ").split("|").map(t => t.trim()).filter(Boolean);
+    if (!texts.length) return message.reply("❌ Message দাও");
+
     try {
-      const userData = await usersData.get(senderID) || {};
-      if (!isOwner && userData.isVIP !== true) {
-        const money = userData.money || 0;
-        if (money < PRICE) return message.reply(`❌ 200,000 balance লাগবে`);
-        await usersData.set(senderID, { money: money - PRICE });
+      // ইমোজি ফন্ট ডাউনলোড (যদি না থাকে)
+      const emojiPath = path.join(__dirname, "NotoColorEmoji.ttf");
+      if (!fs.existsSync(emojiPath)) {
+        await downloadFile("https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf", emojiPath);
       }
-    } catch (err) { console.log("Balance system error") }
 
-    try {
-      const uid = event.messageReply.senderID;
-      const texts = args.join(" ").split("|").map(t => t.trim()).filter(Boolean);
-      if (!texts.length) return message.reply("❌ Message দাও");
+      if (!global.__fcFontsLoaded) {
+        // ফন্ট ফ্যামিলি নাম "Emoji" হিসেবে রেজিস্টার করা হলো
+        registerFont(emojiPath, { family: "Emoji" });
+        global.__fcFontsLoaded = true;
+      }
 
-      let name = "Messenger User";
-      try {
-        const info = await api.getUserInfo(uid);
-        if (info[uid]) name = info[uid].name;
-      } catch (e) {}
-
+      const info = await api.getUserInfo(uid);
+      const name = info[uid]?.name || "Messenger User";
       const avatarImg = await getAvatar(uid);
-      const fontPath = path.join(__dirname, "Messenger.ttf");
-      if (fs.existsSync(fontPath) && !global.__fcFontLoaded) {
-        registerFont(fontPath, { family: "Messenger" });
-        global.__fcFontLoaded = true;
-      }
-      const activeFont = global.__fcFontLoaded ? "Messenger" : "sans-serif";
 
-      /* ===== CANVAS DESIGN ===== */
-      const W = 800;
-      const padX = 20;
-      const padY = 15;
-      const lineH = 32;
-      const gap = 30;
-      let y = 80;
+      /* ===== CANVAS SETUP ===== */
+      const W = 850;
+      const padX = 26, padY = 22, lineH = 42, gap = 15;
+      let y = 110;
 
       const temp = createCanvas(1, 1).getContext("2d");
-      temp.font = `26px ${activeFont}`;
-      const maxW = W - 220;
-
+      // এখানে ফন্ট অর্ডারে ইমোজি ফন্টকে সর্বোচ্চ প্রাধান্য দেওয়া হয়েছে
+      temp.font = '28px "Emoji", sans-serif';
+      
+      const maxW = W - 250;
       const bubbles = texts.map(text => {
         const lines = wrapText(temp, text, maxW - (padX * 2));
         const w = Math.max(...lines.map(l => temp.measureText(l).width));
-        return {
-          lines,
-          w: w + (padX * 2),
-          h: (lines.length * lineH) + (padY * 2)
-        };
+        return { lines, w: Math.max(w + (padX * 2), 110), h: (lines.length * lineH) + (padY * 2) };
       });
 
-      const H = bubbles.reduce((s, b) => s + b.h + gap, 0) + 120;
+      const H = bubbles.reduce((s, b) => s + b.h + gap, 0) + 160;
       const canvas = createCanvas(W, H);
       const ctx = canvas.getContext("2d");
 
-      // Dark Mode Background
+      // BG (Pure Black)
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, W, H);
 
-      for (const b of bubbles) {
-        // Name above the first bubble
-        ctx.fillStyle = "#8a8d91";
-        ctx.font = `18px ${activeFont}`;
-        ctx.fillText(name, 105, y - 10);
+      for (let i = 0; i < bubbles.length; i++) {
+        const b = bubbles[i];
+        
+        // Name (iOS Style Grey)
+        ctx.fillStyle = "#8E8E93";
+        ctx.font = '20px sans-serif';
+        ctx.fillText(name, 120, y - 18);
 
-        // Messenger Bubble (#242526 or #3E4042)
-        ctx.fillStyle = "#3e4042";
-        drawMessengerBubble(ctx, 105, y, b.w, b.h, 25);
+        // Bubble
+        ctx.fillStyle = "#262628";
+        drawiOSBubble(ctx, 120, y, b.w, b.h, 30);
 
-        // Text
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `26px ${activeFont}`;
+        // Text with Emoji Force
+        ctx.fillStyle = "#FFFFFF";
+        // বিশেষ ড্রয়িং কনফিগ
+        ctx.font = '28px "Emoji", sans-serif';
         ctx.textBaseline = "top";
 
         let ty = y + padY;
         for (const l of b.lines) {
-          ctx.fillText(l, 105 + padX, ty);
+          ctx.fillText(l, 120 + padX, ty);
           ty += lineH;
         }
 
-        // Circular Avatar
-        const avatarSize = 50;
-        const ay = y + b.h - avatarSize; // Bottom-aligned like Messenger
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(60, ay + (avatarSize/2), avatarSize/2, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(avatarImg, 60 - (avatarSize/2), ay, avatarSize, avatarSize);
-        ctx.restore();
-
-        // Active Status Dot
-        ctx.beginPath();
-        ctx.arc(80, ay + 42, 8, 0, Math.PI * 2);
-        ctx.fillStyle = "#31a24c";
-        ctx.fill();
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
+        if (i === bubbles.length - 1) {
+          const avatarSize = 58;
+          const ay = y + b.h - avatarSize + 2;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(68, ay + (avatarSize/2), avatarSize/2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(avatarImg, 39, ay, avatarSize, avatarSize);
+          ctx.restore();
+        }
         y += b.h + gap;
       }
 
-      const outPath = path.join(__dirname, `messenger_fake_${Date.now()}.png`);
+      const outPath = path.join(__dirname, `fc_final_${Date.now()}.png`);
       fs.writeFileSync(outPath, canvas.toBuffer());
-
       await message.reply({ attachment: fs.createReadStream(outPath) });
       fs.unlinkSync(outPath);
 
     } catch (e) {
       console.error(e);
-      message.reply("❌ Fakechat error: " + e.message);
+      message.reply("❌ Error: " + e.message);
     }
   }
 };
 
-/* ===== HELPER FUNCTIONS ===== */
+/* ===== HELPERS (FIXED) ===== */
+
+async function downloadFile(url, dest) {
+  const res = await axios({ url, method: 'GET', responseType: 'stream' });
+  return new Promise((resolve, reject) => {
+    const writer = fs.createWriteStream(dest);
+    res.data.pipe(writer).on('finish', resolve).on('error', reject);
+  });
+}
 
 async function getAvatar(uid) {
   try {
@@ -153,22 +137,19 @@ function wrapText(ctx, text, maxWidth) {
   const words = text.split(" ");
   const lines = [];
   let currentLine = words[0];
-
   for (let i = 1; i < words.length; i++) {
-    const word = words[i];
-    const width = ctx.measureText(currentLine + " " + word).width;
-    if (width < maxWidth) {
-      currentLine += " " + word;
+    if (ctx.measureText(currentLine + " " + words[i]).width < maxWidth) {
+      currentLine += " " + words[i];
     } else {
       lines.push(currentLine);
-      currentLine = word;
+      currentLine = words[i];
     }
   }
   lines.push(currentLine);
   return lines;
 }
 
-function drawMessengerBubble(ctx, x, y, w, h, r) {
+function drawiOSBubble(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
