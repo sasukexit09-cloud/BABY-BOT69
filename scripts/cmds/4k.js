@@ -1,75 +1,106 @@
-const axios = require("axios");
-
 module.exports = {
   config: {
-    name: "4k",
-    aliases: ["upscale"],
-    version: "1.5",
+    name: "enhance",
+    aliases: ["4k", "enhance4k"],
+    version: "6.0",
+    author: "AyanHost",
     role: 0,
-    author: "Ayan • Fixed by Maya",
-    countDown: 5,
-    longDescription: "Upscale images to 4K resolution",
+    shortDescription: "Enhance uploaded image to 4K-like + stylish presets + countdown delete (Node.js 16 compatible)",
     category: "image",
-    guide: {
-      en: "{pn} reply to an image to upscale it"
-    }
+    guide: ".enhance [preset]\nPresets: cinematic, anime, nature, soft-glow\nReply to an image or upload one."
   },
 
-  onStart: async function ({ message, event }) {
-    let waitMsg;
+  onStart: async function({ api, event, args }) {
+    const fs = require("fs-extra");
+    const path = require("path");
+    const Jimp = require("jimp");
+    const axios = require("axios");
+
+    const { threadID, messageReply } = event;
+    const __root = path.resolve(__dirname, "cache", "enhance");
+    if (!fs.existsSync(__root)) fs.mkdirSync(__root, { recursive: true });
+
+    // Step 1: Detect preset
+    const presets = ["cinematic", "anime", "nature", "soft-glow"];
+    let preset = "default";
+    if (args.length > 0 && presets.includes(args[0].toLowerCase())) {
+      preset = args[0].toLowerCase();
+    }
+
+    // Step 2: Detect uploaded/reply image
+    if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
+      return api.sendMessage("⚠️ Please reply to an image or upload one!", threadID);
+    }
+
+    const imageURL = messageReply.attachments[0].url;
+
+    // Step 3: Send fancy message
+    const sentMsg = await api.sendMessage(`✨ Enhancing your image with preset: ${preset} ... ✨`, threadID);
+
+    // Step 4: Download image
+    const fileExt = ".jpg";
+    const inputPath = path.join(__root, `input_${Date.now()}${fileExt}`);
+    const outputPath = path.join(__root, `enhanced_${Date.now()}.jpg`);
+
     try {
-      const reply = event.messageReply;
+      const response = await axios.get(imageURL, { responseType: "arraybuffer" });
+      fs.writeFileSync(inputPath, Buffer.from(response.data));
 
-      if (
-        !reply ||
-        !reply.attachments ||
-        !reply.attachments.length ||
-        reply.attachments[0].type !== "photo"
-      ) {
-        return message.reply("📸 অনুগ্রহ করে একটি ছবিতে reply দিয়ে কমান্ড ব্যবহার করো");
+      // Step 5: Load image with Jimp
+      let image = await Jimp.read(inputPath);
+
+      // Step 6: Resize to 4K-like (approximation)
+      image = image.resize(3840, Jimp.AUTO);
+
+      // Step 7: Apply preset filters
+      switch (preset) {
+        case "cinematic":
+          image = image.color([{ apply: "mix", params: ["#ffccaa", 20] }]).brightness(0.1).contrast(0.1);
+          break;
+        case "anime":
+          image = image.color([{ apply: "saturate", params: [40] }]).brightness(0.15);
+          break;
+        case "nature":
+          image = image.color([{ apply: "saturate", params: [30] }]).brightness(0.05);
+          break;
+        case "soft-glow":
+          image = image.blur(2).brightness(0.1).contrast(0.05);
+          break;
+        default:
+          image = image.brightness(0.1).contrast(0.1);
       }
 
-      const imageUrl = reply.attachments[0].url;
-      const apiUrl = "https://aryan-xyz-upscale-api-phi.vercel.app/api/upscale-image";
+      // Step 8: Save enhanced image
+      await image.writeAsync(outputPath);
 
-      waitMsg = await message.reply("⚙️ 4K তে convert হচ্ছে...\n⏳ একটু অপেক্ষা করো");
+      // Step 9: Send enhanced image
+      await api.sendMessage({
+        body: `✨ Your enhanced image is ready! Preset applied: ${preset}`,
+        attachment: fs.createReadStream(outputPath)
+      }, threadID);
 
-      const res = await axios.get(apiUrl, {
-        params: {
-          imageUrl: imageUrl,
-          apikey: "ArYANAHMEDRUDRO"
-        },
-        timeout: 30000
-      });
-
-      if (!res.data || !res.data.resultImageUrl) {
-        throw new Error("API response invalid");
-      }
-
-      const stream = await global.utils.getStreamFromURL(
-        res.data.resultImageUrl,
-        "4k-upscaled.png"
-      );
-
-      if (waitMsg?.messageID) {
-        await message.unsend(waitMsg.messageID);
-      }
-
-      await message.reply({
-        body: "✅ 4K Upscale Complete ☘️",
-        attachment: stream
-      });
+      // Step 10: Countdown animation + delete fancy message
+      setTimeout(async () => {
+        const countdownMsg = await api.sendMessage("🔥 Deleting fancy message in 3...", threadID);
+        setTimeout(() => api.editMessage("⚡ Deleting fancy message in 2...", countdownMsg.messageID), 1000);
+        setTimeout(() => api.editMessage("💫 Deleting fancy message in 1...", countdownMsg.messageID), 2000);
+        setTimeout(() => {
+          api.unsendMessage(sentMsg.messageID);
+          api.unsendMessage(countdownMsg.messageID);
+        }, 3000);
+      }, 1000);
 
     } catch (err) {
-      console.error("❌ 4K Upscale Error:", err);
+      console.error("Enhance error:", err);
+      await api.sendMessage("⚠️ Failed to enhance image!", threadID);
+    }
 
-      if (waitMsg?.messageID) {
-        message.unsend(waitMsg.messageID).catch(() => {});
-      }
-
-      message.reply(
-        "❌ ছবি upscale করতে সমস্যা হয়েছে\n🔁 পরে আবার চেষ্টা করো"
-      );
+    // Step 11: Clean cache
+    try {
+      const files = await fs.readdir(__root);
+      for (const file of files) fs.unlinkSync(path.join(__root, file));
+    } catch (err) {
+      console.error("Cache clear error:", err.message);
     }
   }
 };
