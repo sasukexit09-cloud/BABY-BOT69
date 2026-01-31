@@ -1,32 +1,39 @@
-const fs = require("fs");
-module.exports.config = {
-  name: "samima",
-  version: "1.0.1",
-  hasPermssion: 0,
-  credits: "rX", 
-  description: "Detects 'rumana' in any message",
-  commandCategory: "no prefix",
-  usages: "Just type anything with rumana",
-  cooldowns: 5, 
-};
+module.exports = {
+    config: {
+        name: "samima_logic",
+        version: "2.0",
+        author: "Gemini",
+        countDown: 0,
+        role: 0,
+        category: "automation",
+        shortDescription: "Special logic for Samima and Ayan Boss",
+        longDescription: "Automatically greets Samima or reminds users to show respect when her name is mentioned.",
+        guide: { en: "Auto-detection, no command needed." }
+    },
 
-module.exports.handleEvent = function({ api, event, client, __GLOBAL }) {
-  const { threadID, messageID, body } = event;
-  if (!body) return;
+    onChat: async function ({ api, event, message }) {
+        const { body, senderID, threadID } = event;
+        if (!body) return;
 
-  const keywordList = ["samima", "SAMIMA", "Samima", "সামিমা"];
-  const isMatch = keywordList.some(word => body.toLowerCase().includes(word.toLowerCase()));
+        // শামীমার অরিজিনাল UID
+        const samimaUID = "61578295556160"; 
+        const input = body.toLowerCase();
+        const keywords = ["samima", "সামিমা", "শামীমা"];
 
-  if (isMatch) {
-    const msg = {
-      body: "keyword SAMIMA",
-      attachment: fs.createReadStream(__dirname + `/noprefix/rumana.mp4`)
-    };
-    api.sendMessage(msg, threadID, messageID);
-    api.setMessageReaction("😌💋", event.messageID, (err) => {}, true);
-  }
-};
+        // ১. শামীমা নিজে কোনো গ্রুপে মেসেজ দিলে (সালাম ও বসের অপেক্ষা)
+        if (senderID === samimaUID) {
+            await message.reply("আসসালামু আলাইকুম ভাবী! 💌🙈");
+            
+            // ১.৫ সেকেন্ড বিরতি দিয়ে দ্বিতীয় মেসেজ
+            return setTimeout(() => {
+                api.sendMessage("আয়ান বস আপনার জন্য অপেক্ষা করছে। 👑", threadID);
+            }, 1500);
+        }
 
-module.exports.run = function({ api, event, client, __GLOBAL }) {
-  // no command usage
+        // ২. অন্য কেউ সামিমার নাম নিলে (সম্মান দেওয়ার নির্দেশ)
+        const isMentioned = keywords.some(word => input.includes(word));
+        if (isMentioned && senderID !== api.getCurrentUserID()) {
+            return message.reply("উনি আয়ান বসের বউ, সম্মান দিয়ে কথা বল! 🤫🔥");
+        }
+    }
 };
