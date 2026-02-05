@@ -2,88 +2,72 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-const baseApiUrl = async () => {
-  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
-  return base.data.mahmud;
-};
-
 module.exports = {
   config: {
     name: "autodl",
-    version: "1.7",
-    author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
-    countDown: 10,
+    version: "2.0.0",
+    author: "rX x Rahat",
+    countDown: 2, // Cooldown komiye deya hoyeche
     role: 0,
+    description: { en: "Ultra-fast auto video downloader" },
     category: "media",
-    guide: {
-      en: "{pn} [video link] or reply to a link"
-    }
+    guide: { en: "Paste link and wait for magic" }
   },
 
-  onStart: async function ({ api, args, event }) {
-    const link = args[0] || event.messageReply?.body;
+  onStart: async function ({ api, event }) {
+    return api.sendMessage("⚡ Auto-downloader is active!", event.threadID, event.messageID);
+  },
 
-    if (!link || !link.startsWith("http")) {
-      return api.sendMessage(
-        "❌ | Please provide a valid video link or reply to one.",
-        event.threadID,
-        event.messageID
-      );
-    }
+  onChat: async function ({ api, event }) {
+    const { body, threadID, messageID } = event;
+    if (!body || !body.startsWith("https://")) return;
 
-    const cacheDir = path.join(__dirname, "cache");
-    const filePath = path.join(cacheDir, `alldl_${Date.now()}.mp4`);
+    // Fast Regex Check
+    const isMedia = /youtu\.be|youtube\.com|tiktok\.com|instagram\.com|facebook\.com|fb\.watch/.test(body);
+    if (!isMedia) return;
+
+    const { alldown } = require("rx-dawonload");
 
     try {
-      api.setMessageReaction("👀", event.messageID, () => {}, true);
+      // Non-blocking reaction
+      api.setMessageReaction("⚡", messageID, () => {}, true);
 
-      if (!fs.existsSync(cacheDir)) {
-        fs.mkdirSync(cacheDir, { recursive: true });
-      }
+      // Fast fetching
+      const res = await alldown(body.trim());
+      if (!res || !res.url) return api.setMessageReaction("❌", messageID, () => {}, true);
 
-      const base = await baseApiUrl();
-      const apiUrl = `${base}/api/download/video?link=${encodeURIComponent(link)}`;
+      // Create stream instead of writing full file first
+      const cachePath = path.join(__dirname, "cache", `fast_${Date.now()}.mp4`);
+      if (!fs.existsSync(path.join(__dirname, "cache"))) fs.mkdirSync(path.join(__dirname, "cache"));
+
+      // Use Axios stream for high speed
       const response = await axios({
         method: 'get',
-        url: apiUrl,
-        responseType: 'arraybuffer',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
-        }
+        url: res.url,
+        responseType: 'stream',
+        headers: { 'User-Agent': 'Mozilla/5.0' }
       });
 
-      fs.writeFileSync(filePath, Buffer.from(response.data));
+      const writer = fs.createWriteStream(cachePath);
+      response.data.pipe(writer);
 
-      const stats = fs.statSync(filePath);
-      if (stats.size < 100) {
-        throw new Error("Invalid video file received.");
-      }
+      writer.on('finish', () => {
+        api.sendMessage({
+          body: `✅ 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲\n🚀 𝗦𝗽𝗲𝗲𝗱: 𝚄𝙻𝚃𝚁𝙰 𝙵𝙰𝚂𝚃\n📍 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${res.title || 'Media'}`,
+          attachment: fs.createReadStream(cachePath)
+        }, threadID, (err) => {
+          if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath);
+          if (!err) api.setMessageReaction("✅", messageID, () => {}, true);
+        }, messageID);
+      });
 
-      api.setMessageReaction("👀", event.messageID, () => {}, true);
-
-      return api.sendMessage(
-        {
-          body: "𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝐝𝐨𝐰𝐧𝐥𝐨𝐚𝐝 𝐯𝐢𝐝𝐞𝐨 𝐛𝐚𝐛𝐲 <😽",
-          attachment: fs.createReadStream(filePath)
-        },
-        event.threadID,
-        () => {
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        },
-        event.messageID
-      );
+      writer.on('error', (err) => {
+        throw err;
+      });
 
     } catch (err) {
       console.error(err);
-      api.setMessageReaction("💔", event.messageID, () => {}, true);
-
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-      return api.sendMessage(
-        `🖤error, contact 𝙰𝚈𝙰𝙽 `,
-        event.threadID,
-        event.messageID
-      );
+      api.setMessageReaction("❌", messageID, () => {}, true);
     }
   }
 };
