@@ -1,73 +1,70 @@
-const axios = require("axios");
-const fs = require("fs-extra");
-const path = require("path");
+const axios = require('axios');
 
 module.exports = {
   config: {
-    name: "autodl",
-    version: "2.0.0",
-    author: "rX x Rahat",
-    countDown: 2, // Cooldown komiye deya hoyeche
+    name: "alldl",
+    aliases: ["dl", "video", "fb", "insta", "yt", "tiktok"],
+    version: "0.0.1",
+    author: "ArYAN",
+    countDown: 5,
     role: 0,
-    description: { en: "Ultra-fast auto video downloader" },
     category: "media",
-    guide: { en: "Paste link and wait for magic" }
+    guide: {
+      en: "{pn} [URL]"
+    }
   },
 
-  onStart: async function ({ api, event }) {
-    return api.sendMessage("⚡ Auto-downloader is active!", event.threadID, event.messageID);
-  },
+  onStart: async function ({ message, args, event }) {
+    const url = args.find(arg => /^https?:\/\//.test(arg));
+    if (!url) return message.reply("Please provide a valid URL.");
 
-  onChat: async function ({ api, event }) {
-    const { body, threadID, messageID } = event;
-    if (!body || !body.startsWith("https://")) return;
-
-    // Fast Regex Check
-    const isMedia = /youtu\.be|youtube\.com|tiktok\.com|instagram\.com|facebook\.com|fb\.watch/.test(body);
-    if (!isMedia) return;
-
-    const { alldown } = require("rx-dawonload");
+    message.reaction("⏳", event.messageID);
 
     try {
-      // Non-blocking reaction
-      api.setMessageReaction("⚡", messageID, () => {}, true);
+      const res = await axios.get(`http://103.187.23.122:2099/dl?url=${encodeURIComponent(url)}`);
+      const data = res.data;
 
-      // Fast fetching
-      const res = await alldown(body.trim());
-      if (!res || !res.url) return api.setMessageReaction("❌", messageID, () => {}, true);
+      if (!data.url) {
+        message.reaction("❌", event.messageID);
+        return message.reply("Could not find a downloadable link for this URL.");
+      }
 
-      // Create stream instead of writing full file first
-      const cachePath = path.join(__dirname, "cache", `fast_${Date.now()}.mp4`);
-      if (!fs.existsSync(path.join(__dirname, "cache"))) fs.mkdirSync(path.join(__dirname, "cache"));
-
-      // Use Axios stream for high speed
-      const response = await axios({
-        method: 'get',
-        url: res.url,
-        responseType: 'stream',
-        headers: { 'User-Agent': 'Mozilla/5.0' }
+      await message.reply({
+        body: `•Title: ${data.title}\n•Duration: ${data.duration}\n•Description: ${data.description || 'No description'}`,
+        attachment: await global.utils.getStreamFromUrl(data.url)
       });
 
-      const writer = fs.createWriteStream(cachePath);
-      response.data.pipe(writer);
+      message.reaction("✅", event.messageID);
+    } catch (error) {
+      message.reaction("❌", event.messageID);
+      return message.reply("An error occurred while processing your request.");
+    }
+  },
 
-      writer.on('finish', () => {
-        api.sendMessage({
-          body: `✅ 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲\n🚀 𝗦𝗽𝗲𝗲𝗱: 𝚄𝙻𝚃𝚁𝙰 𝙵𝙰𝚂𝚃\n📍 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${res.title || 'Media'}`,
-          attachment: fs.createReadStream(cachePath)
-        }, threadID, (err) => {
-          if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath);
-          if (!err) api.setMessageReaction("✅", messageID, () => {}, true);
-        }, messageID);
-      });
+  onChat: async function ({ event, message }) {
+    if (!event.body || event.senderID === global.botID) return;
 
-      writer.on('error', (err) => {
-        throw err;
-      });
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const match = event.body.match(urlRegex);
 
-    } catch (err) {
-      console.error(err);
-      api.setMessageReaction("❌", messageID, () => {}, true);
+    if (match) {
+      const url = match[0];
+      
+      try {
+        const res = await axios.get(`http://103.187.23.122:2099/dl?url=${encodeURIComponent(url)}`);
+        const data = res.data;
+
+        if (data.url) {
+          message.reaction("⏳", event.messageID);
+          await message.reply({
+            body: `•Title: ${data.title}\n•Duration: ${data.duration}`,
+            attachment: await global.utils.getStreamFromUrl(data.url)
+          });
+          message.reaction("✅", event.messageID);
+        }
+      } catch (e) {
+        // Silent error for auto-dl
+      }
     }
   }
 };
