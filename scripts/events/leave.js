@@ -6,8 +6,8 @@ const path = require("path");
 module.exports = {
   config: {
     name: "leave",
-    version: "2.0",
-    author: "Tarek (Upgraded by Maya)",
+    version: "2.2",
+    author: "𝐀𝐘𝐀𝐍 (Upgraded by Maya)",
     category: "events"
   },
 
@@ -36,12 +36,17 @@ module.exports = {
         "{userName} was a valued VIP member of {boxName} 💎\n" +
         "This action should NOT be taken lightly ⚠️\n\n" +
         "Admins are advised to review the situation carefully.\n" +
-        "Respect VIP members 🙏"
+        "Respect VIP members 🙏",
+
+      // 🔥 roast lines for admin kick
+      kickRoast:
+        "\n\n😈 𝐑𝐔𝐋𝐄𝐒 𝐍𝐀 𝐌𝐀𝐍𝐋𝐄 𝐌𝐀𝐑𝐀 𝐓𝐎 𝐊𝐇𝐄𝐓𝐄𝐘 𝐇𝐎𝐁𝐄 𝐏𝐈𝐎🚪\n" +
+        "𝐑 𝐃𝐎𝐒𝐇 𝐃𝐈𝐓𝐄 𝐄𝐒𝐎 𝐍𝐀 𝐀𝐃𝐌𝐈𝐍 𝐓𝐔𝐌𝐀𝐃𝐄𝐑 𝐌𝐎𝐓𝐎 𝐁𝐀𝐋𝐏𝐀𝐊𝐍𝐀 𝐌𝐄𝐌𝐁𝐄𝐑𝐒 𝐂𝐇𝐔𝐒𝐄 𝐍𝐀😼🔥"
     }
   },
 
   onStart: async ({ threadsData, message, event, api, getLang, usersData }) => {
-    const hours = parseInt(getTime("HH"));
+    const hours = new Date().getHours();
     const { threadID, logMessageData, logMessageType } = event;
     const threadData = await threadsData.get(threadID);
 
@@ -55,15 +60,20 @@ module.exports = {
     };
 
     const downloadImage = async (url, filePath) => {
+      if (fs.existsSync(filePath)) return;
       const res = await axios.get(url, { responseType: "arraybuffer" });
       fs.writeFileSync(filePath, res.data);
     };
 
-    /* ================= LEAVE ================= */
+    /* ================= SELF LEAVE ================= */
     if (logMessageType === "log:unsubscribe") {
       const uid = logMessageData.leftParticipantFbId;
-      const userInfo = await api.getUserInfo(uid);
-      const userName = userInfo[uid]?.name || "Someone";
+
+      let userName = "Someone";
+      try {
+        const userInfo = await api.getUserInfo(uid);
+        userName = userInfo?.[uid]?.name || userName;
+      } catch (e) {}
 
       const isVip = await usersData?.isVip?.(uid);
 
@@ -73,9 +83,11 @@ module.exports = {
         .replace(/\{boxName\}/g, threadData.threadName || "this group")
         .replace(/\{session\}/g, getSession());
 
-      const imgUrl = "https://files.catbox.moe/1jy0ww.jpg";
-      const imgPath = path.join(__dirname, isVip ? "vip_leave.jpg" : "leave.jpg");
+      // funny line ONLY for self leave
+      text += "\n\n𝐣𝐚 𝐤𝐮𝐭𝐭𝐚 𝐯𝐚𝐠𝐠𝐠 𝐡𝐮𝐬𝐬𝐬 😾😝";
 
+      const imgUrl = "https://files.catbox.moe/asuxqo.jpg";
+      const imgPath = path.join(__dirname, isVip ? "vip_leave.jpg" : "leave.jpg");
       await downloadImage(imgUrl, imgPath);
 
       return message.send({
@@ -84,11 +96,15 @@ module.exports = {
       });
     }
 
-    /* ================= KICK ================= */
+    /* ================= ADMIN KICK ================= */
     if (logMessageType === "log:admin_removed") {
       const uid = logMessageData.userFbId;
-      const userInfo = await api.getUserInfo(uid);
-      const userName = userInfo[uid]?.name || "Someone";
+
+      let userName = "Someone";
+      try {
+        const userInfo = await api.getUserInfo(uid);
+        userName = userInfo?.[uid]?.name || userName;
+      } catch (e) {}
 
       const isVip = await usersData?.isVip?.(uid);
 
@@ -97,9 +113,11 @@ module.exports = {
         .replace(/\{userName\}/g, userName)
         .replace(/\{boxName\}/g, threadData.threadName || "this group");
 
+      // 🔥 roast added ONLY when admin kicks
+      text += getLang("kickRoast");
+
       const imgUrl = "https://files.catbox.moe/27ym75.jpg";
       const imgPath = path.join(__dirname, isVip ? "vip_kick.jpg" : "kick.jpg");
-
       await downloadImage(imgUrl, imgPath);
 
       return message.send({
