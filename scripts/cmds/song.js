@@ -6,7 +6,7 @@ module.exports = {
   config: {
     name: "song",
     version: "2.3.0",
-    author: "Milon",
+    author: "Ayan bbe",
     countDown: 5,
     role: 0,
     description: "Search and download songs without prefix",
@@ -25,7 +25,7 @@ module.exports = {
         return message.reply("❌ Please provide a song name.\n📌 Example: song Let Me Love You");
       }
 
-      const searchingMessage = await message.reply(`🔍 Searching for "${query}"...\n⏳ Please wait...`);
+      const searchingMessage = await message.reply(`🔍 Searching for "${query}"...\n⏳ Please wait koro bby..🍓`);
 
       try {
         // Search API
