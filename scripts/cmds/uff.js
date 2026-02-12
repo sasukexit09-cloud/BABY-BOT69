@@ -26,7 +26,7 @@ module.exports = {
     author: "AYAN BBE💋", 
     version: "1.3",
     cooldowns: 5,
-    role: 0, // সবাই ব্যবহার করতে পারবে
+    role: 2, // সবাই ব্যবহার করতে পারবে
     shortDescription: "18+ TikTok video",
     longDescription: "Fetches a random 18+ TikTok video",
     category: "18+",
