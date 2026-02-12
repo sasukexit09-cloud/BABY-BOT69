@@ -5,7 +5,7 @@ module.exports = {
     version: "1.3",
     author: "kshitiz",
     countDown: 60,
-    role: 0, // কেউই restriction নেই
+    role: 2, // কেউই restriction নেই
     shortDescription: "Get a random hentai video",
     longDescription: "Sends a random 18+ hentai video. No VIP required.",
     category: "18+",
