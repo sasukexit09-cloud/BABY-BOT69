@@ -89,12 +89,12 @@ handlerCheckData.cantCreateThread=Groups with id '%1' cannot be written to the d
 handlerCheckData.cantCreateUser=Users with id '%1' cannot be written to the database!
 
 # bot/handler/handlerEvents.js
-handlerEvents.userBanned=You have been banned from using the bot\n» Reason: %1\n» Time: %2\n» User ID: %3
-handlerEvents.threadBanned=This group has been banned from using the bot\n» Reason: %1\n» Time: %2\n» Thread ID: %3
+handlerEvents.userBanned=𝚈𝙾𝚄 𝙷𝙰𝚅𝙴 𝙱𝙴𝙴𝙽 𝙱𝙰𝙽𝙽𝙴𝙳 𝙵𝚁𝙾𝙼 𝚄𝚂𝙸𝙽𝙶 𝙱𝙾𝚃 🍓\n» Reason: %1\n» Time: %2\n» User ID: %3
+handlerEvents.threadBanned=𝚃𝙷𝙸𝚂 𝙶𝚁𝙾𝚄𝙿 𝙷𝙰𝚂 𝙱𝙴𝙴𝙽 𝙱𝙰𝙽𝙽𝙴𝙳 𝙵𝚁𝙾𝙼 𝚄𝚂𝙸𝙽𝙶 𝙱𝙾𝚃🍨\n» Reason: %1\n» Time: %2\n» Thread ID: %3
 handlerEvents.onlyAdminBox=This group is currently enabled only group administrators can use the bot
 handlerEvents.onlyAdminBot=🍓 | 𝙲𝚄𝚁𝙴𝙽𝚃𝙻𝚈 𝙾𝙽𝙻𝚈 𝙱𝙰𝙱𝚈'𝚂 𝙳𝙰𝙳𝚈 𝙲𝙰𝙽 𝚄𝚂𝙰𝙶𝙴𝚂 𝙱𝙱𝙴 👀
-handlerEvents.commandNotFound=𝚃𝚑𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚢𝚘𝚞 𝚊𝚛𝚎 𝚞𝚜𝚒𝚗𝚐 "%1" 𝚍𝚘𝚎𝚜 𝚗𝚘𝚝 𝚎𝚡𝚒𝚜𝚝 𝚋𝚊𝚋𝚢 😽,💌 𝚃𝚢𝚙𝚎 %2𝚑𝚎𝚕𝚙 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚕𝚕 𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜 💋
-handlerEvents.commandNotFound2=𝙱𝚊𝚋𝚢 𝚢𝚘𝚞𝚛 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚒𝚜 𝚍𝚘𝚎𝚜 𝚗𝚘𝚝 𝚎𝚡𝚒𝚜𝚝🍓,💌 𝚃𝚢𝚙𝚎 %1𝚑𝚎𝚕𝚙 𝚝o 𝚜𝚎𝚎 𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝚋𝚊𝚋𝚢 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜🍓💋
+handlerEvents.commandNotFound=𝚃𝚑𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚢𝚘𝚞 𝚊𝚛𝚎 𝚞𝚜𝚒𝚗𝚐 "%1" 𝚍𝚘𝚎𝚜 𝚗𝚘𝚝 𝚎𝚡𝚒𝚜𝚝 𝚋𝚊𝚋𝚢 🍒,🍨 𝚃𝚢𝚙𝚎 %2𝚑𝚎𝚕𝚙 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚕𝚕 𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜 💋
+handlerEvents.commandNotFound2=𝙱𝚊𝚋𝚢 𝚢𝚘𝚞𝚛 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚒𝚜 𝚍𝚘𝚎𝚜 𝚗𝚘𝚝 𝚎𝚡𝚒𝚜𝚝🍓,💌 𝚃𝚢𝚙𝚎 %1𝚑𝚎𝚕𝚙 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝚋𝚊𝚋𝚢 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜🍓💋
 handlerEvents.commandSyntaxError=💌-𝙱𝙰𝙱𝚈 𝚈𝙾𝚄𝚁𝙴 𝚄𝚂𝙸𝙽𝙶 𝚃𝙷𝙸𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 𝙰𝚁𝙴 𝚆𝚁𝙾𝙽𝙶 𝚂𝚈𝙽𝚃𝚇 👅, 𝙿𝙻𝙴𝙰𝚂𝙴 𝚃𝚈𝙿𝙴 %1𝙷𝙴𝙻𝙿 %2 𝚃𝙾 𝚂𝙴𝙴 𝚃𝙷𝙴 𝙳𝙴𝚃𝙰𝙸𝙻𝚂 𝙾𝙵 𝙷𝙾𝚆 𝚃𝙾 𝚄𝚂𝙴 𝚃𝙷𝙸𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 👄
 handlerEvents.onlyAdmin=❌ | Only group administrators can use the command "%1"
 handlerEvents.onlyAdminToUseOnReply=🍓 | 𝙾𝙽𝙻𝚈 𝙲𝙰𝙽 𝙱𝙰𝙱𝚈𝚂 𝙵𝙰𝚃𝙷𝙴𝚁 𝚄𝚂𝙴 𝚃𝙷𝙴 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 "%1"
@@ -141,10 +141,10 @@ updater.skipFile=There is a new version of the %1 file, but you have skipped thi
 verifyfbid.sendCode=Your verification code is:\n%1\nThe verification code is valid for %2 minutes
 
 # utils.js
-utils.errorOccurred=🍓 An error occurred:\n\n%1
+utils.errorOccurred=🍓 𝙰𝙽 𝙴𝚁𝚁𝙾 𝚃𝚁𝚈 𝙰𝙶𝙸 𝙱𝙱𝚈🍨:\n\n%1
 
 # for command
-command.restartedBot=Bot has been restarted
+command.restartedBot=𝙱𝙾𝚃 𝙷𝙰𝚂 𝙱𝙴𝙴𝙽 𝚁𝙴𝚂𝚃𝚁𝙸𝙲𝚃𝙴𝙳🍨
 
 # dashboard/app.js
 app.googleApiRefreshTokenExpired=Google API refresh token has expired or been revoked, please get a new token at https://developers.google.com/oauthplayground/
