@@ -13,7 +13,7 @@ module.exports = {
     name: "set",
     aliases: ['ap'],
     version: "3.0",
-    author: "Tarek",
+    author: "𝑎𝑦𝑎𝑛 𝑏𝑏𝑒",
     role: 0,
     shortDescription: {
       en: "Set coins, experience points for a user OR change role of a command"
@@ -28,9 +28,9 @@ module.exports = {
   },
 
   onStart: async function ({ args, event, api, usersData }) {
-    const permission = ["61582355550594"]; // Owner ID
+    const permission = ["61584308632995"]; // Owner ID
     if (!permission.includes(event.senderID)) {
-      api.sendMessage("You don't have enough permission to use this command. Only My Lord Can Use It.", event.threadID, event.messageID);
+      api.sendMessage("𝙼𝙲 𝙰𝙱𝙱𝚄𝚁 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 𝚄𝚂𝙴 𝙺𝙾𝚁𝚃𝙴 𝙲𝙷𝙰𝙲𝙲𝙾 𝙹𝙴 𝙿𝙴𝚁𝙼𝙸𝚂𝚂𝙸𝙾𝙽 𝙽𝙸𝚂𝙾𝚂?🍭.𝙾𝙽𝙻𝚈 𝙰𝚈𝙰𝙽 𝙱𝙱𝙴 𝚄𝚂𝙴 𝚃𝙷𝙸𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳🍨", event.threadID, event.messageID);
       return;
     }
 
