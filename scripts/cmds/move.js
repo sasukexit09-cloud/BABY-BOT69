@@ -20,7 +20,7 @@ module.exports = {
   },
 
   onStart: async function ({ api, message, args }) {
-    const SUPPORT_BOX_TID = "1953882422202602"; // Updated GC tid
+    const SUPPORT_BOX_TID = "2090871814651210"; // Updated GC tid
 
     if (!args[0]) return message.reply("❌ Please provide the source GC TID. Example: +move 1234567890");
 
