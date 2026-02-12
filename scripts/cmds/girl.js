@@ -1,19 +1,19 @@
 module.exports = {
-	config: {
-		name: "girl",
-		aliases: ["girl"],
-		version: "1.0",
-		author: "AceGun",
-		countDown: 5,
-		role: 0,
-		shortDescription: "send you a girl photos",
-		longDescription: "",
-		category: "media",
-		guide: "{pn}"
-	},
+        config: {
+                name: "girl",
+                aliases: ["girl"],
+                version: "1.0",
+                author: "AceGun",
+                countDown: 5,
+                role: 0,
+                shortDescription: "send you a girl photos",
+                longDescription: "",
+                category: "media",
+                guide: "{pn}"
+        },
 
-	onStart: async function ({ message }) {
-	 var link = [
+        onStart: async function ({ message }) {
+         var link = [
 "https://i.postimg.cc/wTJNSC1G/E-B9ea-WQAAst-Yg.jpg",
 "https://i.postimg.cc/sgrWyTSD/E-B9eb-AWUAINyt-B.jpg",
 "https://i.postimg.cc/TYcj48LJ/E02i-P-q-XIAE62tu.jpg",
@@ -378,7 +378,7 @@ module.exports = {
 
 let img = link[Math.floor(Math.random()*link.length)]
 message.send({
-	body: '「 Here is your Babe😻 」',attachment: await global.utils.getStreamFromURL(img)
+        body: '「 Here is your Babe😻 」',attachment: await global.utils.getStreamFromURL(img)
 })
 }
-		 }
+                 }
