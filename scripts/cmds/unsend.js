@@ -1,82 +1,59 @@
 module.exports = {
   config: {
     name: "unsend",
-    aliases: ["un", "uns", "unsef", "u"],
-    version: "1.2",
-    author: "NTKhang",
+    aliases: ["un", "uns", "u"],
+    version: "3.0",
+    author: "NTKhang | Fixed",
     countDown: 5,
     role: 0,
     category: "box chat",
-    guide: {
-      vi: "reply tin nhắn muốn gỡ của bot và gọi lệnh {pn}",
-      en: "reply the message you want to unsend and call the command {pn}"
-    },
     noPrefix: true
   },
 
   langs: {
-    vi: {
-      syntaxError: "Vui lòng reply tin nhắn muốn gỡ của bot",
-      notEnoughBalance: "Bạn không có đủ 50₮ để dùng lệnh này"
-    },
     en: {
-      syntaxError: "Please reply the message you want to unsend",
-      notEnoughBalance: "You need 50₮ to use this command"
+      syntaxError: "⚠️ Reply to the bot message you want to unsend.",
+      notEnoughBalance: "💸 You need 50₮ to use this command."
     }
   },
 
-  // Mock user balance storage (replace with DB in real bot)
-  userBalance: {},
-
-  // Check if user has enough balance
-  checkBalance: function(userID) {
-    if (!this.userBalance[userID]) this.userBalance[userID] = 1000; // Default balance
-    return this.userBalance[userID] >= 50;
-  },
-
-  // Deduct balance
-  deductBalance: function(userID) {
-    this.userBalance[userID] -= 50;
-  },
-
-  checkReply: function({ event, api, message, getLang }) {
-    if (!event.messageReply || event.messageReply.senderID !== api.getCurrentUserID()) {
-      message.reply(getLang("syntaxError"));
-      return false;
-    }
-    return true;
-  },
-
-  onStart: async function ({ message, event, api, getLang }) {
+  async handleUnsend({ event, message, api, usersData, getLang }) {
     const userID = event.senderID;
 
-    if (!this.checkBalance(userID)) {
+    if (!event.messageReply ||
+        event.messageReply.senderID !== api.getCurrentUserID()) {
+      return message.reply(getLang("syntaxError"));
+    }
+
+    const userData = await usersData.get(userID);
+    const balance = userData.money || 0;
+
+    if (balance < 50) {
       return message.reply(getLang("notEnoughBalance"));
     }
 
-    if (!this.checkReply({ event, api, message, getLang })) return;
+    await usersData.set(userID, {
+      money: balance - 50
+    });
 
-    this.deductBalance(userID);
     await message.unsend(event.messageReply.messageID);
-    message.reply(`50₮ deducted. Remaining balance: ${this.userBalance[userID]}₮`);
+
+    return message.reply(
+      `✅ Message Unsent!\n💸 -50₮\n💰 Remaining: ${balance - 50}₮`
+    );
   },
 
-  onChat: async function ({ event, message, api, getLang }) {
+  async onStart(ctx) {
+    return this.handleUnsend(ctx);
+  },
+
+  async onChat({ event }) {
     const input = event.body?.toLowerCase().trim();
     if (!input) return;
 
     const triggers = [this.config.name, ...(this.config.aliases || [])];
     if (!triggers.includes(input)) return;
 
-    const userID = event.senderID;
-    if (!this.checkBalance(userID)) {
-      return message.reply(getLang("notEnoughBalance"));
-    }
-
-    if (!this.checkReply({ event, api, message, getLang })) return;
-
-    this.deductBalance(userID);
-    await message.unsend(event.messageReply.messageID);
-    message.reply(`50₮ deducted. Remaining balance: ${this.userBalance[userID]}₮`);
+    return this.handleUnsend(arguments[0]);
   }
 };
