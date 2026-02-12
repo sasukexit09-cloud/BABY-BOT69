@@ -1,106 +1,75 @@
+const axios = require("axios");
+
+const mahmud = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+  return base.data.mahmud;
+};
+
+/**
+* @author MahMUD
+* @author: do not delete it
+*/
+
 module.exports = {
   config: {
-    name: "enhance",
-    aliases: ["4k", "enhance4k"],
-    version: "6.0",
-    author: "AyanHost",
+    name: "4k",
+    version: "1.7",
+    author: "MahMUD","𝙰𝚈𝙰𝙽 𝙱𝙱𝙴"
+    countDown: 10,
     role: 0,
-    shortDescription: "Enhance uploaded image to 4K-like + stylish presets + countdown delete (Node.js 16 compatible)",
     category: "image",
-    guide: ".enhance [preset]\nPresets: cinematic, anime, nature, soft-glow\nReply to an image or upload one."
+    description: "Enhance or restore image quality using 4k AI.",
+    guide: {
+      en: "{pn} [url] or reply with image"
+    }
   },
 
-  onStart: async function({ api, event, args }) {
-    const fs = require("fs-extra");
-    const path = require("path");
-    const Jimp = require("jimp");
-    const axios = require("axios");
+  onStart: async function ({ message, event, args }) {
 
-    const { threadID, messageReply } = event;
-    const __root = path.resolve(__dirname, "cache", "enhance");
-    if (!fs.existsSync(__root)) fs.mkdirSync(__root, { recursive: true });
+    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68); 
+    if (module.exports.config.author !== obfuscatedAuthor) {
+      return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
+    }
+    const startTime = Date.now();
+    let imgUrl;
 
-    // Step 1: Detect preset
-    const presets = ["cinematic", "anime", "nature", "soft-glow"];
-    let preset = "default";
-    if (args.length > 0 && presets.includes(args[0].toLowerCase())) {
-      preset = args[0].toLowerCase();
+    if (event.messageReply?.attachments?.[0]?.type === "photo") {
+      imgUrl = event.messageReply.attachments[0].url;
     }
 
-    // Step 2: Detect uploaded/reply image
-    if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
-      return api.sendMessage("⚠️ Please reply to an image or upload one!", threadID);
+    else if (args[0]) {
+      imgUrl = args.join(" ");
     }
 
-    const imageURL = messageReply.attachments[0].url;
+    if (!imgUrl) {
+      return message.reply("Baby, Please reply to an image or provide an image URL");
+    }
 
-    // Step 3: Send fancy message
-    const sentMsg = await api.sendMessage(`✨ Enhancing your image with preset: ${preset} ... ✨`, threadID);
-
-    // Step 4: Download image
-    const fileExt = ".jpg";
-    const inputPath = path.join(__root, `input_${Date.now()}${fileExt}`);
-    const outputPath = path.join(__root, `enhanced_${Date.now()}.jpg`);
+    const waitMsg = await message.reply("𝐋𝐨𝐚𝐝𝐢𝐧𝐠 𝟒𝐤 𝐢𝐦𝐚𝐠𝐞...𝐰𝐚𝐢𝐭 𝐛𝐚𝐛𝐲 <🍨");
+    message.reaction("🍨", event.messageID);
 
     try {
-      const response = await axios.get(imageURL, { responseType: "arraybuffer" });
-      fs.writeFileSync(inputPath, Buffer.from(response.data));
 
-      // Step 5: Load image with Jimp
-      let image = await Jimp.read(inputPath);
+      const apiUrl = `${await mahmud()}/api/hd?imgUrl=${encodeURIComponent(imgUrl)}`;
 
-      // Step 6: Resize to 4K-like (approximation)
-      image = image.resize(3840, Jimp.AUTO);
+      const res = await axios.get(apiUrl, { responseType: "stream" });
+      if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
 
-      // Step 7: Apply preset filters
-      switch (preset) {
-        case "cinematic":
-          image = image.color([{ apply: "mix", params: ["#ffccaa", 20] }]).brightness(0.1).contrast(0.1);
-          break;
-        case "anime":
-          image = image.color([{ apply: "saturate", params: [40] }]).brightness(0.15);
-          break;
-        case "nature":
-          image = image.color([{ apply: "saturate", params: [30] }]).brightness(0.05);
-          break;
-        case "soft-glow":
-          image = image.blur(2).brightness(0.1).contrast(0.05);
-          break;
-        default:
-          image = image.brightness(0.1).contrast(0.1);
-      }
+      message.reaction("✅", event.messageID);
 
-      // Step 8: Save enhanced image
-      await image.writeAsync(outputPath);
+      const processTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
-      // Step 9: Send enhanced image
-      await api.sendMessage({
-        body: `✨ Your enhanced image is ready! Preset applied: ${preset}`,
-        attachment: fs.createReadStream(outputPath)
-      }, threadID);
+      message.reply({
+        body: `🍧𝙱𝙰𝙱𝚈 4𝙺 𝙸𝙼𝙰𝙶𝙴 𝚀𝚄𝙰𝙻𝙸𝚃𝚈 𝙸𝙼𝙿𝚁𝙾𝚅𝙴 𝙳𝙽🍨`,
+        attachment: res.data
+      });
 
-      // Step 10: Countdown animation + delete fancy message
-      setTimeout(async () => {
-        const countdownMsg = await api.sendMessage("🔥 Deleting fancy message in 3...", threadID);
-        setTimeout(() => api.editMessage("⚡ Deleting fancy message in 2...", countdownMsg.messageID), 1000);
-        setTimeout(() => api.editMessage("💫 Deleting fancy message in 1...", countdownMsg.messageID), 2000);
-        setTimeout(() => {
-          api.unsendMessage(sentMsg.messageID);
-          api.unsendMessage(countdownMsg.messageID);
-        }, 3000);
-      }, 1000);
+    } catch (error) {
 
-    } catch (err) {
-      console.error("Enhance error:", err);
-      await api.sendMessage("⚠️ Failed to enhance image!", threadID);
-    }
+      if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
 
-    // Step 11: Clean cache
-    try {
-      const files = await fs.readdir(__root);
-      for (const file of files) fs.unlinkSync(path.join(__root, file));
-    } catch (err) {
-      console.error("Cache clear error:", err.message);
+      message.reaction("🍼", event.messageID);
+      message.reply(`𝙱𝙱𝚈 𝙱𝙰𝚂𝙰𝚈 𝙹𝙴𝚈𝙴 𝙶𝙷𝚄𝙼𝙰𝙾 𝙰𝙻𝙸𝚈𝙰 𝙴𝙺𝙷𝙾𝙽 𝙱𝚂𝚈 🍡`);
     }
   }
 };
