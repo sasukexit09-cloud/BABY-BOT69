@@ -15,8 +15,8 @@ module.exports = {
     name: "spyx",
     version: "1.7",
     role: 0,
-    author: "AYAN BBE",
-    category: "info",
+    author: "MahMUD",
+    category: "info"
     countDown: 10
   },
 
