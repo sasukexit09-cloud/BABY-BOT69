@@ -1,72 +1,65 @@
 const axios = require("axios");
 
-const baseApiUrl = async () => {
-  const base = await axios.get(
-    "https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json"
-  );
+const mahmud = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
   return base.data.mahmud;
 };
 
 module.exports = {
   config: {
-    name: "pp",
-    aliases: ["pfp", "dp", "profile"],
-    version: "3.0-HD",
-    author: "MahMUD","𝙰𝚈𝙰𝙽 𝙱𝙱𝙴 𝙵𝙸𝚇𝙴𝙳"
+    name: "profile",
+    aliases: ["pp", "dp", "pfp"],
+    version: "1.7",
+    author: "MahMUD",
     role: 0,
     category: "media",
-    shortDescription: "Get HD enhanced profile picture"
+    guide: {
+      en: "{pn} [mention/reply/userID/facebook profile link] - Get the profile picture.",
+      bn: "{pn} [মেনশন/রিপ্লাই/ব্যবহারকারী আইডি/ফেসবুক প্রোফাইল লিঙ্ক] - প্রোফাইল ছবি দেখুন।"
+    }
   },
 
-  onStart: async function ({ api, message, event, args }) {
+  onStart: async function ({ event, message, usersData, args }) {
+   const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);
+if (module.exports.config.author !== obfuscatedAuthor) {
+return api.sendMessage(
+"❌ | You are not authorized to change the author name.",
+event.threadID,
+event.messageID
+);
+}
+    const getUserId = () => {
+      const mentionedUid = Object.keys(event.mentions)[0];
+      const repliedUid = event.messageReply ? event.messageReply.senderID : null;
+      return mentionedUid || repliedUid || args[0] || event.senderID;
+    };
 
-    // 🔐 Author Protection
-    const realAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);
-    if (module.exports.config.author !== realAuthor) {
-      return api.sendMessage(
-        "⚠️ You are not allowed to change author name.",
-        event.threadID,
-        event.messageID
-      );
-    }
+    const getAvatarUrl = async (uid) => await usersData.getAvatarUrl(uid);
+
+    let uid = getUserId();
+    let avatarUrl;
 
     try {
-      let target =
-        Object.keys(event.mentions || {})[0] ||
-        event.messageReply?.senderID ||
-        args[0] ||
-        event.senderID;
-
-      if (!target) target = event.senderID;
-
-      const base = await baseApiUrl();
-
-      // 🔥 HD API Call
-      const apiUrl = `${base}/api/pfp?mahmud=${encodeURIComponent(target)}&hd=1&enhance=1`;
-
-      let response;
-
-      try {
-        response = await axios.get(apiUrl, {
-          responseType: "stream",
-          timeout: 15000
-        });
-      } catch {
-        // 🔁 Facebook Graph Fallback (Highest Possible Size)
-        const fallbackUrl = `https://graph.facebook.com/${target}/picture?width=4000&height=4000`;
-        response = await axios.get(fallbackUrl, {
-          responseType: "stream"
-        });
+      const facebookUrl = args.find(arg => arg.includes("facebook.com"));
+      if (facebookUrl) {
+        const match = facebookUrl.match(/facebook\.com\/(?:profile\.php\?id=)?(\d{5,})/);
+        if (match) {
+          uid = match[1];
+        } else {
+          return message.reply("❌ Could not extract user ID from the Facebook URL. Only numeric ID links are supported.");
+        }
       }
 
-      return message.reply({
-        body: "🍭𝙴𝙸 𝙽𝙴𝚆 𝙱𝙱𝚈 𝚃𝚄𝙼𝙰𝚁 𝙿𝙵 𝙿𝙸𝙲 🍨",
-        attachment: response.data
-      });
+      avatarUrl = await getAvatarUrl(uid);
+      if (!avatarUrl) throw new Error("No avatar found");
 
-    } catch (error) {
-      console.log(error?.response?.status, error?.message);
-      return message.reply("𝙶𝚄 𝙺𝙷𝙰 𝙵𝙸𝙻𝙴 𝙴 𝙿𝙻𝙼 𝙰𝙼𝙸 𝙱𝙾𝚂𝚂 𝙴𝚁 𝚂𝙰𝚃𝙷𝙴 𝙺𝙾𝚃𝙷𝙰 𝙱𝙾𝙻𝙴 𝙳𝙴𝙺𝙷𝙲𝙷𝙸 🍨.");
+      const avatarStream = await global.utils.getStreamFromURL(avatarUrl);
+      message.reply({
+        body: "🍓 𝙱𝙰𝙱𝚈 𝙴𝙸 𝙽𝙴𝚄 𝚃𝚄𝙼𝙰𝚁 𝙲𝚄𝚃𝙴 𝙳𝙿 🍨",
+        attachment: avatarStream
+      });
+    } catch (e) {
+      message.reply("❌ Failed to fetch the profile image. Please check the input and try again.");
     }
   }
 };
