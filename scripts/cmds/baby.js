@@ -11,7 +11,7 @@ const mahmud = [
   "জানু",
   "বেবি",
   "wifey",
-  "aliya",
+  "alya",
 ];
 
 const baseApiUrl = async () => {
@@ -25,7 +25,7 @@ const baseApiUrl = async () => {
 */
 
 module.exports.config = {
-   name: "aliya",
+   name: "alya",
    aliases: ["baby", "bby", "bbu", "jan", "janu", "wifey", "bot"],
    version: "1.7",
    author: "MahMUD",
@@ -106,7 +106,7 @@ module.exports.onStart = async ({ api, event, args, usersData }) => {
       api.sendMessage(botResponse, event.threadID, (err, info) => {
       if (!err) {
         global.GoatBot.onReply.set(info.messageID, {
-          commandName: "aliya",
+          commandName: "alya",
           type: "reply",
           messageID: info.messageID,
           author: uid,
@@ -129,7 +129,7 @@ module.exports.onReply = async ({ api, event }) => {
     api.sendMessage(replyMessage, event.threadID, (err, info) => {
       if (!err) {
         global.GoatBot.onReply.set(info.messageID, {
-          commandName: "aliya",
+          commandName: "alya",
           type: "reply",
           messageID: info.messageID,
           author: event.senderID,
@@ -149,7 +149,7 @@ module.exports.onChat = async ({ api, event }) => {
     const attachments = event.attachments || [];
 
     if (event.type !== "message_reply" && mahmud.some(word => message.startsWith(word))) {
-      api.setMessageReaction("🪽", event.messageID, () => {}, true); api.sendTypingIndicator(event.threadID, true);   const messageParts = message.trim().split(/\s+/);
+      api.setMessageReaction("🍓", event.messageID, () => {}, true); api.sendTypingIndicator(event.threadID, true);   const messageParts = message.trim().split(/\s+/);
       const getBotResponse = async (text, attachments) => {
       try {
       const res = await axios.post(`${await baseApiUrl()}/api/hinata`, { text, style: 3, attachments });  return res.data.message; } catch {  return "error janu🥹";
@@ -254,7 +254,7 @@ module.exports.onChat = async ({ api, event }) => {
         api.sendMessage(hinataMessage, event.threadID, (err, info) => {
           if (!err) {
             global.GoatBot.onReply.set(info.messageID, {
-              commandName: "aliya",
+              commandName: "alya",
               type: "reply",
               messageID: info.messageID,
               author: event.senderID,
@@ -272,7 +272,7 @@ module.exports.onChat = async ({ api, event }) => {
         api.sendMessage(botResponse, event.threadID, (err, info) => {
           if (!err) {
             global.GoatBot.onReply.set(info.messageID, {
-              commandName: "aliya",
+              commandName: "alya",
               type: "reply",
               messageID: info.messageID,
               author: event.senderID,
