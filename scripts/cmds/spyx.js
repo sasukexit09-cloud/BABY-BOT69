@@ -81,7 +81,7 @@ module.exports = {
 ├‣ 𝙴𝚇𝙿: ${formatMoney(exp)}
 ├‣ 𝙱𝚊𝚕𝚊𝚗𝚌𝚎: ${formatMoney(money)}
 ├‣ 𝙱𝚊𝚕𝚊𝚗𝚌𝚎 𝚁𝚊𝚗𝚔: #${moneyRank}
-╰‣ 𝙰𝚕𝚒𝚢𝚊 𝚃𝚎𝚊𝚌𝚑: ${janTeach} #${janTeachRank}`;
+╰‣ 𝙰𝚕𝚢𝚊 𝚃𝚎𝚊𝚌𝚑: ${janTeach} #${janTeachRank}`;
 
       return message.reply(msg);
     } catch (err) {
