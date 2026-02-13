@@ -3,85 +3,83 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "overflow",
-    version: "3.6",
-    author: "Eren",
+    version: "4.0",
+    author: "Eren (Fixed)",
     countDown: 5,
-    role: 0, // কেউই restriction নেই
-    shortDescription: "Watch overflow 🌚",
-    longDescription: "List all episodes and play selected one (no VIP required)",
-    category: "hentai",
-    guide: "{pn} => Show all episodes and select and watch"
+    role: 2,
+    shortDescription: "Episode player",
+    category: "media",
+    guide: "{pn}"
   },
 
   onStart: async function ({ api, event }) {
     try {
-      // Fetch episode list
-      const res = await axios.get("https://high-school-dxd.onrender.com/dxd");
-      const episodes = res.data;
-
-      if (!Array.isArray(episodes) || episodes.length === 0)
-        return api.sendMessage("❌ No episodes found.", event.threadID);
-
-      let msg = `🎬 Overflow Hanime Episodes:\n\n`;
-      const mapEp = [];
-
-      episodes.forEach((epData, i) => {
-        msg += `${i + 1}: ${epData.title}\n`;
-        mapEp.push(epData);
+      const res = await axios.get("https://high-school-dxd.onrender.com/dxd", {
+        timeout: 15000,
+        headers: { "User-Agent": "Mozilla/5.0" }
       });
 
-      msg += `\n📝 Reply with episode number to watch`;
+      if (!res.data)
+        return api.sendMessage("❌ API returned empty data.", event.threadID);
 
-      // Send episode list
+      const episodes = Object.values(res.data);
+      if (!episodes.length)
+        return api.sendMessage("❌ No episodes found.", event.threadID);
+
+      let msg = "🎬 Episode List:\n\n";
+      episodes.forEach((ep, i) => {
+        msg += `${i + 1}. ${ep.title || "Untitled"}\n`;
+      });
+
+      msg += "\nReply with episode number";
+
       return api.sendMessage(msg, event.threadID, (err, info) => {
-        if (err) return console.error(err);
+        if (err) return console.log(err);
 
-        // Save reply data
-        if (!global.GoatBot) global.GoatBot = {};
-        if (!global.GoatBot.onReply) global.GoatBot.onReply = new Map();
         global.GoatBot.onReply.set(info.messageID, {
-          commandName: this.config.name,
+          commandName: "overflow",
           messageID: info.messageID,
           author: event.senderID,
-          data: mapEp
+          episodes: episodes
         });
-      }, event.messageID);
+      });
 
     } catch (err) {
-      console.error(err);
-      return api.sendMessage("❌ Failed to load episode list.", event.threadID);
+      console.error("API ERROR:", err.response?.data || err.message);
+      return api.sendMessage("❌ Failed to fetch episodes.", event.threadID);
     }
   },
 
-  onReply: async function ({ api, event, Reply }) {
-    if (!Reply) return;
-    if (event.senderID !== Reply.author) return;
-
-    const chosen = parseInt(event.body);
-    const epList = Reply.data;
-
-    if (isNaN(chosen) || chosen < 1 || chosen > epList.length)
-      return api.sendMessage("❌ Invalid episode number.", event.threadID, event.messageID);
-
-    const selectedEp = epList[chosen - 1];
-
-    // Delete the episode list message for a clean chat
+  onReply: async function ({ api, event, args, message, Reply }) {
     try {
-      await api.unsendMessage(Reply.messageID);
-    } catch (e) {
-      console.log("Failed to delete episode list message:", e);
-    }
+      if (!Reply) return;
+      if (event.senderID !== Reply.author) return;
 
-    // Send video as a reply
-    try {
-      const stream = await global.utils.getStreamFromURL(selectedEp.video);
+      const index = parseInt(event.body);
+      const episodes = Reply.episodes;
+
+      if (isNaN(index) || index < 1 || index > episodes.length)
+        return api.sendMessage("❌ Invalid episode number.", event.threadID);
+
+      const selected = episodes[index - 1];
+
+      if (!selected.video)
+        return api.sendMessage("❌ Video link not found.", event.threadID);
+
+      try {
+        await api.unsendMessage(Reply.messageID);
+      } catch {}
+
+      const stream = await global.utils.getStreamFromURL(selected.video);
+
       return api.sendMessage({
-        body: `🎥 ${selectedEp.title}`,
+        body: `🎥 ${selected.title}`,
         attachment: stream
-      }, event.threadID, event.messageID);
-    } catch (e) {
-      console.error(e);
-      return api.sendMessage("❌ Failed to load the video.", event.threadID, event.messageID);
+      }, event.threadID);
+
+    } catch (err) {
+      console.error("REPLY ERROR:", err.message);
+      return api.sendMessage("❌ Something went wrong.", event.threadID);
     }
   }
 };
