@@ -33,7 +33,7 @@ module.exports = {
       });
 
       await message.reply({
-        body: `Momoi TTS`,
+        body: `Take alya love bbe🍓😫`,
         attachment: response.data,
       });
 
