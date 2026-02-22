@@ -1,15 +1,21 @@
 const axios = require("axios");
 
-const baseApiUrl = async () => {
-  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
-  return base.data.mahmud;
-};
+// Fetch base API URL
+async function baseApiUrl() {
+  try {
+    const res = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
+    return res.data.mahmud;
+  } catch (err) {
+    console.error("Base API fetch failed:", err.message);
+    return null;
+  }
+}
 
-module.exports.onStart = {
+module.exports = {
   config: {
     name: "namaz",
     aliases: ["prayer", "salah"],
-    version: "1.7",
+    version: "2.0",
     author: "MahMUD",
     countDown: 5,
     role: 0,
@@ -18,26 +24,45 @@ module.exports.onStart = {
   },
 
   onStart: async function ({ message, args }) {
-    const city = args.join(" ") || "Dhaka";
-    const apiUrl = `${await baseApiUrl()}/api/namaz/font3/${encodeURIComponent(city)}`;
-
     try {
-      const response = await axios.get(apiUrl, {
-        headers: { "author": module.exports.config.author }
+      // Get city or default
+      const city = args.length > 0 ? args.join(" ") : "Dhaka";
+
+      // Get base URL
+      const base = await baseApiUrl();
+      if (!base) {
+        return message.reply("❌ API base URL load failed.");
+      }
+
+      // Build API URL
+      const apiUrl = `${base}/api/namaz/font3/${encodeURIComponent(city)}`;
+
+      // Fetch namaz times
+      const res = await axios.get(apiUrl, {
+        headers: {
+          author: module.exports.config.author
+        },
+        timeout: 10000
       });
 
-      if (response.data?.error) {
-        return message.reply(`${response.data.error}`);
+      const data = res.data;
+
+      // Handle API error
+      if (data?.error) {
+        return message.reply(`❌ ${data.error}`);
       }
 
-      if (response.data?.message) {
-        return message.reply(response.data.message);
+      // Handle success message
+      if (data?.message) {
+        return message.reply(data.message);
       }
 
-      return message.reply(`No prayer times available for ${city}.`);
-    } catch (error) {
-      console.error(error);
-      return message.reply("Error fetching prayer times. Please try again later.");
+      // Fallback
+      return message.reply(`❌ No prayer times found for "${city}".`);
+
+    } catch (err) {
+      console.error("Namaz command error:", err.message);
+      return message.reply("❌ Failed to fetch prayer times. Try again later.");
     }
   }
 };
