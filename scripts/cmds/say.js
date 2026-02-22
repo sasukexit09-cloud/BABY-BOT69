@@ -1,59 +1,52 @@
 const axios = require("axios");
 
-let cachedBaseUrl = null;
 const baseApiUrl = async () => {
-  if (cachedBaseUrl) return cachedBaseUrl;
-  const res = await axios.get(
-    "https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json"
-  );
-  cachedBaseUrl = res.data.mahmud;
-  return cachedBaseUrl;
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/exe/main/baseApiUrl.json");
+  return base.data.mahmud
 };
 
 module.exports = {
   config: {
     name: "say",
-    version: "2.2",
-    author: "AYAN BBE💋 | fixed by Maya",
+    version: "1.7",
+    author: "MahMUD",
     countDown: 5,
-    role: 0, // সবাই ইউজ করতে পারবে
+    role: 0,
     category: "media",
-    guide: "{pn} <text> (or reply)",
+    guide: "{pn} <text> (or reply to a message)",
   },
 
-  onStart: async function ({ message, args, event }) {
-    // ===== TEXT COLLECT =====
-    let text = (args.join(" ") || event.messageReply?.body || "").trim();
+  onStart: async function ({ api, message, args, event }) {
+    let text = args.join(" ");
+
+    if (event.type === "message_reply" && event.messageReply.body) {
+      text = event.messageReply.body;
+    }
+
     if (!text) {
-      return message.reply(
-        "⚠️ দয়া করে কিছু লিখুন বা একটি মেসেজে রিপ্লাই দিন!"
-      );
+      return message.reply("⚠️ দয়া করে কিছু লিখুন বা একটি মেসেজে রিপ্লাই দিন!");
     }
 
     try {
-      // ===== API CALL =====
       const baseUrl = await baseApiUrl();
       const response = await axios.get(`${baseUrl}/api/say`, {
         params: { text },
-        headers: {
-          Author: module.exports.config.author,
-        },
+        headers: { "Author": module.exports.config.author },
         responseType: "stream",
-        timeout: 20000,
       });
 
-      // ===== SEND RESULT =====
-      return message.reply({
+      if (response.data.error) {
+        return message.reply(`${response.data.error}`);
+      }
+
+      message.reply({
         body: "",
         attachment: response.data,
       });
 
     } catch (e) {
-      console.error("[SAY ERROR]", e.message);
-      return message.reply(
-        "🐥 দুঃখিত, অডিও তৈরি করা যায়নি!\n" +
-        (e.response?.data?.error || e.message)
-      );
+      console.error("API Error:", e.response ? e.response.data : e.message);
+      message.reply("🥹error, contact MahMUD.\n" + (e.response?.data?.error || e.message));
     }
   },
 };
