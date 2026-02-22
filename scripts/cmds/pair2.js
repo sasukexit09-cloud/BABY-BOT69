@@ -1,137 +1,85 @@
-const axios = require("axios");
-const { createCanvas, loadImage } = require("canvas");
-const fs = require("fs-extra");
-const path = require("path");
-
-const FB_TOKEN = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
+const { getStreamFromURL } = global.utils;
 
 module.exports = {
   config: {
-    name: "pair2",
-    author: "Nyx x @Ariyan (fixed by Maya)",
+    name: "pair",
+    version: "1.7",
+    author: "MahMUD",
     category: "love",
+    guide: "{prefix}pair"
   },
 
-  onStart: async function ({ api, event, usersData }) {
-    try {
-      // ===== GET SENDER NAME =====
-      const senderData = await usersData.get(event.senderID);
-      const senderName = senderData?.name || "Unknown";
-
-      // ===== THREAD INFO =====
-      const threadInfo = await api.getThreadInfo(event.threadID);
-      const users = threadInfo.userInfo || [];
-
-      const me = users.find(u => u.id === event.senderID);
-
-      if (!me?.gender) {
-        return api.sendMessage(
-          "⚠ Your gender could not be detected.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      const targetGender = me.gender === "MALE" ? "FEMALE" : "MALE";
-
-      const candidates = users.filter(
-        u => u.gender === targetGender && u.id !== event.senderID
-      );
-
-      if (!candidates.length) {
-        return api.sendMessage(
-          "❌ No suitable match found in this group.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      const match = candidates[Math.floor(Math.random() * candidates.length)];
-      const matchName = match.name || "Mystery Love";
-
-      // ===== PATH SETUP =====
-      const tmpDir = path.join(__dirname, "tmp");
-      fs.ensureDirSync(tmpDir);
-
-      const myImgPath = path.join(tmpDir, `me_${event.senderID}.jpg`);
-      const pairImgPath = path.join(tmpDir, `pair_${match.id}.jpg`);
-
-      // ===== AVATAR URL 1500x1500 =====
-      const avatar = uid =>
-        `https://graph.facebook.com/${uid}/picture?height=1500&width=1500&access_token=${FB_TOKEN}`;
-
-      // ===== DOWNLOAD DP =====
-      await Promise.all([
-        axios.get(avatar(event.senderID), { responseType: "arraybuffer" })
-          .then(res => fs.writeFileSync(myImgPath, res.data))
-          .catch(() => console.warn(`Failed to download avatar for ${event.senderID}`)),
-
-        axios.get(avatar(match.id), { responseType: "arraybuffer" })
-          .then(res => fs.writeFileSync(pairImgPath, res.data))
-          .catch(() => console.warn(`Failed to download avatar for ${match.id}`))
-      ]);
-
-      // ===== CANVAS =====
-      const width = 800;
-      const height = 400;
-      const canvas = createCanvas(width, height);
-      const ctx = canvas.getContext("2d");
-
-      const bg = await loadImage(
-        "https://i.postimg.cc/tRFY2HBm/0602f6fd6933805cf417774fdfab157e.jpg"
-      );
-
-      const myImg = await loadImage(myImgPath);
-      const pairImg = await loadImage(pairImgPath);
-
-      ctx.drawImage(bg, 0, 0, width, height);
-
-      const drawCircle = (img, x, y, size) => {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(img, x, y, size, size);
-        ctx.restore();
-      };
-
-      drawCircle(myImg, 380, 40, 170);
-      drawCircle(pairImg, width - 220, 190, 180);
-
-      // ===== OUTPUT =====
-      const outPath = path.join(tmpDir, `pair_${Date.now()}.png`);
-      await fs.writeFile(outPath, canvas.toBuffer("image/png"));
-
-      const lovePercent = Math.floor(Math.random() * 31) + 70;
-
-      api.sendMessage(
-        {
-          body:
-`🥰 𝗦𝘂𝗰𝗰𝗲𝘀𝘀𝗳𝘂𝗹 𝗣𝗮𝗶𝗿𝗶𝗻𝗴 💞
-
-・${senderName} 🎀
-・${matchName} 🎀
-
-💌 Wish you a lifetime of happiness ❤️
-💙 Love Percentage: ${lovePercent}%`,
-          attachment: fs.createReadStream(outPath)
-        },
-        event.threadID,
-        () => {
-          [outPath, myImgPath, pairImgPath].forEach(f => {
-            if (fs.existsSync(f)) fs.unlinkSync(f);
-          });
-        },
-        event.messageID
-      );
-
-    } catch (err) {
-      console.error("PAIR2 ERROR:", err);
-      api.sendMessage(
-        "❌ Pair generate করতে সমস্যা হয়েছে, পরে আবার চেষ্টা করো!",
-        event.threadID,
-        event.messageID
-      );
+  onStart: async function ({ event, threadsData, message, usersData, api }) {
+    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68); 
+    if (module.exports.config.author !== obfuscatedAuthor) {
+      return api.sendMessage("You are not authorized to change the author name.\n", event.threadID, event.messageID);
     }
+
+    const uidI = event.senderID;
+    const name1 = await usersData.getName(uidI);
+    const avatarUrl1 = await usersData.getAvatarUrl(uidI);
+    const threadData = await threadsData.get(event.threadID);
+
+    const senderInfo = threadData.members.find(mem => mem.userID == uidI);
+    const gender1 = senderInfo?.gender;
+
+    if (!gender1 || (gender1 !== "MALE" && gender1 !== "FEMALE")) {
+      return message.reply("❌ Couldn't determine your gender. Please update your profile.");
+    }
+
+    const oppositeGender = gender1 === "MALE" ? "FEMALE" : "MALE";
+
+    const candidates = threadData.members.filter(
+      member => member.gender === oppositeGender && member.inGroup && member.userID !== uidI
+    );
+
+    if (candidates.length === 0) {
+      return message.reply(`❌ No ${oppositeGender.toLowerCase()} members found in this group.`);
+    }
+
+    const matched = candidates[Math.floor(Math.random() * candidates.length)];
+
+    const name2 = await usersData.getName(matched.userID);
+    const avatarUrl2 = await usersData.getAvatarUrl(matched.userID);
+
+    const lovePercent = Math.floor(Math.random() * 36) + 65;
+    const compatibility = Math.floor(Math.random() * 36) + 65;
+
+    function toBoldUnicode(name) {
+      const boldAlphabet = {
+        "a": "𝐚", "b": "𝐛", "c": "𝐜", "d": "𝐝", "e": "𝐞", "f": "𝐟", "g": "𝐠", "h": "𝐡", "i": "𝐢", "j": "𝐣",
+        "k": "𝐤", "l": "𝐥", "m": "𝐦", "n": "𝐧", "o": "𝐨", "p": "𝐩", "q": "𝐪", "r": "𝐫", "s": "𝐬", "t": "𝐭",
+        "u": "𝐮", "v": "𝐯", "w": "𝐰", "x": "𝐱", "y": "𝐲", "z": "𝐳", "A": "𝐀", "B": "𝐁", "C": "𝐂", "D": "𝐃",
+        "E": "𝐄", "F": "𝐅", "G": "𝐆", "H": "𝐇", "I": "𝐈", "J": "𝐉", "K": "𝐊", "L": "𝐋", "M": "𝐌", "N": "𝐍",
+        "O": "𝐎", "P": "𝐏", "Q": "𝐐", "R": "𝐑", "S": "𝐒", "T": "𝐓", "U": "𝐔", "V": "𝐕", "W": "𝐖", "X": "𝐗",
+        "Y": "𝐘", "Z": "𝐙", "0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8",
+        "9": "9", " ": " ", "'": "'", ",": ",", ".": ".", "-": "-", "!": "!", "?": "?"
+      };
+      return name.split('').map(char => boldAlphabet[char] || char).join('');
+    }
+
+    const styledName1 = toBoldUnicode(name1);
+    const styledName2 = toBoldUnicode(name2);
+
+    const styledMessage = `
+💖✨ 𝗡𝗲𝘄 𝗣𝗮𝗶𝗿 𝗔𝗹𝗲𝗿𝘁! ✨💖
+
+🎉 𝐄𝐯𝐞𝐫𝐲𝐨𝐧𝐞, 𝐥𝐞𝐭'𝐬 𝐜𝐨𝐧𝐠𝐫𝐚𝐭𝐮𝐥𝐚𝐭𝐞 𝐨𝐮𝐫 𝐥𝐨𝐯𝐞𝐥𝐲 𝐧𝐞𝐰 𝐜𝐨𝐮𝐩𝐥𝐞
+
+• ${styledName1}  
+• ${styledName2}
+
+❤  𝐋𝐨𝐯𝐞 𝐏𝐞𝐫𝐜𝐞𝐧𝐭𝐚𝐠𝐞: ${lovePercent}%  
+🌟 𝐂𝐨𝐦𝐩𝐚𝐭𝐢𝐛𝐢𝐥𝐢𝐭𝐲: ${compatibility}%
+
+💍 𝐌𝐚𝐲 𝐲𝐨𝐮𝐫 𝐥𝐨𝐯𝐞 𝐛𝐥𝐨𝐨𝐦 𝐟𝐨𝐫𝐞𝐯𝐞𝐫`;
+
+    return message.reply({
+      body: styledMessage,
+      attachment: [
+        await getStreamFromURL(avatarUrl1),
+        await getStreamFromURL(avatarUrl2)
+      ]
+    });
   }
 };
