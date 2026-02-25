@@ -2,72 +2,85 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
+const getBaseUrl = async () => {
+  try {
+    const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+    return base.data.mahmud;
+  } catch (e) {
+    return "https://mahmud-global-apis.onrender.com"; 
+  }
+};
+
 module.exports = {
   config: {
     name: "autodl",
-    version: "2.0.0",
-    author: "rX x Rahat",
-    countDown: 2, // Cooldown komiye deya hoyeche
+    version: "1.7",
+    author: "MahMUD",
+    countDown: 0,
     role: 0,
-    description: { en: "Ultra-fast auto video downloader" },
     category: "media",
-    guide: { en: "Paste link and wait for magic" }
+    guide: {
+      en: "[just send the video link]",
+    },
   },
 
-  onStart: async function ({ api, event }) {
-    return api.sendMessage("⚡ Auto-downloader is active!", event.threadID, event.messageID);
-  },
+  onStart: async function () {},
 
   onChat: async function ({ api, event }) {
-    const { body, threadID, messageID } = event;
-    if (!body || !body.startsWith("https://")) return;
+      const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68); 
+        if (module.exports.config.author !== obfuscatedAuthor) {
+        return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
+     }
 
-    // Fast Regex Check
-    const isMedia = /youtu\.be|youtube\.com|tiktok\.com|instagram\.com|facebook\.com|fb\.watch/.test(body);
-    if (!isMedia) return;
+        if (!event.body) return;
+        const supportedSites = /https?:\/\/(www\.)?(vt\.tiktok\.com|tiktok\.com|facebook\.com|fb\.watch|instagram\.com|youtu\.be|youtube\.com|x\.com|twitter\.com|vm\.tiktok\.com)/gi;
+        if (supportedSites.test(event.body)) {
+        const links = event.body.match(/https?:\/\/\S+/gi);
+        if (!links) return;
+        const link = links[0];
 
-    const { alldown } = require("rx-dawonload");
+        let platform = "𝚄𝚗𝚔𝚗𝚘𝚠𝚗";
+        if (link.includes("facebook.com") || link.includes("fb.watch")) platform = "𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤";
+        else if (link.includes("instagram.com")) platform = "𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦";
+        else if (link.includes("tiktok.com")) platform = "𝐓𝐢𝐤𝐓𝐨𝐤";
+        else if (link.includes("youtube.com") || link.includes("youtu.be")) platform = "𝐘𝐨𝐮𝐓𝐮𝐛𝐞";
+        else if (link.includes("x.com") || link.includes("twitter.com")) platform = "𝐗 (𝐓𝐰𝐢𝐭𝐭𝐞𝐫)";
 
-    try {
-      // Non-blocking reaction
-      api.setMessageReaction("⚡", messageID, () => {}, true);
 
-      // Fast fetching
-      const res = await alldown(body.trim());
-      if (!res || !res.url) return api.setMessageReaction("❌", messageID, () => {}, true);
+        const cacheDir = path.join(__dirname, "cache");
+        const filePath = path.join(cacheDir, `autodl_${Date.now()}.mp4`);
+        try { api.setMessageReaction("⏳", event.messageID, () => {}, true);
+        if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
 
-      // Create stream instead of writing full file first
-      const cachePath = path.join(__dirname, "cache", `fast_${Date.now()}.mp4`);
-      if (!fs.existsSync(path.join(__dirname, "cache"))) fs.mkdirSync(path.join(__dirname, "cache"));
+        const base = await getBaseUrl();
+        const apiUrl = `${base}/api/download/video?link=${encodeURIComponent(link)}`;
+        const response = await axios({
+          method: 'get',
+          url: apiUrl,
+          responseType: 'arraybuffer',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+          }
+        });
 
-      // Use Axios stream for high speed
-      const response = await axios({
-        method: 'get',
-        url: res.url,
-        responseType: 'stream',
-        headers: { 'User-Agent': 'Mozilla/5.0' }
-      });
+        fs.writeFileSync(filePath, Buffer.from(response.data));
+        if (fs.statSync(filePath).size < 1000) {
+        throw new Error("Invalid video data.");
+      }
 
-      const writer = fs.createWriteStream(cachePath);
-      response.data.pipe(writer);
+        api.setMessageReaction("✅", event.messageID, () => {}, true);
+        const msgBody = `• 𝐏𝐥𝐚𝐭𝐟𝐨𝐫𝐦: ${platform}\n• 𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝐯𝐢𝐝𝐞𝐨 𝐛𝐚𝐛𝐲 <🍓`;
+        return api.sendMessage( { body: msgBody,
+        attachment: fs.createReadStream(filePath) },
+        event.threadID, () => { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); },  event.messageID );
 
-      writer.on('finish', () => {
-        api.sendMessage({
-          body: `✅ 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲\n🚀 𝗦𝗽𝗲𝗲𝗱: 𝚄𝙻𝚃𝚁𝙰 𝙵𝙰𝚂𝚃\n📍 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${res.title || 'Media'}`,
-          attachment: fs.createReadStream(cachePath)
-        }, threadID, (err) => {
-          if (fs.existsSync(cachePath)) fs.unlinkSync(cachePath);
-          if (!err) api.setMessageReaction("✅", messageID, () => {}, true);
-        }, messageID);
-      });
-
-      writer.on('error', (err) => {
-        throw err;
-      });
-
-    } catch (err) {
-      console.error(err);
-      api.setMessageReaction("❌", messageID, () => {}, true);
+      } catch (err) {
+        console.error("AutoDL Error:", err.message);
+        api.setMessageReaction("❌", event.messageID, () => {}, true);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
     }
-  }
+  },
 };
