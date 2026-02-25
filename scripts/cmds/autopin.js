@@ -1,21 +1,20 @@
-const axios = require("axios");
+!cmd install autopin.js const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
 module.exports = {
   config: {
     name: "autopin",
-    version: "3.7",
-    author: "Arafat",
+    version: "6.0",
+    author: "AYAN BBE",
     role: 0,
     countDown: 0,
     category: "auto",
-    shortDescription: "Pinterest Auto Downloader",
-    longDescription: "Auto-detect Pinterest links → Download Photo/Video",
+    shortDescription: "Pinterest Auto Downloader (HD Single)"
   },
 
   onStart: async ({ message }) => {
-    await message.reply("✅ Autopin Activated");
+    await message.reply("😾 Autopin Activated (HD Mode)");
   },
 
   onChat: async ({ event, message }) => {
@@ -26,49 +25,63 @@ module.exports = {
     const link = text.match(regex)?.[0];
     if (!link) return;
 
-    let tmp;
+    let loading;
+
     try {
-      tmp = await message.reply("⏳ Downloading Pinterest media...");
+      loading = await message.reply("⏳ Fetching Pinterest media...");
 
-      // Get base API
-      const configURL =
-        "https://raw.githubusercontent.com/Arafat-Core/Arafat-Temp/refs/heads/main/download.json";
-      const { data: config } = await axios.get(configURL);
-      const baseAPI = config?.pinterest;
-      if (!baseAPI) throw new Error("Pinterest API not found");
+      // 🔥 Follow redirect (fix pin.it short link)
+      const redirect = await axios.get(link, {
+        maxRedirects: 5,
+        validateStatus: () => true
+      });
 
-      // Get media info
-      const apiURL = `${baseAPI}/arafat/Pinterest?url=${encodeURIComponent(link)}`;
-      const { data: result } = await axios.get(apiURL);
-      if (!result?.success || !result?.file) throw new Error("Unable to fetch media");
+      const finalURL = redirect.request.res.responseUrl;
 
-      // Ensure cache folder
+      // 🔥 Get page HTML
+      const { data: html } = await axios.get(finalURL, {
+        headers: { "User-Agent": "Mozilla/5.0" }
+      });
+
+      // 🔥 Extract ONLY original media
+      const video = html.match(/"contentUrl":"(https:[^"]+\.mp4)"/);
+      const original = html.match(/"url":"(https:[^"]+\/originals\/[^"]+\.(jpg|png))"/);
+
+      let mediaURL;
+
+      if (video) {
+        mediaURL = video[1].replace(/\\u002F/g, "/");
+      } else if (original) {
+        mediaURL = original[1].replace(/\\u002F/g, "/");
+      } else {
+        throw new Error("Media not found");
+      }
+
       const cacheDir = path.join(__dirname, "cache");
       if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
-      const ext = result.file.endsWith(".mp4") ? ".mp4" : ".jpg";
+      const ext = mediaURL.includes(".mp4") ? ".mp4" : ".jpg";
       const filePath = path.join(cacheDir, `pin_${Date.now()}${ext}`);
 
-      // Download file
-      const { data: fileBuffer } = await axios.get(result.file, { responseType: "arraybuffer" });
-      fs.writeFileSync(filePath, fileBuffer);
-
-      // Send media
-      await message.reply({
-        body: ext === ".mp4" ? "🎬 Pinterest Video" : "🖼 Pinterest Photo",
-        attachment: fs.createReadStream(filePath),
+      // 🔥 Download file
+      const { data } = await axios.get(mediaURL, {
+        responseType: "arraybuffer"
       });
 
-      // Clean up
+      fs.writeFileSync(filePath, data);
+
+      await message.reply({
+        body: ext === ".mp4" ? "💟 Pinterest Video" : "😋🍨 Pinterest HD Image",
+        attachment: fs.createReadStream(filePath)
+      });
+
       fs.unlinkSync(filePath);
 
-      // Remove temporary message
-      if (tmp?.messageID) await message.unsend(tmp.messageID);
+      if (loading?.messageID) await message.unsend(loading.messageID);
 
     } catch (err) {
-      // Safe error handling
-      if (tmp?.messageID) await message.unsend(tmp.messageID);
-      await message.reply(`⚠️ Error: ${err.message}`);
+      if (loading?.messageID) await message.unsend(loading.messageID);
+      await message.reply("❌ Failed to fetch Pinterest media");
     }
-  },
+  }
 };
