@@ -14,7 +14,7 @@ const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/
 
 module.exports = {
   config: {
-    name: "kiss",
+    name: "kiss4",
     version: "1.7",
     author: "MahMUD",
     countDown: 5,
