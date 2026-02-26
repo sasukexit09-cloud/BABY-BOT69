@@ -1,116 +1,58 @@
-const DIG = require("discord-image-generation");
-const fs = require("fs-extra");
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
-module.exports = {
-	config: {
-		name: "gay",
-		version: "1.0",
-		author: "@tas33n",
-		countDown: 1,
-		role: 0,
-		shortDescription: "find gay",
-		longDescription: "",
-		category: "box chat",
-		guide: "{pn} {{[on | off]}}",
-		envConfig: {
-			deltaNext: 5
-		}
-	},
-
-	langs: {
-		vi: {
-			noTag: "Bạn phải tag người bạn muốn tát"
-		},
-		en: {
-			noTag: "You must tag the person you want to "
-		}
-	},
-
-	onStart: async function ({ event, message, usersData, args, getLang }) 
-	{
-
-		let mention = Object.keys(event.mentions)
-		let uid;
-
-		// const img = await new DIG.Gay().getImage(url);
-
-
-		if(event.type == "message_reply"){
-		uid = event.messageReply.senderID
-		} else{
-			if (mention[0]){
-				uid = mention[0]
-			}else{
-				console.log(" jsjsj")
-				uid = event.senderID}
-		}
-
-let url = await usersData.getAvatarUrl(uid)
-let avt = await new DIG.Gay().getImage(url)
-
-
-	// 	message.reply({
-	// 		body:"",
-	// 		attachment: await global.utils.getStreamFromURL(avt)
-	// })
-			const pathSave = `${__dirname}/tmp/gay.png`;
-	fs.writeFileSync(pathSave, Buffer.from(avt));
-		let body = "look.... i found a gay"
-		if(!mention[0]) body="Baka you gay\nforgot to reply or mention someone"
-		message.reply({body:body,
-attachment: fs.createReadStream(pathSave)
-		}, () => fs.unlinkSync(pathSave));
-
-
-	}
+const baseApiUrl = async () => {
+  const base = await axios.get(
+    "https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json"
+  );
+  return base.data.mahmud;
 };
 
+/**
+* @author MahMUD
+* @author: do not delete it
+*/
+
+module.exports = {
+  config: {
+    name: "gay",
+    aliases: [],
+    version: "1.7",
+    author: "MahMUD",
+    role: 0,
+    category: "fun",
+    cooldown: 10,
+    guide: "gay [mention-reply-UID]",
+  },
+
+  onStart: async function ({ api, event, args }) {
+     const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);
+     if (module.exports.config.author !== obfuscatedAuthor) {
+     return api.sendMessage(
+     "You are not authorized to change the author name.", event.threadID, event.messageID );
+   }
+
+    const { threadID, messageID, messageReply, mentions } = event;
+    let id2; if (messageReply) { id2 = messageReply.senderID; } else if (Object.keys(mentions).length > 0) {
+    id2 = Object.keys(mentions)[0];  } else if (args[0]) {  id2 = args[0]; } else {
+    return api.sendMessage( "baby, Mention, reply, or provide UID of the target.", threadID, messageID );
+  }
+
+   try {
+    const url = `${await baseApiUrl()}/api/dig?type=gay&user=${id2}`;
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    const filePath = path.join(__dirname, `gay_${id2}.png`);
+    fs.writeFileSync(filePath, response.data);
 
 
-
-
-
-
-
-
-// 	onStart: async function ({ message, event, usersData, threadsData, args }) {
-
-
-
-
-// 		if(event.type == "message_reply"){
-//       avt = await usersData.getAvatarUrl(event.messageReply.senderID)
-//     } else{
-//       if (!uid2){avt =  await usersData.getAvatarUrl(uid1)
-//               } else{avt = await usersData.getAvatarUrl(uid2)}}
-
-
-// 		message.reply({body:"Look.... I found a gay",
-// attachment: fs.createReadStream(pathSave)
-// 		}, () => fs.unlinkSync(pathSave));
-
-
-
-
-
-// message.send({body:"Look.... I found a gay",
-// attachment: fs.createReadStream(pathSave)
-// 		}, () => fs.unlinkSync(pathSave));
-
-// st fs = require("fs-extra");
-// let url = await usersData.getAvatarUrl(event.messageReply.senderID)
-// // const img = await new DIG.Gay().getImage(url);
-		// const pathSave = `${__dirname}/tmp/gay.png`;
-		// fs.writeFileSync(pathSave, Buffer.from(avt));
-
-// // message.send({body:"Look.... I found a gay",
-// // attachment: fs.createReadStream(pathSave)
-// // 		}, () => fs.unlinkSync(pathSave));
-
-
-// 	}
-
-
-
-
-// }
+    api.sendMessage({ attachment: fs.createReadStream(filePath),
+    body: `𝐄𝐟𝐟𝐞𝐜𝐭 𝐠𝐚𝐲 𝐬𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥 🐸`,
+     },
+    threadID, () => fs.unlinkSync(filePath),  messageID );
+  } catch (err) {
+    console.error(err);
+    api.sendMessage(`🥹 Error, contact MahMUD.`, threadID, messageID);
+    }
+  },
+};
