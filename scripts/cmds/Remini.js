@@ -1,62 +1,75 @@
-const { writeFileSync, existsSync, mkdirSync } = require("fs");
-const { join } = require("path");
 const axios = require("axios");
-const tinyurl = require('tinyurl');
-const fs = require('fs'); 
+
+const mahmud = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+  return base.data.mahmud;
+};
+
+/**
+* @author MahMUD
+* @author: do not delete it
+*/
 
 module.exports = {
   config: {
     name: "remini",
-    aliases: [],
-    version: "2.0",
-    author: "Vex_Kshitiz",
-    countDown: 20,
-    role: 2,
-    shortDescription: "remini",
-    longDescription: "enhance the image quality",
-    category: "tool",
+    version: "1.7",
+    author: "MahMUD",
+    countDown: 10,
+    role: 0,
+    category: "tools",
+    description: "Enhance or restore image quality using Remini AI.",
     guide: {
-      en: "{p}remini (reply to image)",
+      en: "{pn} [url] or reply with image"
     }
   },
 
-  onStart: async function ({ message, event, api }) {
-    api.setMessageReaction("🕐", event.messageID, (err) => {}, true);
-    const { type: a, messageReply: b } = event;
-    const { attachments: c, threadID: d, messageID: e } = b || {};
+  onStart: async function ({ message, event, args }) {
 
-    if (a === "message_reply" && c) {
-      const [f] = c;
-      const { url: g, type: h } = f || {};
+    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68); 
+    if (module.exports.config.author !== obfuscatedAuthor) {
+      return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
+    }
+    const startTime = Date.now();
+    let imgUrl;
 
-      if (!f || !["photo", "sticker"].includes(h)) {
-        return message.reply("❌ | Reply must be an image.");
-      }
+    if (event.messageReply?.attachments?.[0]?.type === "photo") {
+      imgUrl = event.messageReply.attachments[0].url;
+    }
 
-      try {
-        const i = await tinyurl.shorten(g);
-        const { data: j } = await axios.get(`https://vex-kshitiz.vercel.app/upscale?url=${encodeURIComponent(i)}`, {
-          responseType: "json"
-        });
+    else if (args[0]) {
+      imgUrl = args.join(" ");
+    }
 
-        const imageUrl = j.result_url;
-        const imageResponse = await axios.get(imageUrl, { responseType: "arraybuffer" });
+    if (!imgUrl) {
+      return message.reply("Baby, Please reply to an image or provide an image URL");
+    }
 
-        const k = join(__dirname, "cache");
-        if (!existsSync(k)) {
-          mkdirSync(k, { recursive: true });
-        }
+    const waitMsg = await message.reply("Remini images loading...wait baby <😘");
+    message.reaction("😘", event.messageID);
 
-        const imagePath = join(k, "remi_image.png");
-        writeFileSync(imagePath, imageResponse.data);
+    try {
 
-        message.reply({ attachment: fs.createReadStream(imagePath) }, d);
-      } catch (m) {
-        console.error(m);
-        message.reply("❌ | Error occurred while enhancing image.");
-      }
-    } else {
-      message.reply("❌ | Please reply to an image.");
+      const apiUrl = `${await mahmud()}/api/remini?imgUrl=${encodeURIComponent(imgUrl)}`;
+
+      const res = await axios.get(apiUrl, { responseType: "stream" });
+      if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
+
+      message.reaction("✅", event.messageID);
+
+      const processTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+      message.reply({
+        body: `✅ | Here's your Remini image baby`,
+        attachment: res.data
+      });
+
+    } catch (error) {
+
+      if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
+
+      message.reaction("❎", event.messageID);
+      message.reply(`🫢error baby, contact AYAN BBE🍓.`);
     }
   }
 };
