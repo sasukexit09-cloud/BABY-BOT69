@@ -1,74 +1,74 @@
-const DIG = require("discord-image-generation");
-const fs = require("fs-extra");
+const axios = require("axios");
+const fs = require("fs");
 const path = require("path");
 
+const baseApiUrl = async () => {
+  const base = await axios.get(
+    "https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json"
+  );
+  return base.data.mahmud;
+};
+
+/**
+* @author MahMUD
+* @author: do not delete it
+*/
+
 module.exports = {
-    config: {
-        name: "buttslap",
-        version: "2.1",
-        author: "Amit max ⚡ & Gemini",
-        countDown: 5,
-        role: 0,
-        shortDescription: "Buttslap image with FB new mention style",
-        longDescription: "Generate a buttslap image by mentioning or replying to a user.",
-        category: "fun",
-        guide: { en: "{pn} @tag or reply to a message" }
-    },
+  config: {
+    name: "buttslap",
+    aliases: ["butslap"],
+    version: "1.7",
+    author: "MahMUD",
+    role: 0,
+    category: "fun",
+    cooldown: 8,
+    guide: "slap [mention/reply/UID]",
+  },
 
-    onStart: async function ({ event, message, args }) {
-        const { senderID, mentions, messageReply } = event;
-        
-        let uid1 = senderID; // যে কমান্ড দিচ্ছে
-        let uid2;            // টার্গেট
-        let targetName = "";
-
-        // ১. আইডি ডিটেকশন (Reply অথবা Mention)
-        if (messageReply) {
-            uid2 = messageReply.senderID;
-            targetName = "this person"; // রিপ্লাইয়ের ক্ষেত্রে নাম ডিফল্ট রাখা হয়েছে
-        } else if (Object.keys(mentions).length > 0) {
-            uid2 = Object.keys(mentions)[0];
-            targetName = mentions[uid2].replace("@", "");
-        } else {
-            return message.reply("দয়া করে একজনকে মেনশন করুন অথবা যার ওপর ইফেক্ট দিতে চান তার মেসেজে রিপ্লাই দিন।");
-        }
-
-        // ২. নিজেকে নিজে ইফেক্ট দেওয়া আটকানো
-        if (uid1 == uid2) return message.reply("নিজেকে নিজে কি এসব করা ঠিক? 🐸");
-
-        // ৩. Access Token ও HQ Avatar URLs
-        const accessToken = "6628568379|c1e620fa708a1d5696fb991c1bde5662";
-        const avatar1 = `https://graph.facebook.com/${uid1}/picture?width=1500&height=1500&access_token=${accessToken}`;
-        const avatar2 = `https://graph.facebook.com/${uid2}/picture?width=1500&height=1500&access_token=${accessToken}`;
-
-        const tmpDir = path.join(__dirname, "tmp");
-        const filePath = path.join(tmpDir, `buttslap_${Date.now()}.png`);
-
-        try {
-            await fs.ensureDir(tmpDir);
-
-            // ৪. ইমেজ জেনারেশন (Spank mode)
-            const imgBuffer = await new DIG.Spank().getImage(avatar1, avatar2);
-            await fs.writeFile(filePath, Buffer.from(imgBuffer));
-
-            // ৫. FB New Style Mention Logic
-            const msgBody = targetName !== "this person" ? `এই নে কড়া ডোজ ${targetName}! 🍑👋` : "এই নে কড়া ডোজ! 🍑👋";
-
-            // ৬. সেন্ড মেথড
-            return message.reply({
-                body: msgBody,
-                mentions: targetName !== "this person" ? [{
-                    tag: targetName,
-                    id: uid2
-                }] : [],
-                attachment: fs.createReadStream(filePath)
-            }, () => {
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-            });
-
-        } catch (err) {
-            console.error(err);
-            return message.reply("ছবি তৈরি করতে সমস্যা হয়েছে। আপনার টোকেন বা ইউজার আইডি চেক করুন।");
-        }
+  onStart: async function ({ api, event, args }) {
+    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);
+    if (module.exports.config.author !== obfuscatedAuthor) {
+      return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
     }
+
+    const { threadID, messageID, messageReply, mentions, senderID } = event;
+    const type = args[0];
+
+    if (!type) return api.sendMessage("Use: fun slap @tag", threadID, messageID);
+
+    let id = senderID;
+    let id2;
+
+    if (messageReply) {
+      id2 = messageReply.senderID;
+    } else if (Object.keys(mentions).length > 0) {
+      id2 = Object.keys(mentions)[0];
+    } else if (args[1]) {
+      id2 = args[1];
+    } else {
+      return api.sendMessage("Mention, reply, or provide UID of the target.", threadID, messageID);
+    }
+
+    try {
+      const url = `${await baseApiUrl()}/api/dig?type=buttslap&user=${id}&user2=${id2}`;
+
+      const response = await axios.get(url, { responseType: "arraybuffer" });
+      const filePath = path.join(__dirname, `slap_${id2}.png`);
+      fs.writeFileSync(filePath, response.data);
+
+      api.sendMessage(
+        {
+          attachment: fs.createReadStream(filePath),
+          body: `Effect: buttslap successful 💥`
+        },
+        threadID,
+        () => fs.unlinkSync(filePath),
+        messageID
+      );
+    } catch (err) {
+      console.error(err);
+      api.sendMessage(`🍓`, threadID, messageID);
+    }
+  }
 };
