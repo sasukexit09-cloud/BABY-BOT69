@@ -14,7 +14,7 @@ module.exports = {
   },
 
   onStart: async ({ message }) => {
-    await message.reply("😾 Autopin Activated (HD Mode)");
+    await message.reply("😾 𝙰𝚄𝚃𝙾 𝙿𝙸𝙽 𝙸𝚂 𝙰𝙲𝚃𝙸𝚅𝙰𝚃𝙴𝙳 (𝙷𝙳 𝙼𝙾𝙳𝙴)");
   },
 
   onChat: async ({ event, message }) => {
@@ -28,7 +28,7 @@ module.exports = {
     let loading;
 
     try {
-      loading = await message.reply("⏳ Fetching Pinterest media...");
+      loading = await message.reply("🍰 Fetching Pinterest media...");
 
       // 🔥 Follow redirect (fix pin.it short link)
       const redirect = await axios.get(link, {
@@ -71,7 +71,7 @@ module.exports = {
       fs.writeFileSync(filePath, data);
 
       await message.reply({
-        body: ext === ".mp4" ? "💟 Pinterest Video" : "😋🍨 Pinterest HD Image",
+        body: ext === ".mp4" ? "💟 𝙱𝙱𝙴 𝙷𝙴𝚁𝙴'𝚂 𝚈𝙾𝚄𝚁 𝙿𝙸𝙽 𝙼𝚄𝚆𝚆𝙰𝙷 😘" : "😋🍨 𝚃𝙰𝙺𝙴 𝚈𝙾𝚄𝚁 𝙿𝙸𝙽 𝙿𝙸𝙲 𝙱𝙱𝙴 🍓",
         attachment: fs.createReadStream(filePath)
       });
 
