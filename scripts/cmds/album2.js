@@ -19,7 +19,7 @@ const getApiUrl = async () => {
 };
 
 module.exports.config = {
- name: "album",
+ name: "album2",
  version: "1.0.1",
  hasPermssion: 0,
  credits: "Ullash",
