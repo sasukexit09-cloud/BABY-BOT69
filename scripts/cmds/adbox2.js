@@ -4,8 +4,8 @@ const fs = require("fs");
 
 module.exports = {
   config: {
-    name: "adbox",
-    aliases: ["adbox"],
+    name: "adbox2",
+    aliases: ["adbox2"],
     version: "1.1",
     author: "Chitron Bhattacharjee (optimized by Maya)",
     countDown: 5,
@@ -164,21 +164,21 @@ module.exports = {
         }
 
         let msg = `
-🌿 𝙶𝚛𝚘𝚞𝚙 𝙸𝚗𝚏𝚘 — AI 🤖
+🍰 𝐆𝐑𝐎𝐔𝐏 𝐈𝐍𝐅𝐎 - 𝐁𝐀𝐁𝐘 🍇
 ━━━━━━━━━━━━━━━━
-🎀 𝙽𝚊𝚖𝚎: ${name}
-🆔 𝙸𝙳: ${id}
-🌸 𝙴𝚖𝚘𝚓𝚒: ${emoji}
-🔒 𝙰𝚙𝚙𝚛𝚘𝚟𝚊𝚕: ${approval}
-👥 𝙼𝚎𝚖𝚋𝚎𝚛𝚜: ${memCount}
-👑 𝙰𝚍𝚖𝚒𝚗𝚜: ${adminCount}
+🎀 𝗡𝗔𝗠𝗘: ${name}
+🆔 𝗜𝗗: ${id}
+🌸 𝗘𝗠𝗢𝗝𝗜: ${emoji}
+🔒 𝗔𝗣𝗣𝗥𝗢𝗩𝗔𝗟: ${approval}
+👥 𝗠𝗘𝗠𝗕𝗘𝗥𝗦: ${memCount}
+👑 𝗔𝗗𝗠𝗜𝗡𝗦: ${adminCount}
 
-🌟 𝙰𝚍𝚖𝚒𝚗 𝙻𝚒𝚜𝚝:
-${adminList || "No admins yet! 🌱"}
+💟 𝗔𝗗𝗠𝗜𝗡 𝗟𝗜𝗦𝗧 💟:
+${adminList || "𝙽𝙾𝚃 𝙵𝙾𝚄𝙽𝙳 𝙰𝙳𝙼𝙸𝙽 𝙻𝙸𝚂𝚃🥺"}
 
 ✉️ 𝙼𝚎𝚜𝚜𝚊𝚐𝚎𝚜 𝚂𝚎𝚗𝚝: ${msgs}
 
-🤖 𝙱𝚘𝚝 𝚙𝚘𝚠𝚎𝚛𝚎𝚍 𝚋𝚢 𝙼𝚊𝚢𝚊 𝙰𝙸
+🍓𝙱𝙾𝚃 𝙿𝚁𝙾𝚅𝙸𝙳𝙴𝚁 𝙱𝚈 𝙰𝚈𝙰𝙽 𝙱𝙱𝙴 🍓
 ━━━━━━━━━━━━━━━━
         `;
         apiSend(api, event.threadID, msg);
