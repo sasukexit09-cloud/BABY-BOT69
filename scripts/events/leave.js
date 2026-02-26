@@ -33,7 +33,7 @@ module.exports.run = async function ({ api, event }) {
   else {
 
     return api.sendMessage(
-      `🍓𝙰𝙳𝙼𝙸𝙽 𝙱𝙱𝙴 𝙺𝙸𝙲𝙺𝙴𝙳 𝚃𝙷𝙸𝚂 𝚄𝚂𝙴𝚁 🥺 ${fullName} 𝘼𝙏 ${time}`,
+      `🍓𝙰𝙳𝙼𝙸𝙽 𝙱𝙱𝙴 𝙺𝙸𝙲𝙺𝙴𝙳 𝚃𝙷𝙸𝚂 𝚄𝚂𝙴𝚁 🥺 ${fullName} 𝙰𝚃 ${time}`,
       event.threadID
     );
   }
