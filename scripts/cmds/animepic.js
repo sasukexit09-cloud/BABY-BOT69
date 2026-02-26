@@ -8,25 +8,17 @@ module.exports = {
   config: {
     name: "guess",
     aliases: ["enemy", "animepic"],
-    version: "1.3",
-    author: "Mahu • VIP by Maya",
+    version: "1.4",
+    author: "Mahu",
     role: 0,
-    shortDescription: "Guess the anime character (VIP only)",
+    shortDescription: "Guess the anime character",
     longDescription: "Guess the name of the anime character based on traits and tags with random images.",
     category: "game",
-    guide: { en: "{p}guess (VIP only)" }
+    guide: { en: "{p}guess" }
   },
 
   onStart: async function ({ event, message, usersData, api }) {
     try {
-      /* ===== VIP CHECK ===== */
-      const userData = await usersData.get(event.senderID);
-      if (!userData || userData.vip !== true) {
-        return message.reply(
-          "🔒 এই গেমটি শুধুমাত্র VIP user দের জন্য\n💎 VIP নিতে Admin এর সাথে যোগাযোগ করো"
-        );
-      }
-      /* ===================== */
 
       const response = await axios.get('https://global-prime-mahis-apis.vercel.app');
       const characters = response.data.data;
@@ -46,7 +38,7 @@ module.exports = {
       await fs.writeFile(imagePath, imageRes.data);
 
       const gameMsg =
-        `🎮 Guess this anime character (VIP)\n\n` +
+        `🎮 Guess this anime character\n\n` +
         `🧬 Traits: ${traits}\n` +
         `🏷️ Tags: ${tags}`;
 
