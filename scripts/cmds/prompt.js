@@ -1,89 +1,46 @@
 const axios = require("axios");
 
-const API_JSON_URL =
-  "https://raw.githubusercontent.com/Arafat-Core/cmds/refs/heads/main/api.json";
-
-let API_BASE = null;
-
-async function getApiBase() {
-  if (API_BASE) return API_BASE;
-  try {
-    const { data } = await axios.get(API_JSON_URL, { timeout: 5000 });
-    API_BASE = data?.api;
-  } catch {
-    API_BASE = null;
-  }
-  return API_BASE;
-}
+const mahmud = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+  return base.data.mahmud;
+};
 
 module.exports = {
   config: {
     name: "prompt",
     aliases: ["p"],
-    version: "1.6",
-    author: "Ayan",
-    role: 0,
-    shortDescription: "Image to prompt",
-    longDescription: "Generate an AI prompt from an image",
+    version: "1.7",
+    author: "MahMUD",
     category: "ai",
     guide: {
-      en:
-        "#prompt <image url>\n" +
-        "#p <image url>\n" +
-        "Reply to an image with #p"
-    }
+      en: "{pn} reply with an image",
+    },
   },
 
-  onStart: async function ({ api, event, args }) {
-    try {
-      let imageUrl = args[0];
+  onStart: async function ({ api, args, event }) {
+    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68);   if (module.exports.config.author !== obfuscatedAuthor) {  return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);   }
+    const apiUrl = `${await mahmud()}/api/prompt`;
+    let prompt = args.join(" ") || "Describe this image";
 
-      if (!imageUrl && event.messageReply?.attachments?.length) {
-        const att = event.messageReply.attachments[0];
-        if (att.type === "photo") imageUrl = att.url;
+    if (event.type === "message_reply" && event.messageReply.attachments[0]?.type === "photo") {
+      try {
+        const response = await axios.post(apiUrl, {
+          imageUrl: event.messageReply.attachments[0].url,
+          prompt
+        }, {
+          headers: { "Content-Type": "application/json", "author": module.exports.config.author }
+        });
+
+        const reply = response.data.error || response.data.response || "No response";
+        api.sendMessage(reply, event.threadID, event.messageID);
+        return api.setMessageReaction("🪽", event.messageID, () => {}, true);
+
+      } catch (error) {
+        api.sendMessage("moye moye🥹", event.threadID, event.messageID);
+        return api.setMessageReaction("❌", event.messageID, () => {}, true);
       }
-
-      if (!imageUrl) {
-        return api.sendMessage(
-          "Image URL required.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      const BASE = await getApiBase();
-      if (!BASE) {
-        return api.sendMessage(
-          "API unavailable.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      const requestUrl =
-        `${BASE}/prompt?url=` + encodeURIComponent(imageUrl);
-
-      const { data } = await axios.get(requestUrl, { timeout: 60000 });
-
-      if (!data || data.success === false || !data.prompt) {
-        return api.sendMessage(
-          "Failed to generate prompt.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      return api.sendMessage(
-        data.prompt,
-        event.threadID,
-        event.messageID
-      );
-    } catch (err) {
-      return api.sendMessage(
-        "Error: " + (err?.message || "unknown"),
-        event.threadID,
-        event.messageID
-      );
     }
+
+    api.sendMessage("Please reply with an image.", event.threadID, event.messageID);
   }
 };
