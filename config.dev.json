@@ -21,17 +21,17 @@
   },
   "adminBot": [
     "61584308632995",
-    "61586697506019",
+    "61577428435222",
     ""
   ],
   "erenBot": [
-  "61584308632995","61586697506019"
+  "61584308632995","61577428435222"
   ],
   "whiteListMode": {
     "enable": false,
     "whiteListIds": [
       "61584308632995",
-      "61586697506019",
+      "61577428435222",
       ""
     ],
     "notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
