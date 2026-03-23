@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "pending",
     version: "1.0",
-    author: "T A N J I L",
+    author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
     countDown: 5,
     role: 2,
     shortDescription: { vi: "", en: "" },
@@ -51,21 +51,21 @@ module.exports = {
       // SEND PREFIX + OWNER + CONTACT
       api.sendMessage(
         `╭────֍  
-│ PREFIX : !
-│ OWNER : AYAN 🕷️
-│ CONTACT : https://www.facebook.com/Ayanokujo.6969
+│ 𝗣𝗥𝗘𝗙𝗜𝗫 : !
+│ 𝗢𝗪𝗡𝗘𝗥 : AYAN 🕷️
+│ 𝗖𝗢𝗡𝗧𝗔𝗖𝗧 : https://www.facebook.com/Ayanokujo.6969
 ╰──────────────֍
 
 ╭────֍
-│ Successful Connected ✅
+│ 🍨𝚈𝙴𝙰 𝙼𝙸𝙺𝙾 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 🍨
 ╰─────────────֍`,
         tid,
         async () => {
           // AUTO VIDEO SEND
           api.sendMessage(
             {
-              body: "Connected Video 🎥",
-              attachment: await global.utils.getStreamFromURL("https://files.catbox.moe/ag6xko.mp4")
+              body: "🍨 𝙼𝙸𝙺𝙾 𝙸𝚂 𝙽𝙾𝚆 𝙰𝙻𝙸𝚅𝙴 🍨",
+              attachment: await global.utils.getStreamFromURL("https://files.catbox.moe/ddxeq9.mp4")
             },
             tid
           );
