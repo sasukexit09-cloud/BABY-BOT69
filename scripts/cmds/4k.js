@@ -14,7 +14,7 @@ module.exports = {
   config: {
     name: "4k",
     version: "1.7",
-    author: "MahMUD","𝙰𝚈𝙰𝙽 𝙱𝙱𝙴"
+    author: "MahMUD",
     countDown: 10,
     role: 0,
     category: "image",
@@ -45,8 +45,8 @@ module.exports = {
       return message.reply("Baby, Please reply to an image or provide an image URL");
     }
 
-    const waitMsg = await message.reply("𝐋𝐨𝐚𝐝𝐢𝐧𝐠 𝟒𝐤 𝐢𝐦𝐚𝐠𝐞...𝐰𝐚𝐢𝐭 𝐛𝐚𝐛𝐲 <🍨");
-    message.reaction("🍨", event.messageID);
+    const waitMsg = await message.reply("🍰 𝙻𝙾𝙰𝙳𝙸𝙽𝙶 4𝙺 𝙸𝙼𝙰𝙶𝙴...𝚆𝙰𝙸𝚃 𝙱𝙰𝙱𝚈 <🍇");
+    message.reaction("🍭", event.messageID);
 
     try {
 
@@ -55,12 +55,12 @@ module.exports = {
       const res = await axios.get(apiUrl, { responseType: "stream" });
       if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
 
-      message.reaction("✅", event.messageID);
+      message.reaction("🍰", event.messageID);
 
       const processTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
       message.reply({
-        body: `🍧𝙱𝙰𝙱𝚈 4𝙺 𝙸𝙼𝙰𝙶𝙴 𝚀𝚄𝙰𝙻𝙸𝚃𝚈 𝙸𝙼𝙿𝚁𝙾𝚅𝙴 𝙳𝙽🍨`,
+        body: `🍓 𝙴𝙸 𝙽𝙴𝚄 𝙱𝙱𝙴 𝚃𝚄𝙼𝙰𝚁 𝙴𝙽𝙷𝙰𝙽𝙲𝙴𝙳 𝙸𝙼𝙰𝙶𝙴 🍨`,
         attachment: res.data
       });
 
@@ -68,8 +68,8 @@ module.exports = {
 
       if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
 
-      message.reaction("🍼", event.messageID);
-      message.reply(`𝙱𝙱𝚈 𝙱𝙰𝚂𝙰𝚈 𝙹𝙴𝚈𝙴 𝙶𝙷𝚄𝙼𝙰𝙾 𝙰𝙻𝙸𝚈𝙰 𝙴𝙺𝙷𝙾𝙽 𝙱𝚂𝚈 🍡`);
+      message.reaction("😌", event.messageID);
+      message.reply(`🐱𝙴𝚁𝙾𝚁𝚁 𝙱𝙰𝙱𝚈 𝙲𝙾𝙽𝚃𝙰𝙲𝚃 𝙰𝙳𝙼𝙸𝙽`);
     }
   }
 };
