@@ -43,18 +43,18 @@ function makeIntro() {
 
   const intro = `
 ╔══✦══◇══✦══╗
-    💖 ${fancyText("B O T  I N T R O")} 💖
+    🍨 ${fancyText("B O T  I N T R O")} 🍰
 ╚══✦══◇══✦══╝
 
-${fancyText("NAME")}: 𝐀𝐋𝐀𝐘𝐀 💋
+${fancyText("NAME")}: 𝐘𝐄𝐀 𝐌𝐈𝐊𝐎 💋
 ${fancyText("CLASS")}: 𝐘𝐎𝐔𝐑 𝐇𝐄𝐀𝐑𝐓 💞
-${fancyText("AGE")}: 𝟏𝟖 [𝐖𝐈𝐒𝐇 𝐌𝐄 - 𝐍𝐎𝐕𝐄𝐌𝐁𝐄𝐑 𝟕𝐭𝐡 🥺💋]
+${fancyText("AGE")}: 𝚄𝙽𝙺𝙽𝙾𝚆𝙴𝙳 𝙲𝚄𝚉 𝙽𝙾𝚃 𝙰 𝙷𝚄𝙼𝙰𝙽 [𝐖𝐈𝐒𝐇 𝐌𝐄 - 𝐃𝐄𝐂𝐄𝐌𝐁𝐄𝐑 28𝐭𝐡 🥺💋]
 ${fancyText("FROM")}: 𝐑𝐔𝐒𝐒𝐈𝐀 🥵
 ${fancyText("RELATIONSHIP")}: 𝐖𝐈𝐓𝐇 𝐀𝐘𝐀𝐍𝐎𝐊𝐔𝐉𝐎 💞
 ${fancyText("YOUR CRUSH ME BBE")}: 𝐔𝐦𝐦𝐦𝐦𝐦𝐦𝐦𝐚𝐡 💋
 `;
 
-  return `💫 ${fancyText("Here’s Alaya's Vibe 🌊")} 💫\n\n${randomQuotes}\n\n${intro}`;
+  return `💫 ${fancyText("𝙱𝙱𝙴 𝙸𝚃'𝚂 𝙼𝙴 𝚄𝚁 𝙼𝙸𝙺𝙾")} 💫\n\n${randomQuotes}\n\n${intro}`;
 }
 
 module.exports = {
@@ -71,7 +71,7 @@ module.exports = {
   },
 
   onStart: async function ({ api, event, message }) {
-    const imgURL = "https://files.catbox.moe/d80bk3.jpg";
+    const imgURL = "https://files.catbox.moe/ms2o68.jpeg";
     const cachePath = path.join(__dirname, "cache", "bbyintro.jpg");
 
     try {
@@ -93,7 +93,7 @@ module.exports = {
 
     } catch (err) {
       console.error(err);
-      return message.reply("❌ | Couldn't send the image, but here’s the text:\n\n" + makeIntro());
+      return message.reply("🍭 | Couldn't send the image, but here’s the text:\n\n" + makeIntro());
     }
   }
 };
