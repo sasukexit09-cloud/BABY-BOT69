@@ -6,7 +6,7 @@ module.exports = {
     name: "info",
     aliases: ["inf", "in4"],
     version: "2.0",
-    author: " Eren",
+    author: " 𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
     countDown: 5,
     role: 0,
     shortDescription: {
@@ -32,11 +32,11 @@ module.exports = {
   },
 
   sendInfo: async function (message) {
-    const botName = "◦•●♡ʏᴏᴜʀ ʙʙʏ♡●•◦";
-    const authorName = "AYANO KUJO💋🥵";
+    const botName = "🍨 𝚈𝙴𝙰 𝙼𝙸𝙺𝙾 🍨";
+    const authorName = "𝙰𝚈𝙰𝙽𝙾 𝙺𝚄𝙹𝙾💌";
     const authorFB = "https://m.me/Ayanokujo.6969";
     const authorInsta = "wahat_12am";
-    const status = "𝗦𝗶𝗻𝗴𝗹𝗲";
+    const status = "𝚂𝙸𝙽𝙶𝙻𝙴";
 
     const now = moment().tz('Asia/Dhaka');
     const time = now.format('h:mm:ss A');
@@ -47,25 +47,25 @@ module.exports = {
     const hours = Math.floor((uptime / (60 * 60)) % 24);
     const uptimeString = `${hours}h ${minutes}m ${seconds}s`;
 
-    const videoUrl = "https://files.catbox.moe/te24y4.mp4"; /*dont use imgur url for this cmd*/
+    const videoUrl = "https://files.catbox.moe/jioszd.mp4"; /*dont use imgur url for this cmd*/
 
     const body = `
 
 ┏━━━━━━━━━━━━━━━━┓
-┃ 🧑 Admin Info
-┃ ╰➤ Name: ${authorName}
-┃ ╰➤ Facebook: ${authorFB}
-┃ ╰➤ Instagram: ${authorInsta}
-┃ ╰➤ Status: ${status}
+┃   🝮︎︎︎︎︎︎︎ 𝙰𝙳𝙼𝙸𝙽 𝙸𝙽𝙵𝙾 🝮︎︎︎︎︎︎︎
+┃ ╰➤ ɴᴀᴍᴇ: ${authorName}
+┃ ╰➤ ғᴀᴄᴇʙᴏᴏᴋ: ${authorFB}
+┃ ╰➤ ɪɴsᴛᴀ: ${authorInsta}
+┃ ╰➤ sᴛᴀᴛᴜs: ${status}
 ┃
-┃ 🤖 Bot Details
-┃ ╰➤ Name: ${botName}
-┃ ╰➤ Time: ${time}
-┃ ╰➤ Uptime: ${uptimeString}
+┃   ❣︎ 𝙱𝙾𝚃 𝙳𝙴𝚃𝙰𝙸𝙻𝚂 ❣︎
+┃ ╰➤ ɴᴀᴍᴇ: ${botName}
+┃ ╰➤ ᴛɪᴍᴇ: ${time}
+┃ ╰➤ ᴜᴘᴛɪᴍᴇ: ${uptimeString}
 ┗━━━━━━━━━━━━━━━━┛
 
-I may not be perfect,
-   but I’ll always reply to you.`;
+💌 𝙸 𝙼𝙰𝚈 𝙽𝙾𝚃 𝙱𝙴 𝙿𝙴𝚁𝙵𝙴𝙲𝚃 💌,
+  🍓 𝙱𝚄𝚃 𝙸 𝚆𝙸𝙻𝙻 𝙰𝙻𝚆𝙰𝚈𝚂 𝚁𝙴𝙿𝙻𝚈 𝚃𝙾 𝚈𝙾𝚄 🍨`;
 
     const response = await axios.get(videoUrl, { responseType: 'stream' });
 
