@@ -11,8 +11,8 @@ module.exports = {
     author: "GPT ULTIMATE",
     category: "events",
     envConfig: {
-      logGroupID: "1879628072949507",
-      adminUIDs: ["YOUR_FB_ID"]
+      logGroupID: "1453292846261675",
+      adminUIDs: ["61577428435222"]
     }
   },
 
