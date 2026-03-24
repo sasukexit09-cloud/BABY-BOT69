@@ -7,7 +7,7 @@ module.exports = {
     author: "TAREK",
     category: "events",
     envConfig: {
-      logGroupID: "1879628072949507" // তোমার লগ গ্রুপ আইডি
+      logGroupID: "1534849337581834" // তোমার লগ গ্রুপ আইডি
     }
   },
 
