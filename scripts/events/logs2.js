@@ -1,137 +1,107 @@
-const { getTime } = global.utils;
+const fs = require("fs-extra");
+const path = require("path");
+const moment = require("moment-timezone");
 
-const userWarnings = new Map();
-const bannedUsers = new Set();
-const commandTracker = new Map();
+const dataPath = path.join(__dirname, "../../data/logs2_data.json");
+
+// ডাটা লোড বা তৈরি করা
+if (!fs.existsSync(dataPath)) {
+  fs.outputJsonSync(dataPath, { banned: [], warnings: {} });
+}
 
 module.exports = {
   config: {
     name: "logs2",
-    version: "4.0",
-    author: "GPT ULTIMATE",
+    version: "4.5",
+    author: "GPT & MIKON",
     category: "events",
     envConfig: {
-      logGroupID: "1453292846261675",
-      adminUIDs: ["61577428435222"]
+      logGroupID: "1453292846261675", // আপনার লগ গ্রুপ আইডি
+      adminUIDs: ["61577428435222"] // অ্যাডমিন আইডি
     }
   },
 
-  onEvent: async function ({ event, api, usersData }) {
-    const { config } = global.GoatBot;
-    const logGroupID = this.config.envConfig.logGroupID;
-    const admins = this.config.envConfig.adminUIDs;
-    const prefix = config.prefix || "/";
+  onEvent: async function ({ event, api, usersData, threadsData }) {
+    const { logGroupID, adminUIDs } = this.config.envConfig;
+    const { senderID, threadID, body, type, logMessageType, logMessageData } = event;
+    
+    if (senderID === api.getCurrentUserID()) return;
 
-    const time = getTime("HH:mm:ss");
+    let data = fs.readJsonSync(dataPath);
+    const time = moment.tz("Asia/Dhaka").format("HH:mm:ss");
 
-    // =========================
-    // 🚫 BAN CHECK
-    // =========================
-    if (bannedUsers.has(event.senderID)) {
-      return api.sendMessage("🚫 You are banned!", event.threadID);
+    // --- [ ১. BAN CHECK ] ---
+    if (data.banned.includes(senderID) && body && body.startsWith("/")) {
+      return api.sendMessage(`🚫 আপনি এই বোট থেকে নিষিদ্ধ (Banned)!`, threadID);
     }
 
-    // =========================
-    // 👮 ADMIN PROTECT
-    // =========================
-    if (event.logMessageType === "log:unsubscribe") {
-      const leftID = event.logMessageData?.leftParticipantFbId;
-
-      if (admins.includes(leftID)) {
-        await api.sendMessage(
-          `🚨 ADMIN ALERT!
-❌ An admin was removed!
-🆔 ${leftID}
-🕒 ${time}`,
-          logGroupID
-        );
+    // --- [ ২. ADMIN REMOVAL PROTECT ] ---
+    if (logMessageType === "log:unsubscribe") {
+      const leftID = logMessageData?.leftParticipantFbId;
+      if (adminUIDs.includes(leftID)) {
+        const msg = `🚨 ADMIN ALERT!\n❌ একজন অ্যাডমিনকে রিমুভ করা হয়েছে!\n🆔 UID: ${leftID}\n🕒 সময়: ${time}`;
+        api.sendMessage(msg, logGroupID);
       }
     }
 
-    // =========================
-    // 💬 MESSAGE + COMMAND
-    // =========================
-    if (event.type === "message" && event.body) {
-      if (!event.body.startsWith(prefix)) return;
+    // --- [ ৩. SPAM & NSFW DETECTION ] ---
+    if (type === "message" && body) {
+      const prefix = "/"; // আপনার বটের প্রিফিক্স
+      if (!body.startsWith(prefix)) return;
 
-      const command = event.body.slice(prefix.length).split(" ")[0].toLowerCase();
+      const args = body.slice(prefix.length).trim().split(/ +/);
+      const command = args.shift().toLowerCase();
 
-      // =========================
-      // 🤖 AI SPAM DETECTION
-      // =========================
+      // --- অটো ব্যান সিস্টেম (Spam) ---
+      if (!global.spamTracker) global.spamTracker = new Map();
+      let userSpam = global.spamTracker.get(senderID) || [];
       const now = Date.now();
-      let data = commandTracker.get(event.senderID) || [];
+      userSpam.push(now);
+      userSpam = userSpam.filter(t => now - t < 15000); // ১৫ সেকেন্ডের উইন্ডো
+      global.spamTracker.set(senderID, userSpam);
 
-      data.push(now);
-      data = data.filter(t => now - t < 20000); // 20 sec window
-      commandTracker.set(event.senderID, data);
-
-      if (data.length >= 5) {
-        bannedUsers.add(event.senderID);
-
-        await api.sendMessage(
-          `🚨 AUTO BAN!
-User spammed commands (5 in 20s)`,
-          logGroupID
-        );
-
-        return api.sendMessage("🚫 You are banned for spamming!", event.threadID);
-      }
-
-      // =========================
-      // 🔞 18+ PROTECTION
-      // =========================
-      const adultCommands = ["18", "nsfw", "xxx"];
-
-      if (adultCommands.includes(command) && !admins.includes(event.senderID)) {
-        let warn = userWarnings.get(event.senderID) || 0;
-        warn++;
-        userWarnings.set(event.senderID, warn);
-
-        if (warn >= 3) {
-          bannedUsers.add(event.senderID);
-
-          return api.sendMessage("🚫 Banned for 18+ misuse!", event.threadID);
+      if (userSpam.length > 5 && !adminUIDs.includes(senderID)) {
+        if (!data.banned.includes(senderID)) {
+          data.banned.push(senderID);
+          fs.writeJsonSync(dataPath, data);
+          api.sendMessage(`🚨 AUTO BAN!\nUser: ${senderID}\nReason: Spamming Commands.`, logGroupID);
+          return api.sendMessage("🚫 আপনি স্প্যাম করার কারণে অটো ব্যান হয়েছেন!", threadID);
         }
-
-        return api.sendMessage(`⚠️ Warning ${warn}/3`, event.threadID);
       }
-    }
-  },
 
-  // =========================
-  // ⚙️ COMMANDS
-  // =========================
-  onStart: async function ({ api, event, args }) {
-    const admins = this.config.envConfig.adminUIDs;
+      // --- NSFW/18+ প্রোটেকশন ---
+      const adultCommands = ["18+", "nsfw", "xxx", "sex", "porn"];
+      if (adultCommands.includes(command) && !adminUIDs.includes(senderID)) {
+        let warnCount = (data.warnings[senderID] || 0) + 1;
+        data.warnings[senderID] = warnCount;
 
-    if (!event.body) return;
-    const cmd = event.body.split(" ")[0];
+        if (warnCount >= 3) {
+          data.banned.push(senderID);
+          delete data.warnings[senderID];
+          fs.writeJsonSync(dataPath, data);
+          api.sendMessage(`🚫 User ${senderID} banned for 18+ keyword usage.`, logGroupID);
+          return api.sendMessage("🚫 আপনি ৩ বার নিষিদ্ধ কমান্ড ব্যবহারের কারণে ব্যান হয়েছেন!", threadID);
+        } else {
+          fs.writeJsonSync(dataPath, data);
+          return api.sendMessage(`⚠️ Warning ${warnCount}/3: NSFW কমান্ড ব্যবহার নিষিদ্ধ!`, threadID);
+        }
+      }
 
-    // -------------------------
-    // 🔓 UNBAN
-    // -------------------------
-    if (cmd === "/unban") {
-      if (!admins.includes(event.senderID))
-        return api.sendMessage("❌ Admin only!", event.threadID);
+      // --- [ ৪. কমান্ডস: UNBAN & KICK ] ---
+      // যেহেতু এটি ইভেন্ট ফাইল, এখানে আমরা ম্যানুয়ালি কমান্ড চেক করছি
+      if (command === "unban" && adminUIDs.includes(senderID)) {
+        const targetID = args[0];
+        if (!targetID) return api.sendMessage("⚠️ UID দিন।", threadID);
+        data.banned = data.banned.filter(id => id !== targetID);
+        fs.writeJsonSync(dataPath, data);
+        return api.sendMessage(`✅ User ${targetID} কে আনব্যান করা হয়েছে।`, threadID);
+      }
 
-      const uid = args[0];
-      bannedUsers.delete(uid);
-
-      return api.sendMessage(`✅ Unbanned: ${uid}`, event.threadID);
-    }
-
-    // -------------------------
-    // 👢 KICK USER
-    // -------------------------
-    if (cmd === "/kick") {
-      if (!admins.includes(event.senderID))
-        return api.sendMessage("❌ Admin only!", event.threadID);
-
-      const uid = Object.keys(event.mentions)[0];
-      if (!uid) return api.sendMessage("⚠️ Mention user", event.threadID);
-
-      return api.removeUserFromGroup(uid, event.threadID);
+      if (command === "kick" && adminUIDs.includes(senderID)) {
+        const targetID = Object.keys(event.mentions)[0] || args[0];
+        if (!targetID) return api.sendMessage("⚠️ ইউজার মেনশন করুন বা UID দিন।", threadID);
+        return api.removeUserFromGroup(targetID, threadID);
+      }
     }
   }
 };
