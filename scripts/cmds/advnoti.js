@@ -1,4 +1,3 @@
-const { getStreamsFromAttachment } = global.utils;
 const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
@@ -9,7 +8,7 @@ module.exports = {
   config: {
     name: "advnoti",
     aliases: ["advancenoti"],
-    version: "4.0",
+    version: "4.3",
     author: "AYAN",
     countDown: 5,
     role: 2,
@@ -21,166 +20,122 @@ module.exports = {
     }
   },
 
-  // 🔹 STEP 1 → SEND NOTICE & SHOW GROUP LIST
   onStart: async function ({ message, api, event, args }) {
+    try {
+      const allThreads = await api.getThreadList(100, null, ["INBOX"]);
+      const groups = allThreads.filter(t => t.isGroup && t.threadID !== event.threadID);
 
-    const allThreads = await api.getThreadList(1000, null, ["INBOX"]);
-    const groups = allThreads.filter(t => t.isGroup);
+      if (!groups.length) return message.reply("❌ No groups found.");
+      
+      // Message and Attachment check
+      const msg = args.join(" ");
+      const replyAttachment = event.messageReply?.attachments || [];
+      const directAttachment = event.attachments || [];
+      const allAttachments = [...directAttachment, ...replyAttachment];
 
-    if (groups.length === 0) {
-      return message.reply("❌ No groups found.");
+      if (!msg && allAttachments.length === 0) {
+        return message.reply("⚠️ Please type a message or provide an attachment to send notice.");
+      }
+
+      selectionCache.set(event.senderID, {
+        message: msg,
+        attachments: allAttachments,
+        senderID: event.senderID
+      });
+
+      let list = "💌 𝙶𝚁𝙾𝚄𝙿 𝙻𝙸𝚂𝚃 💌:\n\n";
+      groups.forEach((g, i) => {
+        list += `${i + 1}. ${g.name || "Unnamed Group"} (${g.threadID})\n`;
+      });
+
+      list += "\n🍒 𝙿𝙻𝙴𝙰𝚂𝙴 𝚁𝙴𝙿𝙻𝚈 𝚆𝙸𝚃𝙷 𝙶𝚁𝙾𝚄𝙿 𝙽𝙾 (𝙴𝚇𝙰𝙼𝙿𝙻𝙴: 1 3 5) 𝙾𝚁 𝚃𝚈𝙿𝙴 '𝚊𝚕𝚕' 🍒";
+      
+      return message.reply(list, (err, info) => {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: this.config.name,
+          messageID: info.messageID,
+          author: event.senderID,
+          groups: groups
+        });
+      });
+    } catch (e) {
+      console.log(e);
+      return message.reply("❌ Error fetching group list: " + e.message);
     }
-
-    if (!args.length && !event.messageReply) {
-      return message.reply("⚠️ Message dao ba reply koro.");
-    }
-
-    // Save data
-    selectionCache.set(event.senderID, {
-      message: args.join(" "),
-      reply: event.messageReply,
-      attachments: event.attachments
-    });
-
-    // Show list
-    let list = "📋 GROUP LIST:\n\n";
-    groups.forEach((g, i) => {
-      list += `${i + 1}. ${g.name || "Unnamed Group"}\n`;
-    });
-
-    list += "\n🔢 Reply with number (e.g: 1 3 5)\n🌍 Type 'all' for all groups";
-
-    message.reply(list);
   },
 
-  // 🔹 STEP 2 → USER SELECT GROUP & SEND
-  onReply: async function ({ message, api, event, envCommands, commandName }) {
+  onReply: async function ({ message, api, event, Reply, envCommands, commandName }) {
+    const { author, groups } = Reply;
+    if (event.senderID !== author) return;
 
-    const { delayPerBatch, batchSize } = envCommands[commandName];
+    const cache = selectionCache.get(author);
+    if (!cache) return message.reply("🍰 𝚂𝙴𝙰𝚂𝚂𝙸𝙾𝙽 𝙴𝚇𝙿𝙸𝚁𝙴 𝙿𝙻𝚂 𝚄𝚂𝙴 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 𝙰𝙶𝙸𝙽 🐱.");
 
-    const cache = selectionCache.get(event.senderID);
-    if (!cache) return;
-
-    const allThreads = await api.getThreadList(1000, null, ["INBOX"]);
-    const groups = allThreads.filter(t => t.isGroup);
-
+    const input = (event.body || "").toLowerCase().trim();
     let selectedGroups = [];
-
-    const input = event.body.toLowerCase();
 
     if (input === "all") {
       selectedGroups = groups;
     } else {
-      const nums = input.split(" ").map(n => parseInt(n));
+      const nums = input.split(/\s+/).map(n => parseInt(n)).filter(n => !isNaN(n));
       selectedGroups = nums
-        .filter(n => !isNaN(n) && n > 0 && n <= groups.length)
+        .filter(n => n > 0 && n <= groups.length)
         .map(n => groups[n - 1]);
     }
 
-    if (selectedGroups.length === 0) {
-      return message.reply("❌ Invalid selection.");
-    }
+    if (!selectedGroups.length) return message.reply("🐱𝙸𝙽𝚅𝙰𝙸𝙻𝙳 𝚂𝙴𝙻𝙴𝙲𝚃𝙸𝙾𝙽 𝙿𝙻𝙴𝙰𝚂𝙴 𝚁𝙴𝙿𝙻𝚈 𝚆𝙸𝚃𝙷 𝙽𝚄𝙼𝙱𝙴𝚁 (1 2) 𝙾𝚁 '𝚊𝚕𝚕'.");
 
-    // 🕒 Time
-    const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
+    const { delayPerBatch, batchSize } = envCommands[commandName];
+    const { getStreamsFromAttachment } = global.utils;
 
-    // 👤 Mention
-    let mentions = [];
-    let tagLine = "";
+    try {
+      message.reply(`🍓𝚆𝙰𝙸𝚃 𝙱𝙱𝙴 𝚂𝙴𝙽𝙳𝙸𝙽𝙶... ${selectedGroups.length} 𝚃𝙷𝙴 𝙶𝚁𝙾𝚄𝙿 🍓`);
 
-    if (cache.reply?.senderID) {
-      tagLine = "👤 Mentioned User";
-      mentions.push({
-        tag: "Mentioned User",
-        id: cache.reply.senderID
-      });
-    }
-
-    // 🔍 AUTO DETECT IMAGE URLs
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const foundUrls = cache.message.match(urlRegex) || [];
-
-    // Clean message
-    let cleanMessage = cache.message.replace(urlRegex, "").trim();
-
-    // 📎 Attachments collect
-    let allAttachments = [];
-
-    if (cache.attachments?.length > 0) {
-      allAttachments.push(...cache.attachments);
-    }
-
-    if (cache.reply?.attachments?.length > 0) {
-      allAttachments.push(...cache.reply.attachments);
-    }
-
-    // 🌐 Download image URLs
-    for (let i = 0; i < foundUrls.length; i++) {
-      try {
-        const url = foundUrls[i];
-
-        if (!url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) continue;
-
-        const filePath = path.join(__dirname, "cache", `notice_${Date.now()}_${i}.jpg`);
-        const res = await axios.get(url, { responseType: "arraybuffer" });
-
-        await fs.writeFile(filePath, res.data);
-        allAttachments.push(fs.createReadStream(filePath));
-
-      } catch (e) {
-        console.log("URL error:", e.message);
+      // Prepare Attachments
+      let streams = [];
+      if (cache.attachments && cache.attachments.length > 0) {
+        streams = await getStreamsFromAttachment(cache.attachments);
       }
-    }
 
-    // Convert to stream
-    let streams = [];
-    if (allAttachments.length > 0) {
-      streams = await getStreamsFromAttachment(allAttachments);
-    }
-
-    // 💎 PREMIUM DESIGN
-    const stylishText = `╔═══『 🍨 𝗬𝗘𝗔 𝗠𝗜𝗞𝗢 𝗔𝗗𝗠𝗜𝗡 𝗡𝗢𝗧𝗜𝗖𝗘 🍨 』═══╗
-┃ 𝚂𝙴𝙽𝙳𝙴𝚁 𝙱𝚈 𝙰𝙳𝙼𝙸𝙽 🍨
-┃ 🍰 𝚃𝙸𝙼𝙴 𝚃𝙾 𝚃𝙰𝙺𝙴 𝙰𝙲𝚃𝙸𝙾𝙽 : ${time}
-┃ ${tagLine}
+      const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
+      const stylishText = `╔═══『 🍨 𝗬𝗘𝗔 𝗠𝗜𝗞𝗢 𝗢𝗙𝗙𝗜𝗖𝗜𝗔𝗟 𝗡𝗢𝗧𝗜𝗖𝗘 🍨 』═══╗
+┃ 🐱 𝚂𝙴𝙽𝙳𝙴𝚁: ${author}
+┃ 🕰️ 𝚃𝙸𝙼𝙴: ${time}
 ╠═══════════════════
-┃ 📢 𝙸𝙼𝙿𝙾𝚁𝚃𝙰𝙽𝚃 𝙼𝙴𝚂𝚂𝙰𝙶𝙴𝚂:
-┃ ${cleanMessage || "—"}
+┃ 📢 𝙼𝙴𝚂𝚂𝙰𝙶𝙴:
+┃ ${cache.message || "— (Media Only) —"}
 ╠═══════════════════
-┃ ⚠️ 𝙿𝙻𝙴𝙰𝚂𝙴 𝙵𝙾𝙻𝙻𝙾𝚆 𝚃𝙷𝙴 𝙽𝙾𝚃𝙸𝙲𝙴 𝙰𝙽𝙳 𝚂𝚄𝙿𝙿𝙾𝚁𝚃 𝚃𝙷𝙴 𝙰𝙳𝙼𝙸𝙽 🝮︎︎︎︎︎︎︎
+┃ ⚠️ 𝙿𝙻𝙴𝙰𝚂𝙴 𝙵𝙾𝙻𝙻𝙾𝚆 𝚃𝙷𝙴 𝙽𝙾𝚃𝙸𝙲𝙴 𝙰𝙽𝙳 𝚂𝚄𝙿𝙿𝙾𝚁𝚃 𝙰𝙳𝙼𝙸𝙽 🝮︎︎︎
 ╚═══════════════════╝`;
 
-    const formSend = {
-      body: stylishText,
-      mentions,
-      attachment: streams
-    };
+      const formSend = { body: stylishText, mentions: [] };
+      if (streams.length > 0) formSend.attachment = streams;
 
-    message.reply(`⚡ Sending to ${selectedGroups.length} groups...`);
+      let success = 0, failed = 0;
 
-    let success = 0;
-    let failed = [];
+      for (let i = 0; i < selectedGroups.length; i++) {
+        try {
+          await api.sendMessage(formSend, selectedGroups[i].threadID);
+          success++;
+        } catch (err) {
+          failed++;
+          console.error(`Failed to send to ${selectedGroups[i].threadID}:`, err);
+        }
+        
+        // Anti-spam delay
+        if ((i + 1) % batchSize === 0) {
+          await new Promise(res => setTimeout(res, delayPerBatch));
+        } else {
+          await new Promise(res => setTimeout(res, 500));
+        }
+      }
 
-    // ⚡ SUPER FAST BATCH SYSTEM
-    for (let i = 0; i < selectedGroups.length; i += batchSize) {
-      const batch = selectedGroups.slice(i, i + batchSize);
+      selectionCache.delete(author);
+      return message.reply(`🍎𝙷𝙴𝚈 𝙼𝙸𝙺𝙾 𝙰𝙳𝙼𝙸𝙽 𝙽𝙾𝚃𝙸𝙵𝙸𝙲𝙰𝚃𝙸𝙾𝙽 𝚂𝙴𝙽𝙳 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈..!\n\n🚀 𝚂𝚄𝙲𝙲𝙴𝚂𝚂 𝙶𝚁𝙾𝚄𝙿 𝙲𝙾𝚄𝙽𝚃: ${success}\n❌ 𝙵𝙰𝙸𝙻𝙴𝙳 𝙶𝚁𝙾𝚄𝙿: ${failed}`);
 
-      await Promise.all(
-        batch.map(async ({ threadID }) => {
-          try {
-            await api.sendMessage(formSend, threadID);
-            success++;
-          } catch (err) {
-            failed.push(threadID);
-          }
-        })
-      );
-
-      await new Promise(res => setTimeout(res, delayPerBatch));
+    } catch (error) {
+      console.log(error);
+      return message.reply("❌ An error occurred: " + error.message);
     }
-
-    selectionCache.delete(event.senderID);
-
-    message.reply(`🍓𝙳𝙾𝙽𝙴 𝙼𝙴𝚂𝚂𝙰𝙶𝙴 𝚂𝙴𝙽𝚃...!\n💌 𝚂𝚄𝙲𝙲𝙴𝚂𝚂: ${success}\n🐱 𝚂𝙾𝚁𝚁𝚈 𝙱𝙱𝙴 𝙵𝙰𝙸𝙻𝙴𝙳: ${failed.length}`);
   }
 };
