@@ -30,7 +30,7 @@ module.exports = {
       fs.writeFileSync(imagePath, response.data);
 
       await api.sendMessage({
-        body: "🍓𝙱𝙰𝙱𝚈 𝚃𝙷𝙰𝙽𝙺𝚂 𝙵𝙾𝚁 𝙸𝙽𝚅𝙸𝚃𝙸𝙽𝙶 𝙰𝙻𝚈𝙰   𝚃𝙾 𝚃𝙷𝙴 𝙶𝚁𝙾𝚄𝙿🍓",
+        body: "🍓𝙱𝙰𝙱𝚈 𝚃𝙷𝙰𝙽𝙺𝚂 𝙵𝙾𝚁 𝙸𝙽𝚅𝙸𝚃𝙸𝙽𝙶 𝙼𝙸𝙺𝙾 𝚃𝙾 𝚃𝙷𝙴 𝙶𝚁𝙾𝚄𝙿🍓",
         attachment: fs.createReadStream(imagePath)
       }, threadID);
 
