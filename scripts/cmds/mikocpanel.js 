@@ -1,0 +1,156 @@
+const os = require("os");
+const fs = require("fs");
+const path = require("path");
+const { createCanvas } = require("canvas");
+const GIFEncoder = require("gifencoder");
+
+// helper
+const toTime = (sec) => {
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return `${d}d ${h}h ${m}m`;
+};
+
+module.exports = {
+  config: {
+    name: "mikocpanel",
+    aliases: ["mikop","mcp"],
+    version: "11.0",
+    author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
+    description: "𝙼𝙸𝙺𝙾 𝚂𝚃𝙰𝚃𝚄𝚂"
+  },
+
+  onStart: async function(ctx) {
+    await module.exports.runDashboard(ctx);
+  },
+
+  onChat: async function(ctx) {
+    const input = ctx.event.body?.toLowerCase()?.trim();
+    if(!["cpanel","panel","cp"].includes(input)) return;
+    await module.exports.runDashboard(ctx);
+  },
+
+  runDashboard: async function({message}) {
+    const width = 1000, height = 700;
+    const encoder = new GIFEncoder(width,height);
+    const canvas = createCanvas(width,height);
+    const ctx = canvas.getContext("2d");
+    const file = path.join(__dirname,"cpanel.gif");
+    const stream = fs.createWriteStream(file);
+    encoder.createReadStream().pipe(stream);
+
+    encoder.start();
+    encoder.setRepeat(0);
+    encoder.setDelay(100);
+    encoder.setQuality(10);
+
+    const BG = "#050510";
+    const totalFrames = 140;
+
+    // Sparks setup
+    const sparks = Array.from({length:90},()=>{
+      return {x:Math.random()*width, y:Math.random()*height, angle:Math.random()*Math.PI*2, speed:Math.random()*0.7+0.3};
+    });
+
+    const neonColor = (t,offset=0)=>{
+      const r = Math.floor(128 + 127 * Math.sin(t+offset));
+      const g = Math.floor(128 + 127 * Math.sin(t+2+offset));
+      const b = Math.floor(128 + 127 * Math.sin(t+4+offset));
+      return `rgb(${r},${g},${b})`;
+    };
+
+    const drawCircle = (x,y,radius,percent,color,label,value,rotation=0)=>{
+      const start = -0.5 * Math.PI + rotation;
+      const end = start + (percent/100)*2*Math.PI;
+
+      ctx.beginPath();
+      ctx.arc(x,y,radius,0,2*Math.PI);
+      ctx.lineWidth = 18;
+      ctx.strokeStyle = "#111";
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(x,y,radius,start,end);
+      ctx.lineWidth = 18;
+      ctx.strokeStyle = color;
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = color;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle="#fff";
+      ctx.font="bold 18px Arial";
+      ctx.textAlign="center";
+      ctx.fillText(label,x,y+radius+30);
+
+      ctx.font="bold 22px Arial";
+      ctx.fillStyle=color;
+      ctx.fillText(value,x,y+5);
+    };
+
+    for(let f=0; f<totalFrames; f++){
+      ctx.fillStyle = BG;
+      ctx.fillRect(0,0,width,height);
+
+      const t = f/10;
+
+      // moving sparks
+      sparks.forEach(s=>{
+        s.x += Math.cos(s.angle)*s.speed;
+        s.y += Math.sin(s.angle)*s.speed;
+        if(s.x>width)s.x=0; if(s.y>height)s.y=0;
+        ctx.fillStyle = neonColor(t,Math.random()*5);
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,2,0,Math.PI*2);
+        ctx.fill();
+      });
+
+      // Title
+      ctx.fillStyle=neonColor(t);
+      ctx.font="bold 36px Arial";
+      ctx.textAlign="center";
+      ctx.fillText("🍨 𝚈𝙴𝙰 𝙼𝙸𝙺𝙾 𝙲𝙾𝙽𝚃𝚁𝙾𝙻 𝙿𝙰𝙽𝙴𝙻 𝚂𝚃𝙰𝚃𝚄𝚂 🍨", width/2,60);
+
+      // SYSTEM STATS
+      const cpu = (os.loadavg()[0]*100/os.cpus().length).toFixed(2);
+      const totalRam = os.totalmem();
+      const freeRam = os.freemem();
+      const usedRam = totalRam - freeRam;
+      const ramPercent = ((usedRam/totalRam)*100).toFixed(2);
+      const storagePercent = ramPercent;
+      const uptimeBot = process.uptime();
+      const uptimeSys = os.uptime();
+      const ping = Math.floor(Math.random()*50+10);
+      const hostName = os.hostname();
+      const platform = os.platform();
+      const botName = "ZENTSU BOT";
+
+      // Draw circular stats with rotation
+      drawCircle(200,250,80,cpu*(f/totalFrames),neonColor(t,1),"𝙲𝙿𝚄",`${cpu}%`,Math.sin(f/20)/2);
+      drawCircle(450,250,80,ramPercent*(f/totalFrames),neonColor(t,2),"𝚁𝙰𝙼",`${ramPercent}%`,Math.sin(f/25)/2);
+      drawCircle(700,250,80,storagePercent*(f/totalFrames),neonColor(t,3),"𝚂𝚃𝙾𝚁𝙰𝙶𝙴",`${storagePercent}%`,Math.sin(f/30)/2);
+      drawCircle(325,450,60,(uptimeBot/86400*100)*(f/totalFrames),neonColor(t,4),"𝙱𝙾𝚃 𝚄𝙿𝚃𝙸𝙼𝙴",toTime(uptimeBot),Math.sin(f/15)/3);
+      drawCircle(625,450,60,(uptimeSys/86400*100)*(f/totalFrames),neonColor(t,5),"𝚂𝚈𝚂𝚃𝙴𝙼 𝚄𝙿𝚃𝙸𝙼𝙴",toTime(uptimeSys),Math.sin(f/18)/3);
+
+      // Ping and server info
+      ctx.fillStyle="#fff";
+      ctx.font="18px Arial";
+      ctx.textAlign="left";
+      ctx.fillText(`𝙿𝙸𝙽𝙶: ${ping} ms`, 50,620);
+      ctx.fillText(`𝚂𝙴𝚁𝚅𝙴𝚁: ${hostName} | Platform: ${platform}`,50,650);
+      ctx.fillText(`𝙱𝙾𝚃 𝙽𝙰𝙼𝙴: ${botName}`,50,680);
+
+      encoder.addFrame(ctx);
+    }
+
+    encoder.finish();
+
+    stream.on("finish", async()=>{
+      await message.reply({
+        body:"🍨 𝙼𝙸𝙺𝙾 𝚂𝚃𝙰𝚃𝚄𝚂 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈 𝙻𝙾𝙰𝙳𝙴𝙳 🍨",
+        attachment: fs.createReadStream(file)
+      });
+    });
+  }
+};
