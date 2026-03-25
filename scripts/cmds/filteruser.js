@@ -5,8 +5,8 @@ function sleep(time) {
 module.exports = {
 	config: {
 		name: "filteruser",
-		version: "1.6",
-		author: "NTKhang",
+		version: "1.7",
+		author: "NTKhang & Fixed",
 		countDown: 5,
 		role: 1,
 		description: {
@@ -42,8 +42,12 @@ module.exports = {
 	},
 
 	onStart: async function ({ api, args, threadsData, message, event, commandName, getLang }) {
-		const threadData = await threadsData.get(event.threadID);
-		if (!threadData.adminIDs.includes(api.getCurrentUserID()))
+		// সরাসরি ফেসবুক সার্ভার থেকে তথ্য নেওয়া হচ্ছে (Live Admin Check)
+		const threadInfo = await api.getThreadInfo(event.threadID);
+		const botID = api.getCurrentUserID();
+		const isAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
+
+		if (!isAdmin)
 			return message.reply(getLang("needAdmin"));
 
 		if (!isNaN(args[0])) {
@@ -57,18 +61,19 @@ module.exports = {
 			});
 		}
 		else if (args[0] == "die") {
-			const threadData = await api.getThreadInfo(event.threadID);
-			const membersBlocked = threadData.userInfo.filter(user => user.type !== "User");
+			const membersBlocked = threadInfo.userInfo.filter(user => user.type !== "User");
 			const errors = [];
 			const success = [];
+			const adminIDs = threadInfo.adminIDs.map(admin => admin.id);
+
 			for (const user of membersBlocked) {
-				if (user.type !== "User" && !threadData.adminIDs.some(id => id == user.id)) {
+				if (!adminIDs.includes(user.id)) {
 					try {
 						await api.removeUserFromGroup(user.id, event.threadID);
 						success.push(user.id);
 					}
 					catch (e) {
-						errors.push(user.name);
+						errors.push(user.name || user.id);
 					}
 					await sleep(700);
 				}
@@ -89,17 +94,26 @@ module.exports = {
 
 	onReaction: async function ({ api, Reaction, event, threadsData, message, getLang }) {
 		const { minimum = 1, author } = Reaction;
-		if (event.userID != author)
-			return;
-		const threadData = await threadsData.get(event.threadID);
+		if (event.userID != author) return;
+
+		// লাইভ অ্যাডমিন চেক এখানেও করা হয়েছে
+		const threadInfo = await api.getThreadInfo(event.threadID);
 		const botID = api.getCurrentUserID();
+		const isAdmin = threadInfo.adminIDs.some(admin => admin.id == botID);
+
+		if (!isAdmin)
+			return message.reply(getLang("needAdmin"));
+
+		const threadData = await threadsData.get(event.threadID);
+		const adminIDs = threadInfo.adminIDs.map(admin => admin.id);
+
 		const membersCountLess = threadData.members.filter(member =>
 			member.count < minimum
 			&& member.inGroup == true
-			// ignore bot and admin box
 			&& member.userID != botID
-			&& !threadData.adminIDs.some(id => id == member.userID)
+			&& !adminIDs.includes(member.userID)
 		);
+
 		const errors = [];
 		const success = [];
 		for (const member of membersCountLess) {
@@ -108,7 +122,7 @@ module.exports = {
 				success.push(member.userID);
 			}
 			catch (e) {
-				errors.push(member.name);
+				errors.push(member.name || member.userID);
 			}
 			await sleep(700);
 		}
