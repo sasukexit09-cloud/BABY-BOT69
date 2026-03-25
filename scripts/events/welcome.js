@@ -5,7 +5,7 @@ const path = require("path");
 module.exports = {
   config: {
     name: "welcome",
-    version: "2.0",
+    version: "2.8",
     author: "Saimx69x",
     category: "events"
   },
@@ -19,16 +19,25 @@ module.exports = {
 
     if (newUsers.some(u => u.userFbId === botID)) return;
 
-    const threadInfo = await api.getThreadInfo(threadID);
-    const groupName = threadInfo.threadName;
-    const memberCount = threadInfo.participantIDs.length;
+    // নামের বক্স (Font) সমস্যা দূর করার ফাংশন
+    const clearName = (str) => {
+      return str.normalize("NFKD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^\x00-\x7F]/g, " ")
+                .trim();
+    };
 
-    for (const user of newUsers) {
-      const userId = user.userFbId;
-      const fullName = user.fullName;
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      // NULL ফিক্স: যদি গ্রুপের নাম না থাকে তবে "New Group" দেখাবে
+      const groupName = threadInfo.threadName || "this group";
+      const memberCount = threadInfo.participantIDs.length;
 
-      try {
-        
+      for (const user of newUsers) {
+        const userId = user.userFbId;
+        const fullName = user.fullName; 
+        const apiName = clearName(fullName) || "New Member";
+
         const timeStr = new Date().toLocaleString("en-BD", {
           timeZone: "Asia/Dhaka",
           hour: "2-digit", minute: "2-digit", second: "2-digit",
@@ -36,31 +45,27 @@ module.exports = {
           hour12: true,
         });
 
-    
-        const apiUrl = `https://xsaim8x-xxx-api.onrender.com/api/welcome?name=${encodeURIComponent(fullName)}&uid=${userId}&threadname=${encodeURIComponent(groupName)}&members=${memberCount}`;
-        const tmp = path.join(__dirname, "..", "cache");
+        // এখানে আমরা এপিআই থেকে ডাটা নিচ্ছি
+        const apiUrl = `https://xsaim8x-xxx-api.onrender.com/api/welcome?name=${encodeURIComponent(apiName)}&uid=${userId}&threadname=${encodeURIComponent(groupName)}&members=${memberCount}`;
+        
+        const tmp = path.join(__dirname, "cache");
         await fs.ensureDir(tmp);
-        const imagePath = path.join(tmp, `welcome_${userId}.png`);
+        // এনিমেশন দেখানোর জন্য ফাইল এক্সটেনশন .gif হওয়া জরুরি
+        const gifPath = path.join(tmp, `welcome_${userId}.gif`);
 
         const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
-        fs.writeFileSync(imagePath, response.data);
+        fs.writeFileSync(gifPath, response.data);
 
         await api.sendMessage({
-          body:
-            `‎𝐇𝐞𝐥𝐥𝐨 ${fullName}\n` +
-            `𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐭𝐨 ${groupName}\n` +
-            `𝐘𝐨𝐮'𝐫𝐞 𝐭𝐡𝐞 ${memberCount} 𝐦𝐞𝐦𝐛𝐞𝐫 𝐨𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩, 𝐩𝐥𝐞𝐚𝐬𝐞 𝐞𝐧𝐣𝐨𝐲 🎉\n` +
-            `━━━━━━━━━━━━━━━━\n` +
-            `📅 ${timeStr}`,
-          attachment: fs.createReadStream(imagePath),
+          body: `‎𝐇𝐞𝐥𝐥𝐨 ${fullName}\n𝐖𝐞𝐥𝐜𝐨𝐦𝐞 𝐭𝐨 ${groupName}\n𝐘𝐨𝐮'𝐫𝐞 𝐭𝐡𝐞 ${memberCount} 𝐦𝐞𝐦𝐛𝐞𝐫 𝐨𝐧 𝐭𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩, 𝐩𝐥𝐞𝐚𝐬𝐞 𝐞𝐧𝐣𝐨𝐲 🎉\n━━━━━━━━━━━━━━━━\n📅 ${timeStr}`,
+          attachment: fs.createReadStream(gifPath),
           mentions: [{ tag: fullName, id: userId }]
         }, threadID);
 
-        fs.unlinkSync(imagePath);
-
-      } catch (err) {
-        console.error("❌ Error sending welcome message:", err);
+        if (fs.existsSync(gifPath)) fs.unlinkSync(gifPath);
       }
+    } catch (err) {
+      console.error("❌ Welcome Error:", err);
     }
   }
 };
