@@ -1,0 +1,120 @@
+module.exports = {
+  config: {
+    name: "allg𝚌",
+    aliases: ["allgc"],
+    version: "1.9.0",
+    role: 2, // Only Bot Admin
+    author: "AYAN",
+    description: "🦋 𝚅𝙴𝙸𝚆 𝙼𝙸𝙺𝙾 𝙰𝙻𝙻 𝙹𝙾𝙸𝙽𝙴𝙳 𝙶𝚁𝙾𝚄𝙿 𝙻𝙸𝚂𝚃 🦋",
+    category: "admin",
+    usePrefix: true, 
+    countDown: 2
+  },
+ onChat: async function ({ api, event, message, commandName }) {
+    // মামা, এই অংশটি প্রিফিক্স ছাড়া কমান্ড চেক করবে
+    const { body } = event;
+    if (!body) return;
+    const args = body.toLowerCase().split(" ");
+    if (args[0] === "allgroup" || args[0] === "allgc") {
+        return this.onStart({ api, event, message, commandName });
+    }
+  },
+
+  onStart: async function ({ api, event, message, commandName }) {
+    try {
+      const botID = api.getCurrentUserID();
+      
+      // Fast fetching from Inbox
+      const threadList = await api.getThreadList(100, null, ["INBOX"]);
+      
+      if (!threadList || threadList.length === 0) {
+        return message.reply("Error: Facebook denied the request. Please try again later.");
+      }
+
+      // Filter active groups only
+      const activeGroups = threadList.filter(group => 
+        group.isGroup && 
+        group.isSubscribed && 
+        group.participantIDs && 
+        group.participantIDs.includes(botID)
+      );
+
+      const totalActive = activeGroups.length;
+
+      if (totalActive === 0) {
+        return message.reply("No active groups found.");
+      }
+
+      let msg = `🦋- 𝙼𝙸𝙺𝙾 𝙰𝙲𝚃𝙸𝚅𝙴 𝙶𝚁𝙾𝚄𝙿 -🦋: ${totalActive} ]\n\n`;
+      let groupIDs = [];
+
+      activeGroups.forEach((group, index) => {
+        const name = group.name || "Unnamed Group";
+        const members = group.participantIDs ? group.participantIDs.length : "0";
+        msg += `${index + 1}. ${name}\n🦋 𝙼𝙸𝙺𝙾 𝙻𝙸𝚂𝚃 𝙸𝙳: ${group.threadID}\n🐱 𝙲𝚄𝚃𝙴𝙿𝙸𝙴 𝙲𝙾𝚄𝙽𝚃: ${members}\n\n`;
+        groupIDs.push(group.threadID);
+      });
+
+      msg += `💌 𝙰𝙲𝚃𝙸𝙾𝙽𝚂 💌:\n1. 𝚁𝙴𝙿𝙻𝚈 "𝙾𝚄𝚃 <num>" 𝚃𝙾 𝙻𝙴𝙰𝚅𝙴.\n2. 𝚁𝙴𝙿𝙻𝚈 "𝙰𝙳𝙳 <num>" 𝚃𝙾 𝙹𝙾𝙸𝙽.\n3. 𝚁𝙴𝙿𝙻𝚈 "𝙱𝙰𝙽 <num>" 𝚃𝙾 𝙱𝙻𝙾𝙲𝙺.`;
+
+      return message.reply(msg, (err, info) => {
+        if (err) return;
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: this.config.name,
+          messageID: info.messageID,
+          author: event.senderID,
+          groupIDs
+        });
+      });
+
+    } catch (error) {
+      console.error("AllGroup Error:", error);
+      return message.reply("Critical Error: API restrictions detected.");
+    }
+  },
+
+  onReply: async function ({ api, event, Reply, message, threadsData }) {
+    const { author, groupIDs } = Reply;
+    if (event.senderID != author) return;
+
+    const input = event.body.split(" ");
+    const action = input[0].toLowerCase();
+    const index = parseInt(input[1]) - 1;
+    const targetID = groupIDs[index];
+
+    if (!targetID || isNaN(index)) return message.reply("Invalid choice! Use: <action> <number>");
+
+    if (action === "out") {
+      try {
+        await api.removeUserFromGroup(api.getCurrentUserID(), targetID);
+        return message.reply(`𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈 𝙻𝙴𝙰𝚅𝙴𝙳 𝚃𝙷𝙴 𝙶𝚁𝙾𝚄𝙿🍰: ${targetID}`);
+      } catch (e) {
+        return message.reply("𝙴𝚁𝚁𝙾𝚁 𝙱𝙱𝙴 𝙸 𝙵𝙰𝙲𝙴𝙳 𝙿𝚁𝙾𝙱𝙻𝙴𝙼 𝚃𝙾 𝙻𝙴𝙰𝚅𝙴..💌");
+      }
+    }
+
+    if (action === "add") {
+      try {
+        await api.addUserToGroup(author, targetID);
+        return message.reply(`🍒 𝚂𝚄𝙲𝙲𝙴𝚂𝚂 𝙰𝙳𝙳𝙴𝙳 𝚄 𝚃𝙾 𝚃𝙷𝙴 𝙶𝚁𝙾𝚄𝙿: ${targetID}`);
+      } catch (e) {
+        return message.reply("𝙱𝙱𝙴 𝙽𝙴𝙴𝙳𝚂 𝙼𝙸𝙺𝙾 𝙰𝙳𝙼𝙸𝙽 𝙿𝙴𝚁𝙼𝙸𝚂𝚂𝙸𝙾𝙽 🍎");
+      }
+    }
+
+    if (action === "ban") {
+      try {
+        const data = await threadsData.get(targetID);
+        if (!data.data) data.data = {};
+        data.data.banned = true;
+        await threadsData.set(targetID, data.data, "data");
+        
+        await api.sendMessage("𝙱𝙰𝙽𝙴𝙳 𝙱𝚈 𝙼𝙸𝙺𝙾 𝙰𝙳𝙼𝙸𝙽 🍨", targetID);
+        await api.removeUserFromGroup(api.getCurrentUserID(), targetID);
+        return message.reply(`𝚂𝚄𝙲𝙲𝙴𝚂𝚂: 𝙶𝚁𝙾𝚄𝙿 ${targetID} banned.`);
+      } catch (e) {
+        return message.reply("𝚂𝙾𝚁𝚁𝚈 𝙱𝙱𝙴 𝙳𝙱 𝚄𝙿𝙳𝙰𝚃𝙴 𝙵𝙰𝙸𝙻𝙴𝙳🐱..!!");
+      }
+    }
+  }
+};
