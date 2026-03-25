@@ -1,172 +1,150 @@
 const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
-const cache = new Map(); // 🔥 simple memory cache
+// 🔥 MAIN API
+const baseApi1 = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json");
+  return base.data.api;
+};
+
+// 🔥 BACKUP API
+const baseApi2 = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+  return base.data.api;
+};
 
 module.exports = {
   config: {
     name: "sing",
-    version: "4.0.0",
-    author: "AYAN | Premium Upgrade",
-    countDown: 2,
+    version: "4.5.0",
+    author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
     role: 0,
     category: "media",
-    guide: { en: "{pn} [song name]" }
+    guide: "{pn} <song name | link>"
   },
 
-  onStart: async function ({ args, message, event, commandName }) {
-    const { getStreamFromURL } = global.utils;
-    const keyWord = args.join(" ");
+  onStart: async function ({ api, event, args }) {
+    if (!args[0]) return api.sendMessage("🍓 | 𝙿𝚕𝚎𝚊𝚜𝚎 𝚎𝚗𝚝𝚎𝚛 𝚊 𝚜𝚘𝚗𝚐 𝚗𝚊𝚖𝚎 🍧", event.threadID, event.messageID);
 
-    if (!keyWord) return message.reply("🎵 | Please type a song name.");
+    const isUrl = /youtu\.be|youtube\.com/.test(args[0]);
 
     try {
-      let result;
+      let apiUrl;
+      try { apiUrl = await baseApi1(); } catch (e) { apiUrl = await baseApi2(); }
 
-      // 🔥 CACHE SYSTEM (30 min)
-      if (cache.has(keyWord)) {
-        const data = cache.get(keyWord);
-        if (Date.now() - data.time < 30 * 60 * 1000) {
-          result = data.result;
-        } else cache.delete(keyWord);
+      if (isUrl) {
+        api.setMessageReaction("⏳", event.messageID, () => {}, true);
+        const { data } = await axios.get(`${apiUrl}/ytDl3?link=${encodeURIComponent(args[0])}&format=mp3`);
+        return handleDownload(api, event, data.downloadLink, data.title);
       }
 
-      if (!result) {
-        result = (await search(keyWord)).slice(0, 6);
-        cache.set(keyWord, { result, time: Date.now() });
+      const keyword = args.join(" ");
+      const { data: result } = await axios.get(`${apiUrl}/ytFullSearch?songName=${encodeURIComponent(keyword)}`);
+      const topResults = result.slice(0, 6);
+
+      if (!topResults.length) return api.sendMessage("🍧 | 𝙽𝚘 𝚛𝚎𝚜𝚞𝚕𝚝 😢", event.threadID, event.messageID);
+
+      let msg = "🍓 𝙼𝙸𝙺𝙾 𝙼𝚄𝚂𝙸𝙲 𝙻𝙸𝚂𝚃 🍧\n\n";
+      const attachments = [];
+
+      for (let i = 0; i < topResults.length; i++) {
+        msg += `🎂 ${i + 1}. ${topResults[i].title}\n⏱ ${topResults[i].time}\n\n`;
+        try {
+          const img = (await axios.get(topResults[i].thumbnail, { responseType: "stream" })).data;
+          attachments.push(img);
+        } catch (e) {}
       }
 
-      if (!result.length)
-        return message.reply("❌ | No results found.");
+      api.sendMessage({ 
+        body: msg + "🍧 𝚁𝙴𝙿𝙻𝚈 𝙰 𝙽𝚄𝙼𝙱𝙴𝚁 𝚃𝙾 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳 🍓", 
+        attachment: attachments 
+      }, event.threadID, (err, info) => {
+        if (err) return console.error(err);
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: this.config.name,
+          author: event.senderID,
+          result: topResults,
+          messageID: info.messageID // ড্যাশবোর্ডের আইডি সেভ রাখা হলো
+        });
+      }, event.messageID);
 
-      const thumbs = await Promise.all(
-        result.map(v => getStreamFromURL(v.thumbnail))
-      );
-
-      let msg = "╔═════ 🍒 MUSIC SEARCH 🍒 ═════╗\n\n";
-      result.forEach((v, i) => {
-        msg += `${i + 1}. ${v.title}\n⏱ ${v.time}\n\n`;
-      });
-
-      msg += "━━━━━━━━━━━━━━━━━━\n";
-      msg += "Reply: number | quality\nExample: 1 320";
-
-      message.reply(
-        { body: msg, attachment: thumbs },
-        (err, info) => {
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName,
-            messageID: info.messageID,
-            author: event.senderID,
-            result
-          });
-        }
-      );
-    } catch {
-      message.reply("⚠️ Search failed.");
+    } catch (err) {
+      api.sendMessage("🍓 | 𝚂𝙾𝚁𝚁𝚈 𝙱𝙱𝙴 𝙰𝙿𝙸 𝙴𝚁𝚁𝙾𝚁 😅", event.threadID, event.messageID);
     }
   },
 
-  onReply: async function ({ event, Reply, message }) {
-    const { getStreamFromURL } = global.utils;
-    const { result } = Reply;
+  onReply: async function ({ api, event, Reply }) {
+    const { result, author, messageID } = Reply;
+    if (event.senderID !== author) return;
 
-    const input = event.body.split(" ");
-    const choice = parseInt(input[0]);
-    const quality = input[1] === "320" ? "320" : "128";
+    const choice = parseInt(event.body);
+    if (isNaN(choice) || choice < 1 || choice > result.length) return;
 
-    if (isNaN(choice) || choice <= 0 || choice > result.length)
-      return message.reply("🍒 Invalid selection.");
+    // ১. মেসেজ পাওয়ার সাথে সাথে ড্যাশবোর্ড মেসেজ ডিলিট (unsend) করা
+    api.unsendMessage(messageID).catch(err => console.log("Unsend failed:", err));
 
+    // ২. রিঅ্যাকশন দেওয়া
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+    
     try {
-      await message.unsend(Reply.messageID);
-      const loading = await message.reply("⏳ Downloading...");
+      let apiUrl;
+      try { apiUrl = await baseApi1(); } catch (e) { apiUrl = await baseApi2(); }
 
-      const video = result[choice - 1];
-      const ytUrl = `https://www.youtube.com/watch?v=${video.id}`;
+      const selected = result[choice - 1];
+      const { data } = await axios.get(`${apiUrl}/ytDl3?link=${encodeURIComponent(selected.id)}&format=mp3`);
 
-      const apis = [
-        `https://yt-mp3-imran.vercel.app/api?url=${encodeURIComponent(ytUrl)}&quality=${quality}`,
-        `https://api.samirxp.repl.co/ytdl?url=${ytUrl}`,
-        `https://xnilapi-glvi.onrender.com/xnil/ytmp3?url=${ytUrl}`
-      ];
-
-      let audioUrl = null;
-
-      for (const apiUrl of apis) {
-        try {
-          const res = await axios.get(apiUrl, { timeout: 15000 });
-          if (!res.data || typeof res.data !== "object") continue;
-
-          audioUrl =
-            res.data.download_link ||
-            res.data.data?.media ||
-            res.data.link ||
-            res.data.url ||
-            res.data.audio ||
-            res.data.result?.download;
-
-          if (audioUrl && audioUrl.startsWith("http")) break;
-        } catch {
-          continue;
-        }
+      if (!data || !data.downloadLink) {
+        api.setMessageReaction("❌", event.messageID, () => {}, true);
+        return api.sendMessage("🍧 | 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝚕𝚒𝚗𝚔 𝚊𝚛𝚎 𝚗𝚘𝚝 𝚏𝚘𝚞𝚗𝚍!", event.threadID, event.messageID);
       }
 
-      if (!audioUrl) throw new Error("All APIs failed");
+      await handleDownload(api, event, data.downloadLink, data.title);
 
-      await message.unsend(loading.messageID);
-
-      await message.reply({
-        body:
-          `╔═════ 🍓 NOW PLAYING 🍓 ═════╗\n\n` +
-          `🎧 Title: ${video.title}\n` +
-          `💿 Quality: ${quality}kbps\n` +
-          `━━━━━━━━━━━━━━━━━━`,
-        attachment: await getStreamFromURL(audioUrl)
-      });
-
-      global.GoatBot.onReply.delete(Reply.messageID);
-
-    } catch {
-      message.reply("⚠️ Currently unavailable.");
+    } catch (err) {
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      api.sendMessage("🍧 | 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳 𝙵𝙰𝙸𝙻𝙴𝙳 𝙿𝙻𝙴𝙰𝚂𝙴 𝚆𝙰𝙸𝚃 𝙱𝙱𝙴 𝙰𝙽𝙳 𝚃𝚁𝚈 𝙰𝙶𝙸𝙽 💌", event.threadID, event.messageID);
     }
   }
 };
 
-// 🔎 SAFE SEARCH
-async function search(keyword) {
+// 🔥 FAST DOWNLOAD HANDLER
+async function handleDownload(api, event, url, title) {
+  const filePath = path.join(__dirname, `tmp_${Date.now()}.mp3`);
+  
   try {
-    const res = await axios.get(
-      `https://www.youtube.com/results?search_query=${encodeURIComponent(
-        keyword
-      )}`,
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-        },
-        timeout: 10000
+    const response = await axios({
+      method: 'get',
+      url: url,
+      responseType: 'stream'
+    });
+
+    const writer = fs.createWriteStream(filePath);
+    response.data.pipe(writer);
+
+    writer.on('finish', async () => {
+      const stats = fs.statSync(filePath);
+      if (stats.size > 26214400) { // 25MB Limit
+        api.sendMessage("🍧 | গানটি অনেক বড় (২৫ মেগাবাইটের বেশি), তাই পাঠানো সম্ভব নয়।", event.threadID, event.messageID);
+        return fs.unlinkSync(filePath);
       }
-    );
 
-    const match = res.data.match(/ytInitialData\s*=\s*(\{.*?\});/s);
-    if (!match) return [];
+      api.sendMessage({
+        body: `🍓 𝙽𝙾𝚆 𝙿𝙻𝙰𝚈𝙸𝙽𝙶 🍧\n\n🎂 ${title}`,
+        attachment: fs.createReadStream(filePath)
+      }, event.threadID, (err) => {
+        if (!err) {
+            api.setMessageReaction("🦋", event.messageID, () => {}, true);
+            fs.unlinkSync(filePath);
+        }
+      }, event.messageID);
+    });
 
-    const json = JSON.parse(match[1]);
+    writer.on('error', (e) => {
+      api.sendMessage("🍧 | File System Error!", event.threadID);
+    });
 
-    const contents =
-      json?.contents?.twoColumnSearchResultsRenderer?.primaryContents
-        ?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
-
-    return contents
-      .filter(v => v.videoRenderer)
-      .map(v => ({
-        id: v.videoRenderer.videoId,
-        title: v.videoRenderer.title?.runs?.[0]?.text || "No title",
-        thumbnail:
-          v.videoRenderer.thumbnail?.thumbnails?.pop()?.url || null,
-        time: v.videoRenderer.lengthText?.simpleText || "N/A"
-      }));
-  } catch {
-    return [];
+  } catch (e) {
+    api.sendMessage("🍧 | 𝚂𝚎𝚛𝚟𝚎𝚛 𝙴𝚛𝚛𝚘𝚛 𝚠𝚑𝚒𝚕𝚎 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐!", event.threadID);
   }
 }
