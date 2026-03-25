@@ -7,7 +7,7 @@ module.exports = {
     name: 'pinterest',
     aliases: ['pin', 'pinter'],
     version: '2.0.0',
-    author: 'Arafat & Fixer',
+    author: '𝙰𝚈𝙰𝙽 𝙱𝙱𝙴',
     cooldown: 5,
     role: 0,
     shortDescription: 'Pinterest Image Search (Multi-API)',
