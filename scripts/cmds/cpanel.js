@@ -14,7 +14,7 @@ const toTime = (sec) => {
 
 module.exports = {
   config: {
-    name: "mikopanel",
+    name: "cpanel",
     aliases: ["panel", "mikopanel"],
     version: "50.0",
     author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
