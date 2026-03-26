@@ -1,4 +1,4 @@
-*cmd install pair2.js const axios = require("axios");
+const axios = require("axios");
 const { createCanvas, loadImage } = require("canvas");
 const fs = require("fs");
 const path = require("path");
