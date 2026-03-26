@@ -11,7 +11,7 @@ const getBaseApiUrl = async () => {
 };
 
 // Triggers: Added all your requested words
-const triggerWords = ["bby", "বট", "baby", "babu", "jan", "alya", "hinata"];
+const triggerWords = ["bby", "বট", "baby", "bot", "janu", "miko", "yea miko"];
 
 module.exports = {
     config: {
