@@ -21,7 +21,7 @@ module.exports = {
     if (!newUsers.some(u => u.userFbId === botID)) return;
 
     try {
-      const imageUrl = "";
+      const imageUrl = "https://files.catbox.moe/8voa1l.jpg";
       const tmp = path.join(__dirname, "..", "cache");
       await fs.ensureDir(tmp);
       const imagePath = path.join(tmp, `bot_join.png`);
