@@ -15,31 +15,34 @@ const toTime = (sec) => {
 module.exports = {
   config: {
     name: "cpanel",
-    aliases: ["panel", "mikopanel"],
+    aliases: ["panel", "mikopanel", "cp"],
     version: "50.0",
     author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
-    description: "𝚈𝙴𝙰 𝙼𝙸𝙺𝙾 𝙲𝙾𝙽𝚃𝚁𝙾𝙻 𝙿𝙰𝙽𝙴𝙻 𝚂𝚃𝙰𝚃𝚄𝚂"
+    countDown: 5,
+    role: 0,
+    shortDescription: "𝚈𝙴𝙰 𝙼𝙸𝙺𝙾 𝙲𝙾𝙽𝚃𝚁𝙾𝙻 𝙿𝙰𝙽𝙴𝙻 𝚂𝚃𝙰𝚃𝚄𝚂",
+    longDescription: "𝚈𝙴𝙰 𝙼𝙸𝙺𝙾 𝙲𝙾𝙽𝚃𝚁𝙾𝙻 𝙿𝙰𝙽𝙴𝙻 𝚂𝚃𝙰𝚃𝚄𝚂",
+    category: "system",
+    guide: "{pn}"
   },
 
   onStart: async function(ctx) {
-    await module.exports.runDashboard(ctx);
+    return await this.runDashboard(ctx);
   },
 
-  onChat: async function(ctx) {
-    const input = ctx.event.body?.toLowerCase()?.trim();
-    if (!["cpanel", "panel", "cp"].includes(input)) return;
-    await module.exports.runDashboard(ctx);
+  run: async function(ctx) {
+    return await this.runDashboard(ctx);
   },
 
   runDashboard: async function(ctx) {
-    const { message, api } = ctx;
+    const { message, api, event } = ctx;
     const loadingMsg = await message.reply("🍨𝚆𝙰𝙸𝚃 𝙼𝙸𝙺𝙾 𝙲𝙿𝙰𝙽𝙴𝙻 𝙻𝙾𝙰𝙳𝙸𝙽𝙶...!!");
 
     const width = 1000, height = 800;
     const encoder = new GIFEncoder(width, height);
     const canvas = createCanvas(width, height);
     const ctxC = canvas.getContext("2d");
-    const filePath = path.join(__dirname, "zentsu_rgb_ultra.gif");
+    const filePath = path.join(__dirname, `zentsu_rgb_${Date.now()}.gif`);
     const stream = fs.createWriteStream(filePath);
 
     encoder.createReadStream().pipe(stream);
@@ -48,9 +51,8 @@ module.exports = {
     encoder.setDelay(70);
     encoder.setQuality(10);
 
-    const totalFrames = 60;
+    const totalFrames = 30; // Frames slightly reduced for faster processing
 
-    // ১. RGB Snowfall Setup
     const snowParticles = Array.from({ length: 150 }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -60,17 +62,13 @@ module.exports = {
     }));
 
     for (let f = 0; f < totalFrames; f++) {
-      // Dynamic RGB Color based on frame
-      const mainHue = (f * 6) % 360;
+      const mainHue = (f * 12) % 360;
       const rgbColor = `hsla(${mainHue}, 100%, 70%, 1)`;
-      const rgbGlow = `hsla(${mainHue}, 100%, 70%, 0.8)`;
       const secondaryColor = `hsla(${(mainHue + 60) % 360}, 100%, 70%, 1)`;
 
-      // Background
       ctxC.fillStyle = "#030008";
       ctxC.fillRect(0, 0, width, height);
 
-      // ২. Snowfall Animation (Changing Colors)
       snowParticles.forEach(p => {
         p.y += p.speed;
         p.hue = (p.hue + 3) % 360;
@@ -81,7 +79,6 @@ module.exports = {
         ctxC.fill();
       });
 
-      // ৩. Highlighted Border (Outer Glow)
       ctxC.strokeStyle = rgbColor;
       ctxC.lineWidth = 4;
       ctxC.shadowBlur = 20;
@@ -89,39 +86,34 @@ module.exports = {
       ctxC.strokeRect(30, 30, width - 60, height - 60);
       ctxC.shadowBlur = 0;
 
-      // ৪. System Data
       const totalRAM = (os.totalmem() / (1024 ** 3)).toFixed(1);
       const usedRAM = ((os.totalmem() - os.freemem()) / (1024 ** 3)).toFixed(1);
       const ramPercent = ((usedRAM / totalRAM) * 100).toFixed(1);
       const cpuLoad = (os.loadavg()[0] * 10).toFixed(1);
       const cache = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
       const temp = (40 + Math.random() * 5).toFixed(1);
-      
+
       const bdTime = new Date().toLocaleTimeString('en-US', {
         timeZone: 'Asia/Dhaka', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
 
-      // ৫. Header with RGB Shadow
       ctxC.textAlign = "center";
       ctxC.font = "bold 50px Arial";
       ctxC.fillStyle = "#fff";
       ctxC.shadowBlur = 25; ctxC.shadowColor = rgbColor;
-      ctxC.fillText("ZENTSU ULTRA RGB PANEL", width / 2, 100);
-      
+      ctxC.fillText("YEA MIKO C—PANEL V1", width / 2, 100);
+
       ctxC.font = "bold 26px Arial";
       ctxC.fillStyle = secondaryColor;
       ctxC.fillText(`𝙲𝙾𝚄𝙽𝚃𝚁𝚈 𝚃𝙸𝙼𝙴: ${bdTime} • 𝚂𝙴𝚁𝚅𝙴𝚁 𝙰𝙲𝚃𝙸𝚅𝙴`, width / 2, 145);
       ctxC.shadowBlur = 0;
 
-      // ৬. Segmented Progress Rings (Rainbow Style)
       const drawRing = (x, y, radius, percent, color, label, val) => {
-        // Outer Track
         ctxC.lineWidth = 15;
         ctxC.setLineDash([5, 10]);
         ctxC.strokeStyle = "rgba(255,255,255,0.05)";
         ctxC.beginPath(); ctxC.arc(x, y, radius, 0, Math.PI * 2); ctxC.stroke();
 
-        // Highlighted Progress
         ctxC.setLineDash([]);
         ctxC.strokeStyle = color;
         ctxC.shadowBlur = 20; ctxC.shadowColor = color;
@@ -129,7 +121,7 @@ module.exports = {
         ctxC.beginPath();
         ctxC.arc(x, y, radius, -Math.PI / 2, (-Math.PI / 2) + (percent / 100) * Math.PI * 2);
         ctxC.stroke();
-        
+
         ctxC.shadowBlur = 0;
         ctxC.fillStyle = "#fff";
         ctxC.font = "bold 28px Arial"; ctxC.fillText(val, x, y + 10);
@@ -140,10 +132,9 @@ module.exports = {
       drawRing(500, 340, 85, ramPercent, secondaryColor, "RAM USAGE", `${ramPercent}%`);
       drawRing(780, 340, 85, 75, rgbColor, "STORAGE", "75%");
 
-      // ৭. Detailed Grid Info
       ctxC.textAlign = "left";
       ctxC.font = "bold 22px Arial";
-      
+
       const drawInfo = (x, y, text, val, c) => {
         ctxC.fillStyle = c; ctxC.shadowBlur = 10; ctxC.shadowColor = c;
         ctxC.fillText(`► ${text}:`, x, y);
@@ -162,7 +153,6 @@ module.exports = {
       drawInfo(550, gy + 90, "𝚄𝙿𝚃𝙸𝙼𝙴", toTime(os.uptime()), secondaryColor);
       drawInfo(550, gy + 135, "𝚂𝚃𝙰𝚃𝚄𝚂", "𝚂𝚃𝙰𝙱𝙻𝙴", rgbColor);
 
-      // ৮. Glowing RGB Footer
       ctxC.shadowBlur = 15; ctxC.shadowColor = rgbColor;
       ctxC.strokeStyle = rgbColor; ctxC.lineWidth = 3;
       ctxC.strokeRect(80, 710, 840, 50);
@@ -178,14 +168,19 @@ module.exports = {
     encoder.finish();
 
     stream.on("finish", async () => {
-      if (loadingMsg && loadingMsg.messageID) {
-        api.unsendMessage(loadingMsg.messageID);
+      try {
+        if (loadingMsg && loadingMsg.messageID) {
+          api.unsendMessage(loadingMsg.messageID);
+        }
+        const bdTimeNow = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka' });
+        await message.reply({
+          body: `🍓 𝙼𝙸𝙺𝙾 𝙲𝙾𝙽𝚃𝚁𝙾𝙻 𝙿𝙰𝙽𝙴𝙻 𝚂𝚃𝙰𝚃𝚄𝚂 🍓 \n━━━━━━━━━━━━━━━━━━━━\n🍒𝚂𝙴𝚁𝚅𝙴𝚁 𝚂𝚃𝙰𝚃𝚄𝚂: 𝙾𝙽𝙻𝙸𝙽𝙴 🟢\n🕰️𝚃𝙸𝙼𝙴: ${bdTimeNow}`,
+          attachment: fs.createReadStream(filePath)
+        });
+        fs.unlinkSync(filePath); // Delete file after sending
+      } catch (err) {
+        console.error(err);
       }
-      const bdTimeNow = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka' });
-      await message.reply({
-        body: `🍓 𝙼𝙸𝙺𝙾 𝙲𝙾𝙽𝚃𝚁𝙾𝙻 𝙿𝙰𝙽𝙴𝙻 𝚂𝚃𝙰𝚃𝚄𝚂 🍓 \n━━━━━━━━━━━━━━━━━━━━\n🍒𝚂𝙴𝚁𝚅𝙴𝚁 𝚂𝚃𝙰𝚃𝚄𝚂: 𝙾𝙽𝙻𝙸𝙽𝙴 🟢\n🕰️𝚃𝙸𝙼𝙴: ${bdTimeNow}`,
-        attachment: fs.createReadStream(filePath)
-      });
     });
   }
 };
