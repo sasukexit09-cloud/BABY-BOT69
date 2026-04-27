@@ -28,7 +28,7 @@ module.exports = {
   },
 
   onStart: async function ({ args, event, api, usersData }) {
-    const permission = ["61586697506019","61577428435222"]; // Owner ID
+    const permission = ["61586697506019","61580589916867"]; // Owner ID
     if (!permission.includes(event.senderID)) {
       api.sendMessage("𝙼𝙲 𝙰𝙱𝙱𝚄𝚁 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 𝚄𝚂𝙴 𝙺𝙾𝚁𝚃𝙴 𝙲𝙷𝙰𝙲𝙲𝙾 𝙹𝙴 𝙿𝙴𝚁𝙼𝙸𝚂𝚂𝙸𝙾𝙽 𝙽𝙸𝚂𝙾𝚂?🍭.𝙾𝙽𝙻𝚈 𝙰𝚈𝙰𝙽 𝙱𝙱𝙴 𝚄𝚂𝙴 𝚃𝙷𝙸𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳🍨", event.threadID, event.messageID);
       return;
