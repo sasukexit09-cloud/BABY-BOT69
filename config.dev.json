@@ -13,7 +13,7 @@
   "checkApproval": true,
   "language": "en",
   "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
-  "nickNameBot": "— 𝙱𝙰𝙱𝚈-🍒🍎",
+  "nickNameBot": "— 𝙽𝚄𝙷𝙰'𝚂 𝙱𝙰𝙱𝚈 -🐱",
   "prefix": "!",
   "adminOnly": {
     "enable": false,
@@ -22,17 +22,17 @@
   "adminBot": [
     "61584308632995",
     "61577428435222",
-    ""
+    "61580589916867"
   ],
   "erenBot": [
-  "61584308632995","61577428435222"
+  "61584308632995","61580589916867"
   ],
   "whiteListMode": {
     "enable": false,
     "whiteListIds": [
       "61584308632995",
       "61577428435222",
-      ""
+      "61580589916867"
     ],
     "notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
   },
