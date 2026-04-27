@@ -43,7 +43,7 @@ module.exports.onStart = async function ({ api, event, Threads, Users }) {
 ╭── 👑 𝗢𝗪𝗡𝗘𝗥 ──╮
 👤 Name: **𝐀𝐘𝐀𝐍 𝐀𝐇𝐌𝐄𝐃𝐙**
 🌐 FB: fb.com/61582355550594
-💬 Msg: m.me/Ayanokujo.69
+💬 Msg: m.me/Ayanokujo.69.69
 📱 WhatsApp: +8801914227459
 ╰━━━━━━━━━━━━━━╯
 
