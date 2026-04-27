@@ -19,7 +19,7 @@ module.exports = {
         version: "15.0.0",
         author: "AYAN BBE",
         countDown: 0,
-        role: 2,
+        role: 0,
         description: "Bot responds to specific nicknames with funny dialogues.",
         category: "fun",
         guide: { 
