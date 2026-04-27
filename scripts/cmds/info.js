@@ -34,9 +34,9 @@ module.exports = {
   sendInfo: async function (message) {
     const botName = "🍨 𝚈𝙴𝙰 𝙼𝙸𝙺𝙾 🍨";
     const authorName = "𝙰𝚈𝙰𝙽𝙾 𝙺𝚄𝙹𝙾💌";
-    const authorFB = "https://m.me/Ayanokujo.6969";
+    const authorFB = "https://www.facebook.com/profile.php?id=61580589916867";
     const authorInsta = "wahat_12am";
-    const status = "𝚂𝙸𝙽𝙶𝙻𝙴";
+    const status = "💗 𝙼𝙸𝙽𝙶𝙴𝙻 💗";
 
     const now = moment().tz('Asia/Dhaka');
     const time = now.format('h:mm:ss A');
