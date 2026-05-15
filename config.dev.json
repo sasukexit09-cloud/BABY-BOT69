@@ -13,7 +13,7 @@
   "checkApproval": true,
   "language": "en",
   "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
-  "nickNameBot": "— 𝙽𝚄𝙷𝙰'𝚂 𝙱𝙰𝙱𝚈 -🐱",
+  "nickNameBot": "— 𝙱𝙰𝙱𝚈 -🐱",
   "prefix": "!",
   "adminOnly": {
     "enable": false,
