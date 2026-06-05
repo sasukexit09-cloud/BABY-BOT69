@@ -14,7 +14,7 @@ module.exports = {
     },
 
     onStart: async function ({ api, event, args, message }) {
-        const botAdmins = ['61584308632995']; // আপনার UID
+        const botAdmins = ['61572112172483']; // আপনার UID
         const { senderID, threadID, mentions, messageReply } = event;
 
         if (!botAdmins.includes(senderID)) {
