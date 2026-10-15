@@ -5,7 +5,7 @@ module.exports = {
     version: "1.9.0",
     role: 2, // Only Bot Admin
     author: "AYAN",
-    description: "🦋 𝚅𝙴𝙸𝚆 𝙼𝙸𝙺𝙾 𝙰𝙻𝙻 𝙹𝙾𝙸𝙽𝙴𝙳 𝙶𝚁𝙾𝚄𝙿 𝙻𝙸𝚂𝚃 🦋",
+    description: "🦋 𝚅𝙴𝙸𝚆 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 𝙰𝙻𝙻 𝙹𝙾𝙸𝙽𝙴𝙳 𝙶𝚁𝙾𝚄𝙿 𝙻𝙸𝚂𝚃 🦋",
     category: "admin",
     usePrefix: true, 
     countDown: 2
@@ -45,13 +45,13 @@ module.exports = {
         return message.reply("No active groups found.");
       }
 
-      let msg = `🦋- 𝙼𝙸𝙺𝙾 𝙰𝙲𝚃𝙸𝚅𝙴 𝙶𝚁𝙾𝚄𝙿 -🦋: ${totalActive} ]\n\n`;
+      let msg = `🦋- 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 𝙰𝙲𝚃𝙸𝚅𝙴 𝙶𝚁𝙾𝚄𝙿 -🦋: ${totalActive} ]\n\n`;
       let groupIDs = [];
 
       activeGroups.forEach((group, index) => {
         const name = group.name || "Unnamed Group";
         const members = group.participantIDs ? group.participantIDs.length : "0";
-        msg += `${index + 1}. ${name}\n🦋 𝙼𝙸𝙺𝙾 𝙻𝙸𝚂𝚃 𝙸𝙳: ${group.threadID}\n🐱 𝙲𝚄𝚃𝙴𝙿𝙸𝙴 𝙲𝙾𝚄𝙽𝚃: ${members}\n\n`;
+        msg += `${index + 1}. ${name}\n🦋 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 𝙻𝙸𝚂𝚃 𝙸𝙳: ${group.threadID}\n🐱 𝙲𝚄𝚃𝙴𝙿𝙸𝙴 𝙲𝙾𝚄𝙽𝚃: ${members}\n\n`;
         groupIDs.push(group.threadID);
       });
 
@@ -98,7 +98,7 @@ module.exports = {
         await api.addUserToGroup(author, targetID);
         return message.reply(`🍒 𝚂𝚄𝙲𝙲𝙴𝚂𝚂 𝙰𝙳𝙳𝙴𝙳 𝚄 𝚃𝙾 𝚃𝙷𝙴 𝙶𝚁𝙾𝚄𝙿: ${targetID}`);
       } catch (e) {
-        return message.reply("𝙱𝙱𝙴 𝙽𝙴𝙴𝙳𝚂 𝙼𝙸𝙺𝙾 𝙰𝙳𝙼𝙸𝙽 𝙿𝙴𝚁𝙼𝙸𝚂𝚂𝙸𝙾𝙽 🍎");
+        return message.reply("𝙱𝙱𝙴 𝙽𝙴𝙴𝙳𝚂 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 𝙰𝙳𝙼𝙸𝙽 𝙿𝙴𝚁𝙼𝙸𝚂𝚂𝙸𝙾𝙽 🍎");
       }
     }
 
@@ -109,7 +109,7 @@ module.exports = {
         data.data.banned = true;
         await threadsData.set(targetID, data.data, "data");
         
-        await api.sendMessage("𝙱𝙰𝙽𝙴𝙳 𝙱𝚈 𝙼𝙸𝙺𝙾 𝙰𝙳𝙼𝙸𝙽 🍨", targetID);
+        await api.sendMessage("𝙱𝙰𝙽𝙴𝙳 𝙱𝚈 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 𝙰𝙳𝙼𝙸𝙽 🍨", targetID);
         await api.removeUserFromGroup(api.getCurrentUserID(), targetID);
         return message.reply(`𝚂𝚄𝙲𝙲𝙴𝚂𝚂: 𝙶𝚁𝙾𝚄𝙿 ${targetID} banned.`);
       } catch (e) {
