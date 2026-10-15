@@ -17,7 +17,7 @@ module.exports = {
     },
   },
 
-  ownerID: "OWNER_ID_HERE", // <-- Change this to your owner ID
+  ownerID: "61593609474442", // <-- Change this to your owner ID
 
   onStart: async function ({ args, message, event, usersData, getLang, senderID }) {
     const input = args[0]?.toLowerCase();
