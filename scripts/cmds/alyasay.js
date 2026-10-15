@@ -4,8 +4,8 @@ const axios = require("axios");
 
 module.exports = {
   config: {
-    name: "alyasay",
-    aliases: ["alyagotto"],
+    name: "zerosay",
+    aliases: ["zerogotto"],
     version: "1.2",
     author: "𝙰𝚈𝙰𝙽 𝙱𝙱𝙴",
     shortDescription: "Generate audio",
@@ -33,7 +33,7 @@ module.exports = {
       });
 
       await message.reply({
-        body: `Take alya love bbe🍓😫`,
+        body: `𝚃𝙰𝙺𝙴 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 𝙻𝙾𝚅𝙴 🍓😫`,
         attachment: response.data,
       });
 
