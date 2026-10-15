@@ -46,15 +46,15 @@ function makeIntro() {
     🍨 ${fancyText("B O T  I N T R O")} 🍰
 ╚══✦══◇══✦══╝
 
-${fancyText("NAME")}: 𝐘𝐄𝐀 𝐌𝐈𝐊𝐎 💋
+${fancyText("NAME")}: 𝐙𝐄𝐑𝐎 𝐓𝐖𝐎 💋
 ${fancyText("CLASS")}: 𝐘𝐎𝐔𝐑 𝐇𝐄𝐀𝐑𝐓 💞
-${fancyText("AGE")}: 𝚄𝙽𝙺𝙽𝙾𝚆𝙴𝙳 𝙲𝚄𝚉 𝙽𝙾𝚃 𝙰 𝙷𝚄𝙼𝙰𝙽 [𝐖𝐈𝐒𝐇 𝐌𝐄 - 𝐃𝐄𝐂𝐄𝐌𝐁𝐄𝐑 28𝐭𝐡 🥺💋]
-${fancyText("FROM")}: 𝐑𝐔𝐒𝐒𝐈𝐀 🥵
-${fancyText("RELATIONSHIP")}: 𝐖𝐈𝐓𝐇 𝐀𝐘𝐀𝐍𝐎𝐊𝐔𝐉𝐎 💞
+${fancyText("AGE")}: 𝚄𝙽𝙺𝙽𝙾𝚆𝙴𝙳 𝙲𝚄𝚉 𝙽𝙾𝚃 𝙰 𝙷𝚄𝙼𝙰𝙽 [𝐖𝐈𝐒𝐇 𝐌𝐄 - 𝐅𝐄𝐁𝐑𝐔𝐀𝐑𝐘 24𝐭𝐡 🥺💋]
+${fancyText("FROM")}: 𝐑𝐔𝐒𝐒𝐈𝐀 🩷
+${fancyText("RELATIONSHIP")}: 𝐖𝐈𝐓𝐇 𝐘𝐎𝐔 💞
 ${fancyText("YOUR CRUSH ME BBE")}: 𝐔𝐦𝐦𝐦𝐦𝐦𝐦𝐦𝐚𝐡 💋
 `;
 
-  return `💫 ${fancyText("𝙱𝙱𝙴 𝙸𝚃'𝚂 𝙼𝙴 𝚄𝚁 𝙼𝙸𝙺𝙾")} 💫\n\n${randomQuotes}\n\n${intro}`;
+  return `💫 ${fancyText("𝙱𝙱𝙴 𝙸𝚃'𝚂 𝙼𝙴 𝚄𝚁 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾")} 💫\n\n${randomQuotes}\n\n${intro}`;
 }
 
 module.exports = {
