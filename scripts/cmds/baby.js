@@ -35,7 +35,7 @@ module.exports = {
 
             if (!args[0]) {
                 return api.sendMessage({
-                    body: `「 ${name} 」\nজ্বি জানু বলো! আমাকে ডাকছো কেন? 😘`,
+                    body: `「 ${name} 」\n𝙱𝙰𝙱𝚈 𝙰𝙼𝙰𝚁 𝙷𝙴𝙰𝚁𝚃 𝚃𝚄𝙼𝙰𝚁 𝚆𝙸𝙵𝙸 𝙴𝚁 𝚂𝙰𝚃𝙷𝙴 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 🩷`,
                     mentions: [{ tag: name, id: senderID }]
                 }, threadID, (err, info) => {
                     if (!err) global.GoatBot?.onReply?.set(info.messageID, { commandName, author: senderID });
