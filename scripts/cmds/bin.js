@@ -3,7 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 
-const ALLOWED_UIDs = ["61584308632995", "61580589916867", ""];
+const ALLOWED_UIDs = ["61593609474442", "", ""];
 const API_SOURCE = "https://xtream-ayan.onrender.com";
 
 module.exports = {
