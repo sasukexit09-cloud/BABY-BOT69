@@ -5,7 +5,7 @@ const axios = require("axios");
 
 /* ===== SETTINGS ===== */
 const PRICE = 200000;
-const OWNER_UID = ["61584308632995"]; 
+const OWNER_UID = ["61593609474442"]; 
 
 module.exports = {
   config: {
