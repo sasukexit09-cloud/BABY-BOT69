@@ -1,7 +1,7 @@
 <h1 align="center">💋 𝙺𝙸𝚂𝚂 𝙾𝙵 𝙳𝙴𝙰𝚃𝙷 💋</h1>
 
 <h1 align="center">
-  <img src="https://files.catbox.moe/ormmed.jpeg" width="450" alt="Ayan's Bot Logo"/>
+  <img src="https://files.catbox.moe/tgs9u1.jpg" width="450" alt="Ayan's Bot Logo"/>
 </h1>
 
 ---
