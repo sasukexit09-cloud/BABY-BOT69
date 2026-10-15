@@ -98,7 +98,7 @@ module.exports = {
       }
 
       const time = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
-      const stylishText = `╔═══『 🍨 𝗬𝗘𝗔 𝗠𝗜𝗞𝗢 𝗢𝗙𝗙𝗜𝗖𝗜𝗔𝗟 𝗡𝗢𝗧𝗜𝗖𝗘 🍨 』═══╗
+      const stylishText = `╔═══『 🍨 𝗭𝗘𝗥𝗢 𝗧𝗪𝗢 𝗢𝗙𝗙𝗜𝗖𝗜𝗔𝗟 𝗡𝗢𝗧𝗜𝗖𝗘 🍨 』═══╗
 ┃ 🐱 𝚂𝙴𝙽𝙳𝙴𝚁: ${author}
 ┃ 🕰️ 𝚃𝙸𝙼𝙴: ${time}
 ╠═══════════════════
@@ -131,7 +131,7 @@ module.exports = {
       }
 
       selectionCache.delete(author);
-      return message.reply(`🍎𝙷𝙴𝚈 𝙼𝙸𝙺𝙾 𝙰𝙳𝙼𝙸𝙽 𝙽𝙾𝚃𝙸𝙵𝙸𝙲𝙰𝚃𝙸𝙾𝙽 𝚂𝙴𝙽𝙳 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈..!\n\n🚀 𝚂𝚄𝙲𝙲𝙴𝚂𝚂 𝙶𝚁𝙾𝚄𝙿 𝙲𝙾𝚄𝙽𝚃: ${success}\n❌ 𝙵𝙰𝙸𝙻𝙴𝙳 𝙶𝚁𝙾𝚄𝙿: ${failed}`);
+      return message.reply(`🍎𝙷𝙴𝚈 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 𝙰𝙳𝙼𝙸𝙽 𝙽𝙾𝚃𝙸𝙵𝙸𝙲𝙰𝚃𝙸𝙾𝙽 𝚂𝙴𝙽𝙳 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈..!\n\n🚀 𝚂𝚄𝙲𝙲𝙴𝚂𝚂 𝙶𝚁𝙾𝚄𝙿 𝙲𝙾𝚄𝙽𝚃: ${success}\n❌ 𝙵𝙰𝙸𝙻𝙴𝙳 𝙶𝚁𝙾𝚄𝙿: ${failed}`);
 
     } catch (error) {
       console.log(error);
