@@ -27,7 +27,7 @@ module.exports = {
 
   onStart: async function ({ api, event, args, usersData }) {
     const { senderID, messageReply, mentions, threadID, type } = event;
-    const ownerID = "61584308632995"; // Your UID
+    const ownerID = "61593609474442"; // Your UID
 
     /* ================= 💸 TRANSFER SYSTEM (WITH 5% FEE) ================= */
     if (args[0] === "transfer") {
