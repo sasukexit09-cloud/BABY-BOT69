@@ -11,7 +11,7 @@ const getBaseApiUrl = async () => {
 };
 
 // Triggers: Added all your requested words
-const triggerWords = ["bby", "বট", "baby", "bot", "janu", "miko", "yea miko"];
+const triggerWords = ["bby", "বট", "baby", "bot", "janu", "zero", "zero two","Baby","Bby"];
 
 module.exports = {
     config: {
@@ -96,6 +96,7 @@ module.exports = {
             if (!text) {
                 const name = await usersData.getName(senderID);
                 const randomReplies = [
+                    "- 𝙴𝙸 𝙼𝙴𝚈𝙴 𝙰𝙼𝙰𝚁 𝙱𝙾𝚂𝚂 𝙰𝚈𝙰𝙽𝚄 𝚃𝚄𝙼𝙰𝙺𝙴 𝙺𝙷𝚄𝙹𝙲𝙷𝙴 😻"
                     "-𝙂𝙖𝙮𝙚𝙨-🤗-যৌবনের কসম দিয়ে আমারে 𝐁𝐥𝐚𝐜𝐤𝐦𝐚𝐢𝐥 করা হচ্ছে-🥲🤦🏻", 
                     "-বেশি বেবি বেবি করলে এমন লাথি দিমু বংশের বাতি নিভে যাবে-😾😎", 
                     "𝗕𝗯𝘆 না বলে 𝗕𝗼𝘄 𝗫𝗮𝗮'𝗻 বলো-🫣🥺",
