@@ -72,7 +72,7 @@ module.exports.onStart = async ({ api, event, args, usersData }) => {
     if (args[0] === "list") {
       const endpoint = args[1] === "all" ? "/list/all" : "/list";
       const response = await axios.get(`${await baseApiUrl()}/api/jan${endpoint}`);
-      if (args[1] === "all") {  let message = "👑 List of Hinata teachers:\n\n";
+      if (args[1] === "all") {  let message = "👑 List of zero two teachers:\n\n";
       const data = Object.entries(response.data.data) .sort((a, b) => b[1] - a[1])  .slice(0, 15); for (let i = 0; i < data.length; i++) {
       const [userID, count] = data[i];
       const name = (await usersData.getName(userID)) || "Unknown"; message += `${i + 1}. ${name}: ${count}\n`; } return api.sendMessage(message, event.threadID, event.messageID); }
@@ -162,7 +162,7 @@ module.exports.onChat = async ({ api, event }) => {
           "আমাকে ডাকলে ,আমি কিন্তূ কিস করে দেবো😘 ",  
           "🐒🐒🐒",
           "bye",
-          "naw amr boss k message daw m.me/mahmud0x7",
+          "𝙰𝙼𝙰𝚁 𝙱𝙾𝚂𝚂 𝙰𝚈𝙰𝙽 𝙺𝙴 𝙲𝚄𝙼𝙼𝙰𝙷 𝙳𝙸𝚈𝙴 𝙰𝚂𝙾",
           "mb ney bye",
           "meww",
           "গোলাপ ফুল এর জায়গায় আমি দিলাম তোমায় মেসেজ",
@@ -196,7 +196,7 @@ module.exports.onChat = async ({ api, event }) => {
           "আজব তো__😒",
           "আমাকে ডেকো না,আমি ব্যাস্ত আসি🙆🏻‍♀",
           "𝗕𝗯𝘆 বললে চাকরি থাকবে না",
-          "𝗕𝗯𝘆 𝗕𝗯𝘆 না করে আমার বস মানে, MahMUD ,MahMUD ও তো করতে পারো😑?",
+          "𝗕𝗯𝘆 𝗕𝗯𝘆 না করে আমার বস মানে, 𝙰𝚈𝙰𝙽 ,𝙰𝚈𝙰𝙽 ও তো করতে পারো😑?",
           "আমার সোনার বাংলা, তারপরে লাইন কি? 🙈",
           "🍺 এই নাও জুস খাও..!𝗕𝗯𝘆 বলতে বলতে হাপায় গেছো না 🥲",
           "হটাৎ আমাকে মনে পড়লো 🙄",
