@@ -34,7 +34,7 @@ module.exports = {
   sendInfo: async function (message) {
     const botName = "🍨 𝚉𝙴𝚁𝙾 𝚃𝚆𝙾 🍨";
     const authorName = "𝙰𝚈𝙰𝙽𝙾 𝙺𝚄𝙹𝙾💌";
-    const authorFacebook = "https://www.facebook.com/profile.php?id=61580589916867";
+    const authorFacebook = "https://www.facebook.com/profile.php?id=61593609474442";
     const authorInstagram = "wahat_12am";
     const status = "🩷 𝚂𝙸𝙽𝙶𝙴𝙻 🩷";
     const authorWhatsapp = 'lucifer_xso'
